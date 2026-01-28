@@ -70,6 +70,8 @@
           typixLib = typix.lib.${pkgs.system};
           sources = [ "examples/main.typ" ];
           commonArgs = {
+            typstOpts.root = ".";
+            typstOutput = "examples/main.pdf";
             typstSource = builtins.elemAt sources 0;
             fontPaths = with pkgs; [
               "${nerd-fonts.jetbrains-mono}/share/fonts/truetype"

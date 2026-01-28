@@ -67,15 +67,117 @@
     stroke: gradient.linear(yellow, black),
   ),
 )
+#h(10em)
+#pt3d.diagram(
+  title: "test",
+  // fill: blue,
+  xaxis: (
+    lim: (-1, 1),
+    instances: (
+      (plane: (hidden: false), position: -1),
+    ),
+  ),
+  yaxis: (
+    lim: (-1, 1),
+    instances: (
+      (plane: (hidden: false), position: 1),
+    ),
+  ),
+  zaxis: (
+    lim: (-1, 1),
+    instances: (
+      (plane: (hidden: false), position: 1),
+    ),
+  ),
+  width: 6cm,
+  height: 6cm,
+)
+\
+\
+\
+\
+\
+#pt3d.diagram(
+  title: "test",
+  // fill: blue,
+  width: 4cm,
+  height: 4cm,
+  xaxis: (
+    format-ticks: none,
+    lim: (-1, 1),
+    instances: (
+      (plane: (hidden: false), position: 0),
+    ),
+  ),
+  yaxis: (
+    format-ticks: none,
+    lim: (-1, 1),
+    instances: (
+      (plane: (hidden: false), position: 0),
+    ),
+  ),
+  zaxis: (
+    format-ticks: none,
+    lim: (-1, 1),
+    instances: (
+      (plane: (hidden: false), position: 0),
+    ),
+  ),
+)
+#h(2em)
+#pt3d.diagram(
+  title: "test",
+  // fill: blue,
+  width: 4cm,
+  height: 4cm,
+  xaxis: (
+    format-ticks: none,
+    lim: (-1, 1),
+  ),
+  yaxis: (
+    format-ticks: none,
+    lim: (-1, 1),
+  ),
+  zaxis: (
+    lim: (-1, 1),
+  ),
+)
+#h(5em)
+#pt3d.diagram(
+  title: "test",
+  // fill: blue,
+  width: 4cm,
+  height: 4cm,
+  xaxis: (
+    format-ticks: none,
+    lim: (-1, 1),
+    instances: (
+      (plane: (hidden: false), position: -1),
+      (plane: (hidden: false), position: 1),
+    ),
+  ),
+  yaxis: (
+    format-ticks: none,
+    lim: (-1, 1),
+    instances: (
+      (plane: (hidden: false), position: -1),
+      (plane: (hidden: false), position: 1),
+    ),
+  ),
+  zaxis: (
+    format-ticks: none,
+    lim: (-1, 1),
+    instances: (
+      (plane: (hidden: false), position: -1),
+      (plane: (hidden: false), position: 1),
+    ),
+  ),
+)
 
 \
 \
-\
-\
-\
-\
-\
-\
+
+lmao shit's fucked
 
 #pt3d.diagram(
   title: "test",
@@ -91,6 +193,7 @@
   yaxis: (lim: (-3, 3)),
   zaxis: (lim: (-5, 1)),
 )
+#h(2em)
 #pt3d.diagram(
   title: "test",
   // fill: blue,
@@ -105,6 +208,7 @@
   yaxis: (lim: (-3, 3)),
   zaxis: (lim: (-1, 1)),
 )
+#h(5em)
 #pt3d.diagram(
   title: "test",
   // fill: blue,
