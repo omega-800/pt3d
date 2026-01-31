@@ -106,7 +106,7 @@
   let content = ()
   let offset = 0pt
   if title != none {
-    let title-elem = block(width: 100%, align(center, title))
+    let title-elem = block(width: 100%, align(center, pad(0.5em,title)))
     content.push(title-elem)
     offset = measure(title-elem).height
   }

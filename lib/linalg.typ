@@ -74,13 +74,13 @@
   (0, calc.sin(x), calc.cos(x)),
 )
 
-#let rotate-y = y => (
+#let mat-rotate-y = y => (
   (calc.cos(y), 0, calc.sin(y)),
   (0, 1, 0),
   (-calc.sin(y), 0, calc.cos(y)),
 )
 
-#let rotate-z = z => (
+#let mat-rotate-z = z => (
   (calc.cos(z), -calc.sin(z), 0),
   (calc.sin(z), calc.cos(z), 0),
   (0, 0, 1),
@@ -89,7 +89,7 @@
 #let apply-matrices = (v, ..m) => {
   let res = v
   for mat in m.pos() {
-    res = mat-mult-vec(mat, v)
+    res = mat-mult-vec(mat, res)
   }
   res
 }

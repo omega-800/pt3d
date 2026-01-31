@@ -1,80 +1,106 @@
 #import "../lib/pt3d.typ" as pt3d
 
-// #pt3d.diagram(
-//   title: "test",
-//   // fill: blue,
-//   stroke: blue,
-//   xaxis: (lim: (-3, 3)),
-//   yaxis: (lim: (-3, 3)),
-//   zaxis: (lim: (-3, 3)),
-//   width: 6cm,
-//   height: 6cm,
-//
-//   pt3d.polygon3d(
-//     fill: red.transparentize(70%),
-//     (3, 0, 3),
-//     (3, 0, -3),
-//     (-3, 0, -3),
-//     (-3, 0, 3),
-//   ),
-//   pt3d.polygon3d(
-//     fill: green.transparentize(70%),
-//     (3, 3, 0),
-//     (3, -3, 0),
-//     (-3, -3, 0),
-//     (-3, 3, 0),
-//   ),
-//   pt3d.polygon3d(
-//     fill: blue.transparentize(70%),
-//     (0, 3, 3),
-//     (0, 3, -3),
-//     (0, -3, -3),
-//     (0, -3, 3),
-//   ),
-//   pt3d.path3d(
-//     stroke: red,
-//     (-1, -1, 1),
-//     (1, -1, 1),
-//     (1, 1, 1),
-//     (-1, 1, 1),
-//     (1, 1, 1),
-//     (1, 1, -1),
-//     (1, -1, -1),
-//     (1, -1, 1),
-//     (1, -1, -1),
-//     (1, -1, -1),
-//     (1, 1, -1),
-//     (-1, 1, -1),
-//     (-1, 1, 1),
-//     (-1, -1, 1),
-//     (-1, -1, -1),
-//     (1, -1, -1),
-//     (-1, -1, -1),
-//     (-1, 1, -1),
-//   ),
-//   pt3d.line3d(
-//     label: "1",
-//     (3, 3, 3),
-//     stroke: gradient.linear(yellow, black),
-//   ),
-//   pt3d.line3d(
-//     label: "2",
-//     (2, 2, 1),
-//     stroke: gradient.linear(yellow, black),
-//   ),
-//   pt3d.line3d(
-//     label: "3",
-//     (1, 1, 0),
-//     stroke: gradient.linear(yellow, black),
-//   ),
-// )
+#pt3d.diagram(
+  width: 3cm,
+  height: 10cm,
+  xaxis: (
+    lim: (-1, 1),
+    instances: (
+      (line: (hidden: false, position: 0), ticks: (-1, 1)),
+    ),
+  ),
+  yaxis: (
+    lim: (-1, 1),
+    instances: (
+      (line: (hidden: false, position: 0), ticks: (-1, -0.5, 0.5, 1)),
+    ),
+  ),
+  zaxis: (
+    lim: (-1, 1),
+    instances: (
+      (line: (hidden: false, position: 0)),
+    ),
+  ),
+)
+#pt3d.diagram(
+  title: [STUFF #sym.Omega],
+  // fill: blue,
+  xaxis: (lim: (-3, 3)),
+  yaxis: (lim: (-3, 3)),
+  zaxis: (lim: (-3, 3)),
+  width: 9cm,
+  height: 9cm,
+  rotations: (
+    pt3d.mat-rotate-x(calc.pi / 6),
+    pt3d.mat-rotate-y(calc.pi / 6),
+    pt3d.mat-rotate-z(0),
+  ),
+
+  pt3d.polygon3d(
+    fill: red.transparentize(70%),
+    (3, 0, 3),
+    (3, 0, -3),
+    (-3, 0, -3),
+    (-3, 0, 3),
+  ),
+  pt3d.polygon3d(
+    fill: green.transparentize(70%),
+    (3, 3, 0),
+    (3, -3, 0),
+    (-3, -3, 0),
+    (-3, 3, 0),
+  ),
+  pt3d.polygon3d(
+    fill: blue.transparentize(70%),
+    (0, 3, 3),
+    (0, 3, -3),
+    (0, -3, -3),
+    (0, -3, 3),
+  ),
+  pt3d.path3d(
+    stroke: red,
+    (-1, -1, 1),
+    (1, -1, 1),
+    (1, 1, 1),
+    (-1, 1, 1),
+    (1, 1, 1),
+    (1, 1, -1),
+    (1, -1, -1),
+    (1, -1, 1),
+    (1, -1, -1),
+    (1, -1, -1),
+    (1, 1, -1),
+    (-1, 1, -1),
+    (-1, 1, 1),
+    (-1, -1, 1),
+    (-1, -1, -1),
+    (1, -1, -1),
+    (-1, -1, -1),
+    (-1, 1, -1),
+  ),
+  pt3d.line3d(
+    label: "1",
+    (3, 3, 3),
+    stroke: gradient.linear(yellow, black),
+  ),
+  pt3d.line3d(
+    label: "2",
+    (2, 2, 1),
+    stroke: gradient.linear(yellow, black),
+  ),
+  pt3d.line3d(
+    label: "3",
+    (1, 1, 0),
+    stroke: gradient.linear(yellow, black),
+  ),
+)
 #h(10em)
 #pt3d.diagram(
   title: "test",
-  // fill: blue,
+  fill: blue.transparentize(80%),
   stroke: blue,
-  width: 16cm,
-  height: 16cm,
+  width: 12cm,
+  height: 12cm,
   xaxis: (
     lim: (-10, 10),
     instances: (
@@ -106,8 +132,7 @@
     (x, y) => (calc.sin(x) + calc.cos(y)) * 2,
     stroke: blue,
     fill: blue.transparentize(90%),
-    color-fn: (x, y, z) => pt3d
-      .rgb-clamp((0, 0, -z * 100)),
+    color-fn: (x, y, z) => pt3d.rgb-clamp((0, 0, -z * 100)),
     steps: 50,
   ),
   pt3d.lineparam3d(
@@ -118,36 +143,6 @@
   ),
 )
 
-// \
-// \
-// \
-// \
-// \
-// #pt3d.diagram(
-//   title: "test",
-//   // fill: blue,
-//   stroke: blue,
-//   width: 4cm,
-//   height: 4cm,
-//   xaxis: (
-//     lim: (-1, 1),
-//     instances: (
-//       (plane: (hidden: false, position: 0), format-ticks: none),
-//     ),
-//   ),
-//   yaxis: (
-//     lim: (-1, 1),
-//     instances: (
-//       (plane: (hidden: false, position: 0), format-ticks: none),
-//     ),
-//   ),
-//   zaxis: (
-//     lim: (-1, 1),
-//     instances: (
-//       (plane: (hidden: false, position: 0), format-ticks: none),
-//     ),
-//   ),
-// )
 // #h(2em)
 // #pt3d.diagram(
 //   title: "test",
@@ -239,8 +234,8 @@
 //   title: "test Y",
 //   // fill: blue,
 //   stroke: blue,
-//   width: 4cm,
-//   height: 4cm,
+//   width: 10cm,
+//   height: 10cm,
 //   xaxis: (lim: (-2, 2)),
 //   yaxis: (
 //     lim: (-1, 1),

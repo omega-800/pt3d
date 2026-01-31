@@ -305,8 +305,12 @@
     if elem.label != none {
       // FIXME:
       place(
-        dx: if elem.kind == "z" { dx } else { dx - 6% },
-        dy: dy,
+        dx: if elem.kind == "z" { dx - 13% } else if elem.kind == "y" {
+          dx - 12% // proffeshunal
+        } else { dx - 2% },
+        dy: if elem.kind == "y" { dy } else if elem.kind == "z" {
+          dy - 4%
+        } else { dy },
         pad(16pt, elem.label),
       )
     }
@@ -361,8 +365,8 @@
         // FIXME:
         let (dx, dy) = if elem.kind == "z" { end } else { start }
         place(
-          dx: if elem.kind == "z" { dx } else { dx - 2% },
-          dy: dy,
+          dx: if elem.kind == "x" { dx } else { dx - 4% },
+          dy: if elem.kind == "z" { dy } else { dy + 2% },
           text(size: 0.75em)[#calc.round(tick, digits: 2)],
         )
       }
