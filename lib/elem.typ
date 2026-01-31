@@ -1,15 +1,15 @@
-#let path3d = (stroke: none, ..points) => (
+#let path3d = (stroke: black, ..points) => (
   path: points.pos(),
   stroke: stroke,
 )
 
-#let polygon3d = (stroke: none, fill: none, ..points) => (
+#let polygon3d = (stroke: black, fill: none, ..points) => (
   polygon: points.pos(),
   stroke: stroke,
   fill: fill,
 )
 
-#let line3d = (stroke: none, label: none, ..points) => {
+#let line3d = (stroke: black, label: none, ..points) => {
   let pts = points.pos()
   if pts.len() < 2 {
     pts.insert(0, (0, 0, 0))
@@ -21,10 +21,17 @@
   )
 }
 
-#let plane3d = (n, d, stroke: none, fill: none) => (
+#let plane3d = (n, d, stroke: black, fill: none) => (
   plane: (n, d),
   stroke: stroke,
   fill: fill,
+)
+
+#let lineparam3d = (stroke: black, label: none, steps: auto, fn) => (
+  lineparam: fn,
+  stroke: stroke,
+  label: label,
+  steps: steps
 )
 
 #let axis3d = (
@@ -86,6 +93,7 @@
 )
 
 #let axis = (
+  order: auto,
   kind: "x",
   instances: (),
   scale: auto,
@@ -100,6 +108,7 @@
   filter: (value, distance) => true,
   ..plots,
 ) => (
+  order: order,
   axis: true,
   kind: kind,
   instances: if instances.len() == 0 { (axis3d(kind: kind),) } else {

@@ -1,5 +1,32 @@
 #import "elem.typ": *
 #import "linalg.typ": *
+#import "canvas.typ": *
+
+#let n-points-on = (from, to, n) => range(0, n + 1).map(i => (
+  from + i * ((to - from) / n)
+))
+#let n-points-on-cube = (
+  ((xfrom, xto), (yfrom, yto), (zfrom, zto)),
+  n,
+) => n-points-on(xfrom, xto, n).zip(
+  n-points-on(yfrom, yto, n),
+  n-points-on(zfrom, zto, n),
+)
+
+#let render-lineparam((on-canvas, _, dim, ..x), elem) = {
+  let ((xfrom, xto), (yfrom, yto), (zfrom, zto)) = dim
+  let steps = if elem.steps == auto { 5 } else { elem.steps }
+  let points = n-points-on-cube(dim, steps).map(p => (elem.lineparam)(..p))
+  // panic(points)
+  if elem.label != none {
+    let (dx, dy) = on-canvas(points.last())
+    place(dx: dx, dy: dy, elem.label)
+  }
+  place(path(
+    stroke: elem.stroke,
+    ..points.map(on-canvas).filter(p => not p.any(out-of-bounds)),
+  ))
+}
 
 #let render-path((on-canvas, ..x), elem) = {
   place(path(stroke: elem.stroke, ..elem.path.map(on-canvas)))
@@ -13,7 +40,7 @@
   ))
 }
 
-#let render-plane((on-canvas, dim, ..x), elem) = {
+#let render-plane((on-canvas, ..x), elem) = {
   let elem-eval = eval-plane(elem)
   place(polygon(
     fill: elem-eval.fill,
@@ -74,13 +101,9 @@
     if (
       ticks == auto and nticks == auto
     ) {
-      range(0, 11).map(i => (
-        tfrom + i * (span / 10)
-      ))
+      n-points-on(tfrom, tto, 10)
     } else if ticks == auto {
-      range(0, nticks + 1).map(i => (
-        tfrom + i * (span / nticks)
-      ))
+      n-points-on(tfrom, tto, nticks)
     } else {
       ticks
     }
@@ -150,15 +173,6 @@
   let mid = (f, s) => f.enumerate().map(((i, n)) => (s.at(i) + n) / 2)
   let line-from = point-n(elem.line.position, from)
   let line-to = point-n(elem.line.position, to)
-  if not elem.line.hidden {
-    let (dx, dy) = on-canvas(mid(line-from, line-to))
-    if elem.label != none {
-      // TODO: 
-      place(dx: dx, dy: dy, pad(16pt,elem.label))
-    }
-    // TODO: tip, toe
-    place-line(line-from, line-to)
-  }
   if not elem.plane.hidden {
     let plane-points = if elem.kind == "x" {
       (
@@ -193,6 +207,19 @@
     //   fill: elem.fill,
     // ))
   }
+  if not elem.line.hidden {
+    let (dx, dy) = on-canvas(mid(line-from, line-to))
+    if elem.label != none {
+      // FIXME:
+      place(
+        dx: if elem.kind == "z" { dx } else { dx - 6% },
+        dy: dy,
+        pad(16pt, elem.label),
+      )
+    }
+    // TODO: tip, toe
+    place-line(line-from, line-to)
+  }
   if elem.format-ticks != none {
     let ticks = ()
     if type(elem.ticks) == array {
@@ -209,42 +236,42 @@
     // if elem.format-subticks != none {}
 
     if not elem.line.hidden {
-      // panic(point-n(elem.line.position, from))
-      let (pxfrom, pyfrom) = on-canvas(line-from).map(
-        i => float(i) * 100,
-      )
-      let (pxto, pyto) = on-canvas(line-to).map(i => (
-        float(i) * 100
-      ))
-      let pm = -(pxfrom - pxto) / (pyfrom - pyto)
-      let dir = 1 / calc.sqrt(1 + calc.pow(pm, 2))
-      let n = 4
-      // let start = (pxfrom - dir * n, pyfrom - pm * dir * n).map(i => i * 1%)
-      // let end = (pxfrom + dir * n, pyfrom + pm * dir * n).map(i => i * 1%)
-
-      // FIXME:
-      // panic(
-      //   ticks.map(point).map(on-canvas).map(i => i.map(i => float(i) * 100)),
-      // )
-      // panic(ticks)
+      // FIXME: depends on position of axis
       for tick in ticks {
-        // let (tx, ty) = on-canvas(point(tick)).map(i => float(i) * 100)
-        // let (tx, ty) = on-canvas(point-r(line-from, tick + from)).map(i => float(i) * 100)
-        let (tx, ty) = on-canvas(point-r(line-from, tick)).map(i => (
-          float(i) * 100
-        ))
-        let start = (tx - dir * n, ty - pm * dir * n).map(i => i * 1%)
-        let end = (tx + dir * n, ty + pm * dir * n).map(i => i * 1%)
-        // place-line(point-p(point(tick), -0.1), point-p(point(tick), 0.1))
+        let (px, py, pz) = point-r(line-from, tick)
+
+        let (start, end) = (
+          if elem.line.position.at(0) - elem.line.position.at(1) > 0 {
+            if elem.kind == "x" {
+              ((px, py, pz - 0.1), (px, py, pz + 0.1))
+            } else if elem.kind == "y" {
+              ((px - 0.1, py, pz), (px + 0.1, py, pz))
+            } else {
+              ((px - 0.1, py, pz), (px + 0.1, py, pz))
+            }
+          } else {
+            if elem.kind == "x" {
+              ((px, py - 0.1, pz), (px, py + 0.1, pz))
+            } else if elem.kind == "y" {
+              ((px, py, pz - 0.1), (px, py, pz + 0.1))
+            } else {
+              ((px, py - 0.1, pz), (px, py + 0.1, pz))
+            }
+          }
+        ).map(on-canvas)
+
         place(line(
           stroke: elem.stroke,
           start: start,
           end: end,
         ))
-
-        // let (dx, dy) = on-canvas(point-p(tick-point, 0.1))
-        let (dx, dy) = end
-        place(dx: dx, dy: dy, text(size: 0.75em)[#calc.round(tick, digits: 2)])
+        // FIXME:
+        let (dx, dy) = if elem.kind == "z" { end } else { start }
+        place(
+          dx: if elem.kind == "z" { dx } else { dx - 2% },
+          dy: dy,
+          text(size: 0.75em)[#calc.round(tick, digits: 2)],
+        )
       }
     }
     if not elem.plane.hidden {
@@ -306,5 +333,7 @@
     render-plane(ctx, elem)
   } else if "line" in elem {
     render-line(ctx, elem)
+  } else if "lineparam" in elem {
+    render-lineparam(ctx, elem)
   }
 }

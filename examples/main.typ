@@ -76,24 +76,40 @@
   width: 16cm,
   height: 16cm,
   xaxis: (
-    lim: (-1, 1),
+    lim: (-10, 10),
     instances: (
-      (plane: (hidden: false, position: -1), line: (hidden: false, position: (1,-1))),
+      (
+        plane: (hidden: false, position: 10),
+        line: (hidden: false, position: (-10, 10)),
+      ),
     ),
   ),
   yaxis: (
-    lim: (-1, 1),
+    lim: (-10, 10),
     instances: (
-      (plane: (hidden: false, position: 1), line: (hidden: false, position: (-1,-1))),
+      (
+        plane: (hidden: false, position: 10),
+        line: (hidden: false, position: (-10, 10)),
+      ),
     ),
   ),
   zaxis: (
-    lim: (-1, 1),
+    lim: (-10, 10),
     instances: (
-      (plane: (hidden: false, position: 1), line: (hidden: false, position: (1,1))),
+      (
+        plane: (hidden: false, position: 10),
+        line: (hidden: false, position: (-10, 10)),
+      ),
     ),
   ),
+  pt3d.lineparam3d(
+    (x, y, z) => (x * 2, calc.cos(y), calc.sin(z)),
+    stroke: red,
+    steps: 100,
+    label: "fun"
+  ),
 )
+
 // \
 // \
 // \

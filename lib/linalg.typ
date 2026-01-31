@@ -39,7 +39,7 @@
   )
 }
 
-// TODO: 
+// TODO:
 #let bounds(elem) = {
   ((-5, 5), (-5, 5), (-5, 5))
 }
@@ -68,33 +68,47 @@
   new
 }
 
-#let rotate = (n, p) => mat-mult-vec(
-  (
-    (calc.cos(n), -calc.sin(n), 0),
-    (calc.sin(n), calc.cos(n), 0),
-    (0, 0, 1),
-  ),
-  mat-mult-vec(
-    (
-      (calc.cos(n), 0, calc.sin(n)),
-      (0, 1, 0),
-      (-calc.sin(n), 0, calc.cos(n)),
-    ),
-    mat-mult-vec(
-      (
-        (1, 0, 0),
-        (0, calc.cos(n), -calc.sin(n)),
-        (0, calc.sin(n), calc.cos(n)),
-      ),
-      p,
-    ),
-  ),
+#let mat-rotate-x = x => (
+  (1, 0, 0),
+  (0, calc.cos(x), -calc.sin(x)),
+  (0, calc.sin(x), calc.cos(x)),
 )
-// #let rotate = (n, p) => mat-mult-vec(
-//   (
-//     (calc.cos(n), -calc.sin(n), calc.sin(n)),
-//     (calc.sin(n), calc.cos(n), -calc.sin(n)),
-//     (-calc.sin(n), calc.sin(n), calc.cos(n)),
-//   ),
-//   p,
-// )
+
+#let rotate-y = y => (
+  (calc.cos(y), 0, calc.sin(y)),
+  (0, 1, 0),
+  (-calc.sin(y), 0, calc.cos(y)),
+)
+
+#let rotate-z = z => (
+  (calc.cos(z), -calc.sin(z), 0),
+  (calc.sin(z), calc.cos(z), 0),
+  (0, 0, 1),
+)
+
+#let apply-matrices = (v, ..m) => {
+  let res = v
+  for mat in m.pos() {
+    res = mat-mult-vec(mat, v)
+  }
+  res
+}
+
+#let rotate3d = (x, y, z, p) => {
+  let v1 = if x != none { rotate-x(x, p) } else { p }
+  let v2 = if y != none { rotate-y(y, v1) } else { v1 }
+  let v3 = if z != none { rotate-z(z, v2) } else { v2 }
+  v3
+}
+
+#let perpendicular-2d(line-from, line-to, point, off-x, off-y) = {
+  let (pxfrom, pyfrom) = line-from
+  let (pxto, pyto) = line-to
+  let pm = -(pxfrom - pxto) / (pyfrom - pyto)
+  let dir = 1 / calc.sqrt(1 + calc.pow(pm, 2))
+  let (tx, ty) = point
+  (
+    (tx - dir * off-x, ty - pm * dir * off-x).map(i => i * 1%),
+    (tx + dir * off-y, ty + pm * dir * off-y).map(i => i * 1%),
+  )
+}

@@ -3,6 +3,7 @@
 #import "style.typ": *
 #import "linalg.typ": *
 #import "proj.typ": *
+#import "canvas.typ": *
 
 // https://www.mauriciopoppe.com/notes/computer-graphics/viewing/projection-transform/
 // http://www.songho.ca/opengl/gl_projectionmatrix.html
@@ -34,36 +35,6 @@
 //   return ((-from) / span) * 100%
 // }
 
-#let out-of-bounds = x => x > 100% or x < 0%
-#let overflow-correction = ns => {
-  let s = ns.filter(out-of-bounds).sorted()
-  let high = calc.max(s.last(default: 100%), 100%)
-  let low = calc.min(s.first(default: 0%), 0%)
-  let span = high - low
-  (
-    span / 2,
-    -low / span * 100%,
-    (100% - high) / span * 100%,
-    (100% / span) * 100%,
-  )
-}
-#let rescale = ((xtrsh, xlo, xhi, xscale), (ytrsh, ylo, yhi, yscale)) => (
-  (x, y),
-) => {
-  let adjust = (val, trsh, ol, oh, s) => {
-    let av = s * val
-    (if av > trsh { av + oh } else { av + ol })
-  }
-  (adjust(x, xtrsh, xlo, xhi, xscale), adjust(y, ytrsh, ylo, yhi, yscale))
-}
-#let rotate3d = ((x, y, z)) => rotate(calc.pi / 6, (x, y, z))
-#let canvas((xd, yd, zd), scale-fn) = ((x, y, z)) => {
-  scale-fn(ortho-proj(
-    (xd, yd, zd),
-    rotate3d((x, y, z)),
-  ))
-}
-
 #let diagram(
   width: 6cm,
   height: 4cm,
@@ -77,12 +48,27 @@
   cycle: petroff10,
   fill: none,
   stroke: none,
+  rotations: (
+    (
+      (calc.sqrt(3), 0, -calc.sqrt(3)),
+      (-1, 2, -1),
+      (
+        calc.sqrt(2),
+        calc.sqrt(2),
+        calc.sqrt(2),
+      ),
+    ).map(r => r.map(i => i / calc.sqrt(6))),
+  ),
   ..children,
 ) = context {
   // TODO: refactor axis creation, fill in defaults only as soon as known
   let xas = axis(kind: "x", ..xaxis)
   let yas = axis(kind: "y", ..yaxis)
   let zas = axis(kind: "z", ..zaxis)
+  let (ox, oz, oy) = (xas, zas, yas)
+    .enumerate()
+    .map(((i, a)) => if a.order != auto { a.order } else { i })
+  let a-order = (ox, oy, oz)
   let xlim = xas.lim
   let ylim = yas.lim
   let zlim = zas.lim
@@ -90,6 +76,9 @@
   for c in children.pos() {
     dim = intersect-bounds(dim, bounds(c))
   }
+  // let (rx, ry, rz) = rotate
+  // let rotate-canvas = ((x, y, z)) => rotate3d(rx, ry, rz, (x, y, z))
+  let rotate-canvas = v => apply-matrices(v, ..rotations)
   dim = intersect-bounds(dim, (xlim, ylim, zlim), larger: false)
   let ((xfrom, xto), (yfrom, yto), (zfrom, zto)) = dim
   xas.lim = (xfrom, xto)
@@ -98,24 +87,18 @@
 
   // TODO: only include rendered points
   let plot-extremes = cube-vertices(dim)
-    .map(rotate3d)
+    .map(rotate-canvas)
     .map(p => ortho-proj(
       dim,
       p,
     ).map(i => i * 100%))
 
-  let on-canvas = canvas(dim, rescale(
+  let on-canvas = canvas(dim, a-order, rotate-canvas, rescale(
     overflow-correction(plot-extremes.map(((x, y)) => x)),
     overflow-correction(plot-extremes.map(((x, y)) => y)),
   ))
-  // panic(
-  //   plot-extremes,
-  //   overflow-correction(plot-extremes.map(((x, y)) => x)),
-  //   overflow-correction(plot-extremes.map(((x, y)) => y)),
-  //   cube-vertices(dim).map(rotate3d).map(on-canvas),
-  // )
 
-  let ctx = (on-canvas, rotate3d, dim, (xas, yas, zas))
+  let ctx = (on-canvas, rotate-canvas, dim, (xas, yas, zas))
   let (dxx, dxy) = on-canvas((xto, 0, 0))
   let (dyx, dyy) = on-canvas((0, yto, 0))
   let (dzx, dzy) = on-canvas((0, 0, zto))
