@@ -34,6 +34,14 @@
   steps: steps
 )
 
+#let planeparam3d = (stroke: black, fill: none, steps: auto, color-fn: () => black, fn) => (
+  planeparam: fn,
+  color-fn: color-fn,
+  stroke: stroke,
+  fill: fill,
+  steps: steps
+)
+
 #let axis3d = (
   kind: "x",
   stroke: black,

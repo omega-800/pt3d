@@ -102,11 +102,19 @@
       ),
     ),
   ),
+  pt3d.planeparam3d(
+    (x, y) => (calc.sin(x) + calc.cos(y)) * 2,
+    stroke: blue,
+    fill: blue.transparentize(90%),
+    color-fn: (x, y, z) => pt3d
+      .rgb-clamp((0, 0, -z * 100)),
+    steps: 50,
+  ),
   pt3d.lineparam3d(
     (x, y, z) => (x * 2, calc.cos(y), calc.sin(z)),
     stroke: red,
     steps: 100,
-    label: "fun"
+    label: "fun",
   ),
 )
 
