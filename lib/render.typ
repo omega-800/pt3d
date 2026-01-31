@@ -1,11 +1,11 @@
 #import "elem.typ": *
 #import "linalg.typ": *
 
-#let render-path((dim, on-canvas), elem) = {
+#let render-path((on-canvas, ..x), elem) = {
   place(path(stroke: elem.stroke, ..elem.path.map(on-canvas)))
 }
 
-#let render-polygon((dim, on-canvas), elem) = {
+#let render-polygon((on-canvas, ..x), elem) = {
   place(polygon(
     fill: elem.fill,
     stroke: elem.stroke,
@@ -13,30 +13,13 @@
   ))
 }
 
-#let render-plane((dim, on-canvas), elem) = {
-  let ((a, b, c), d) = elem.plane
-  let points = ()
-  for ((x1, y1, z1), (x2, y2, z2)) in cube-edges(dim) {
-    let denom = (a * (x2 - x1) + b * (y2 - y1) + c * (z2 - z1))
-    if denom == 0 {
-      continue
-    }
-    let t = (
-      -(a * x1 + b * y1 + c * z1 + d) / denom
-    )
-    if t >= 0 and t <= 1 {
-      points.push((
-        (1 - t) * x1 + t * x2,
-        (1 - t) * y1 + t * y2,
-        (1 - t) * z1 + t * z2,
-      ))
-    }
-  }
-
+#let render-plane((on-canvas, dim, ..x), elem) = {
+  let elem-eval = eval-plane(elem)
   place(polygon(
-    fill: elem.fill,
-    stroke: elem.stroke,
-    ..points
+    fill: elem-eval.fill,
+    stroke: elem-eval.stroke,
+    ..elem-eval
+      .plane
       // .sorted(
       //   // FIXME:
       //   // hmm i guess i'm kinda fucked?
@@ -56,12 +39,11 @@
       //     return x1 > x2
       //   },
       // )
-      // FIXME: is reversed
       .map(on-canvas),
   ))
 }
 
-#let render-line((dim, on-canvas), elem) = {
+#let render-line((on-canvas, ..x), elem) = {
   if elem.label != none {
     let (dx, dy) = on-canvas(elem.line.at(1))
     place(dx: dx, dy: dy, elem.label)
@@ -70,19 +52,69 @@
   place(line(
     stroke: elem.stroke,
     start: on-canvas(elem.line.at(0)),
-    end: on-canvas(
-      elem.line.at(1),
-    ),
+    end: on-canvas(elem.line.at(1)),
   ))
 }
 
-#let render-axis(render, ctx, elem) = {
-  let (dim, on-canvas) = ctx
+
+
+#let render-axis(ctx, elem) = {
+  let (on-canvas, _, dim, (xas, yas, zas)) = ctx
   let ((xfrom, xto), (yfrom, yto), (zfrom, zto)) = dim
-  let (point, point-p, cur, from, to) = if elem.kind == "x" {
+
+  let axis-ticks = (kind: "x", ticks: auto, nticks: auto, ..x) => {
+    let (tto, tfrom) = if kind == "x" {
+      (xto, xfrom)
+    } else if kind == "y" {
+      (yto, yfrom)
+    } else {
+      (zto, zfrom)
+    }
+    let span = tto - tfrom
+    if (
+      ticks == auto and nticks == auto
+    ) {
+      range(0, 11).map(i => (
+        tfrom + i * (span / 10)
+      ))
+    } else if ticks == auto {
+      range(0, nticks + 1).map(i => (
+        tfrom + i * (span / nticks)
+      ))
+    } else {
+      ticks
+    }
+  }
+
+  let filter-tick-axes = a => (
+    a
+      .instances
+      .filter(
+        i => (
+          (not i.plane.hidden or not i.line.hidden)
+            and not i.hidden
+            and i.format-ticks != none
+            and (i.ticks != none or i.nticks != none)
+        ),
+      )
+      .at(0, default: none)
+  )
+
+  let first-tick-axis = a => {
+    let ax = filter-tick-axes(a)
+    if ax == none { none } else { axis-ticks(..ax) }
+  }
+
+  let xticks = first-tick-axis(xas)
+  let yticks = first-tick-axis(yas)
+  let zticks = first-tick-axis(zas)
+
+  let (point, point-p, point-r, point-n, cur, from, to) = if elem.kind == "x" {
     (
       x => (x, 0, 0),
       ((x, y, z), n) => (x, y + n, z + n),
+      ((x, y, z), n) => (n, y, z),
+      ((y, z), n) => (n, y, z),
       ((x, y, z)) => x,
       xfrom,
       xto,
@@ -91,6 +123,8 @@
     (
       y => (0, y, 0),
       ((x, y, z), n) => (x + n, y, z + n),
+      ((x, y, z), n) => (x, n, z),
+      ((x, z), n) => (x, n, z),
       ((x, y, z)) => y,
       yfrom,
       yto,
@@ -99,102 +133,160 @@
     (
       z => (0, 0, z),
       ((x, y, z), n) => (x + n, y + n, z),
+      ((x, y, z), n) => (x, y, n),
+      ((x, y), n) => (x, y, n),
       ((x, y, z)) => z,
       zfrom,
       zto,
     )
   }
+  let pfrom = point(from)
+  let pto = point(to)
+  let place-line = (start, end) => place(line(
+    stroke: elem.stroke,
+    start: on-canvas(start),
+    end: on-canvas(end),
+  ))
+  let mid = (f, s) => f.enumerate().map(((i, n)) => (s.at(i) + n) / 2)
+  let line-from = point-n(elem.line.position, from)
+  let line-to = point-n(elem.line.position, to)
   if not elem.line.hidden {
-    let (dx, dy) = on-canvas(point(to))
-    let (from, to) = dim.at(if elem.kind == "x" {
-      0
-    } else if elem.kind == "y" {
-      1
-    } else {
-      2
-    })
+    let (dx, dy) = on-canvas(mid(line-from, line-to))
     if elem.label != none {
-      place(dx: dx, dy: dy, elem.label)
+      // TODO: 
+      place(dx: dx, dy: dy, pad(16pt,elem.label))
     }
-    // TODO: tip, toe, position
-    place(line(
-      stroke: elem.stroke,
-      start: on-canvas(point(from)),
-      end: on-canvas(point(to)),
-    ))
+    // TODO: tip, toe
+    place-line(line-from, line-to)
   }
   if not elem.plane.hidden {
-    render-plane(ctx, plane3d(
-      point(to),
-      // FIXME: is reversed, fix plane3d render
-      -elem.position,
-      stroke: elem.stroke,
-      fill: elem.fill,
-    ))
+    let plane-points = if elem.kind == "x" {
+      (
+        (elem.plane.position, yfrom, zfrom),
+        (elem.plane.position, yto, zfrom),
+        (elem.plane.position, yto, zto),
+        (elem.plane.position, yfrom, zto),
+      )
+    } else if elem.kind == "y" {
+      (
+        (xfrom, elem.plane.position, zfrom),
+        (xto, elem.plane.position, zfrom),
+        (xto, elem.plane.position, zto),
+        (xfrom, elem.plane.position, zto),
+      )
+    } else {
+      (
+        (xfrom, yfrom, elem.plane.position),
+        (xto, yfrom, elem.plane.position),
+        (xto, yto, elem.plane.position),
+        (xfrom, yto, elem.plane.position),
+      )
+    }
+    render-polygon(
+      ctx,
+      polygon3d(..plane-points, stroke: elem.stroke, fill: elem.fill),
+    )
+    // render-plane(ctx, plane3d(
+    //   pto,
+    //   elem.position,
+    //   stroke: elem.stroke,
+    //   fill: elem.fill,
+    // ))
   }
   if elem.format-ticks != none {
     let ticks = ()
     if type(elem.ticks) == array {
       ticks = elem.ticks.filter(t => t <= to and t >= from)
     } else {
-      let tick-distance = if elem.tick-distance == auto {
+      let nticks = if elem.nticks == auto {
         (to - from) / 10
-      } else { elem.tick-distance }
-      ticks = range(0, int((to - from) / tick-distance)).map(i => (
-        from + i * tick-distance
+      } else { elem.nticks }
+      ticks = range(0, int((to - from) / nticks) + 1).map(i => (
+        from + i * nticks
       ))
     }
 
     // if elem.format-subticks != none {}
+
     if not elem.line.hidden {
+      // panic(point-n(elem.line.position, from))
+      let (pxfrom, pyfrom) = on-canvas(line-from).map(
+        i => float(i) * 100,
+      )
+      let (pxto, pyto) = on-canvas(line-to).map(i => (
+        float(i) * 100
+      ))
+      let pm = -(pxfrom - pxto) / (pyfrom - pyto)
+      let dir = 1 / calc.sqrt(1 + calc.pow(pm, 2))
+      let n = 4
+      // let start = (pxfrom - dir * n, pyfrom - pm * dir * n).map(i => i * 1%)
+      // let end = (pxfrom + dir * n, pyfrom + pm * dir * n).map(i => i * 1%)
+
+      // FIXME:
+      // panic(
+      //   ticks.map(point).map(on-canvas).map(i => i.map(i => float(i) * 100)),
+      // )
+      // panic(ticks)
       for tick in ticks {
-        let tick-point = point(tick)
-        place(line(
-          // TODO: tick-args
-          stroke: elem.stroke,
-          start: on-canvas(point-p(tick-point, -0.1)),
-          end: on-canvas(point-p(tick-point, 0.1)),
+        // let (tx, ty) = on-canvas(point(tick)).map(i => float(i) * 100)
+        // let (tx, ty) = on-canvas(point-r(line-from, tick + from)).map(i => float(i) * 100)
+        let (tx, ty) = on-canvas(point-r(line-from, tick)).map(i => (
+          float(i) * 100
         ))
-        let (dx, dy) = on-canvas(point-p(tick-point, 0.1))
+        let start = (tx - dir * n, ty - pm * dir * n).map(i => i * 1%)
+        let end = (tx + dir * n, ty + pm * dir * n).map(i => i * 1%)
+        // place-line(point-p(point(tick), -0.1), point-p(point(tick), 0.1))
+        place(line(
+          stroke: elem.stroke,
+          start: start,
+          end: end,
+        ))
+
+        // let (dx, dy) = on-canvas(point-p(tick-point, 0.1))
+        let (dx, dy) = end
         place(dx: dx, dy: dy, text(size: 0.75em)[#calc.round(tick, digits: 2)])
       }
     }
-    let pos-grd = (start, fst, cur-t) => {
-      let coord = (
-        elem.position,
-        if start { to } else { -to },
-        cur-t,
-      )
-      on-canvas((
-        if elem.kind == "x" and fst {
-          (0, 1, 2)
-        } else if elem.kind == "x" {
-          (0, 2, 1)
-        } else if elem.kind == "y" and fst {
-          (2, 0, 1)
-        } else if elem.kind == "y" {
-          (1, 0, 2)
-        } else if elem.kind == "z" and fst {
-          (1, 2, 0)
-        } else {
-          (2, 1, 0)
-        }
-      ).map(i => coord.at(i)))
-    }
     if not elem.plane.hidden {
-      for tick in ticks {
-        let tick-point = point(tick)
-        let cur-t = cur(tick-point)
-        place(line(
-          stroke: elem.stroke,
-          start: pos-grd(true, true, cur-t),
-          end: pos-grd(false, true, cur-t),
-        ))
-        place(line(
-          stroke: elem.stroke,
-          start: pos-grd(true, false, cur-t),
-          end: pos-grd(false, false, cur-t),
-        ))
+      if elem.kind == "z" {
+        for tick in xticks {
+          place-line(
+            (tick, yfrom, elem.plane.position),
+            (tick, yto, elem.plane.position),
+          )
+        }
+        for tick in yticks {
+          place-line(
+            (xfrom, tick, elem.plane.position),
+            (xto, tick, elem.plane.position),
+          )
+        }
+      } else if elem.kind == "y" {
+        for tick in xticks {
+          place-line(
+            (tick, elem.plane.position, zfrom),
+            (tick, elem.plane.position, zto),
+          )
+        }
+        for tick in zticks {
+          place-line(
+            (xfrom, elem.plane.position, tick),
+            (xto, elem.plane.position, tick),
+          )
+        }
+      } else {
+        for tick in yticks {
+          place-line(
+            (elem.plane.position, tick, zfrom),
+            (elem.plane.position, tick, zto),
+          )
+        }
+        for tick in zticks {
+          place-line(
+            (elem.plane.position, yfrom, tick),
+            (elem.plane.position, yto, tick),
+          )
+        }
       }
     }
   }
@@ -205,7 +297,7 @@
   elem,
 ) => {
   if "axis" in elem {
-    render-axis((..x) => [], ctx, elem)
+    render-axis(ctx, elem)
   } else if "path" in elem {
     render-path(ctx, elem)
   } else if "polygon" in elem {
@@ -216,4 +308,3 @@
     render-line(ctx, elem)
   }
 }
-#let render-axis = render-axis.with(render)

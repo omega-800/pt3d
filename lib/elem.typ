@@ -2,11 +2,13 @@
   path: points.pos(),
   stroke: stroke,
 )
+
 #let polygon3d = (stroke: none, fill: none, ..points) => (
   polygon: points.pos(),
   stroke: stroke,
   fill: fill,
 )
+
 #let line3d = (stroke: none, label: none, ..points) => {
   let pts = points.pos()
   if pts.len() < 2 {
@@ -18,6 +20,7 @@
     label: label,
   )
 }
+
 #let plane3d = (n, d, stroke: none, fill: none) => (
   plane: (n, d),
   stroke: stroke,
@@ -26,40 +29,24 @@
 
 #let axis3d = (
   kind: "x",
-  position: 0,
   stroke: black,
   fill: black.transparentize(90%),
   label: none,
+  hidden: false,
   plane: (
+    position: 0,
     hidden: true,
   ),
   line: (
+    position: (0, 0),
     hidden: false,
     // tip: auto,
     // toe: auto,
   ),
-) => (
-  position: position,
-  label: if label == none { kind } else { label },
-  stroke: stroke,
-  fill: fill,
-  plane: plane,
-  line: line,
-)
-
-#let axis = (
-  kind: "x",
-  instances: (),
-  scale: auto,
-  lim: auto,
-  inverted: false,
-  mirror: auto,
   ticks: auto,
+  nticks: auto,
   subticks: auto,
   tick-distance: auto,
-  offset: auto,
-  exponent: auto,
-  auto-exponent-threshold: 3,
   locate-ticks: auto,
   format-ticks: auto,
   locate-subticks: auto,
@@ -68,21 +55,21 @@
   format-extra-ticks: none,
   tick-args: (:),
   subtick-args: (:),
-  functions: auto,
-  hidden: false,
-  filter: (value, distance) => true,
-  ..plots,
 ) => (
-  axis: true,
   kind: kind,
-  instances: if instances.len() == 0 { (axis3d(kind: kind),) } else {
-    instances.map(i => axis3d(kind: kind, ..i))
-  },
-  // scale: scale,
-  lim: if lim == auto { (-1, 1) } else { lim },
-  // inverted: inverted,
-  // mirror: mirror,
+  label: if label == none { kind } else { label },
+  hidden: hidden,
+  stroke: stroke,
+  fill: fill,
+  plane: plane,
+  line: (
+    ..line,
+    position: if not "position" in line or type(line.position) != array {
+      (0, 0)
+    } else { line.position },
+  ),
   ticks: ticks,
+  nticks: nticks,
   // subticks: subticks,
   tick-distance: tick-distance,
   // offset: offset,
@@ -96,6 +83,32 @@
   // format-extra-ticks: format-extra-ticks,
   // tick-args: tick-args,
   // subtick-args: subtick-args,
+)
+
+#let axis = (
+  kind: "x",
+  instances: (),
+  scale: auto,
+  lim: auto,
+  inverted: false,
+  mirror: auto,
+  offset: auto,
+  exponent: auto,
+  auto-exponent-threshold: 3,
+  functions: auto,
+  hidden: false,
+  filter: (value, distance) => true,
+  ..plots,
+) => (
+  axis: true,
+  kind: kind,
+  instances: if instances.len() == 0 { (axis3d(kind: kind),) } else {
+    instances.map(i => axis3d(hidden: hidden, kind: kind, ..i))
+  },
+  // scale: scale,
+  lim: if lim == auto { (-1, 1) } else { lim },
+  // inverted: inverted,
+  // mirror: mirror,
   // functions: functions,
   hidden: hidden,
   // filter: filter,

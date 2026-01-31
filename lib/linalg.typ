@@ -39,6 +39,7 @@
   )
 }
 
+// TODO: 
 #let bounds(elem) = {
   ((-5, 5), (-5, 5), (-5, 5))
 }
@@ -67,16 +68,33 @@
   new
 }
 
-#let ortho-proj = (((xfrom, xto), (yfrom, yto), _), (x, y, z)) => (
-  (2 * x - xto - xfrom) / (xto - xfrom),
-  (2 * y - yto - yfrom) / (yto - yfrom),
-)
-
 #let rotate = (n, p) => mat-mult-vec(
   (
-    (calc.cos(n), -calc.sin(n), calc.sin(n)),
-    (calc.sin(n), calc.cos(n), -calc.sin(n)),
-    (-calc.sin(n), calc.sin(n), calc.cos(n)),
+    (calc.cos(n), -calc.sin(n), 0),
+    (calc.sin(n), calc.cos(n), 0),
+    (0, 0, 1),
   ),
-  p,
+  mat-mult-vec(
+    (
+      (calc.cos(n), 0, calc.sin(n)),
+      (0, 1, 0),
+      (-calc.sin(n), 0, calc.cos(n)),
+    ),
+    mat-mult-vec(
+      (
+        (1, 0, 0),
+        (0, calc.cos(n), -calc.sin(n)),
+        (0, calc.sin(n), calc.cos(n)),
+      ),
+      p,
+    ),
+  ),
 )
+// #let rotate = (n, p) => mat-mult-vec(
+//   (
+//     (calc.cos(n), -calc.sin(n), calc.sin(n)),
+//     (calc.sin(n), calc.cos(n), -calc.sin(n)),
+//     (-calc.sin(n), calc.sin(n), calc.cos(n)),
+//   ),
+//   p,
+// )
