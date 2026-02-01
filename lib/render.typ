@@ -1,6 +1,11 @@
 #import "elem.typ": *
 #import "linalg.typ": *
 #import "canvas.typ": *
+#import "eval.typ": *
+
+// FIXME:
+// https://en.wikipedia.org/wiki/Graph_drawing
+// https://computergraphics.stackexchange.com/questions/1761/strategy-for-connecting-2-points-without-intersecting-previously-drawn-segments
 
 #let n-points-on = (from, to, n) => range(0, n + 1).map(i => (
   from + i * ((to - from) / n)
@@ -110,7 +115,6 @@
   let ((xfrom, xto), (yfrom, yto), (zfrom, zto)) = dim
   let steps = if elem.steps == auto { 5 } else { elem.steps }
   let points = n-points-on-cube(dim, steps).map(p => (elem.lineparam)(..p))
-  // panic(points)
   if elem.label != none {
     let (dx, dy) = on-canvas(points.last())
     place(dx: dx, dy: dy, elem.label)
@@ -133,33 +137,13 @@
   ))
 }
 
-#let render-plane((on-canvas, ..x), elem) = {
-  let elem-eval = eval-plane(elem)
+#let render-plane(ctx, elem) = {
+  let (on-canvas, ..x) = ctx
+  let elem-eval = eval-plane(ctx, elem)
   place(polygon(
     fill: elem-eval.fill,
     stroke: elem-eval.stroke,
-    ..elem-eval
-      .plane
-      // .sorted(
-      //   // FIXME:
-      //   // hmm i guess i'm kinda fucked?
-      //   // https://en.wikipedia.org/wiki/Graph_drawing
-      //   // https://computergraphics.stackexchange.com/questions/1761/strategy-for-connecting-2-points-without-intersecting-previously-drawn-segments
-      //   by: ((x1, y1, z1), (x2, y2, z2)) => {
-      //     let dx = calc.abs(x2 - x1)
-      //     let dy = calc.abs(y2 - y1)
-      //     let dz = calc.abs(z2 - z1)
-      //     return dx < dy or dy < dz
-      //     if x1 > 0 and x2 > 0 {
-      //       if y1 > 0 and y2 > 0 {
-      //         return z1 > z2
-      //       }
-      //       return y1 > y2
-      //     }
-      //     return x1 > x2
-      //   },
-      // )
-      .map(on-canvas),
+    ..connect-circle-2d(..elem-eval.plane.map(on-canvas)),
   ))
 }
 
@@ -175,8 +159,6 @@
     end: on-canvas(elem.line.at(1)),
   ))
 }
-
-
 
 #let render-axis(ctx, elem) = {
   let (on-canvas, _, dim, (xas, yas, zas)) = ctx

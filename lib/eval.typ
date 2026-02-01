@@ -1,4 +1,6 @@
-#let eval-plane((on-canvas, dim, ..x), elem) = {
+#import "linalg.typ": *
+
+#let eval-plane((on-canvas, _, dim, ..x), elem) = {
   // FIXME: d doesn't adjust to scale?
   // TODO: use canonical cube?
   let ((a, b, c), d) = elem.plane

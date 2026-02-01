@@ -1,6 +1,29 @@
 #import "../lib/pt3d.typ" as pt3d
 
 #pt3d.diagram(
+  width: 10cm,
+  height: 10cm,
+  xaxis: (
+    lim: (-10, 10),
+    instances: (
+      (plane: (hidden: false, position: -10)),
+    ),
+  ),
+  yaxis: (
+    lim: (-10, 10),
+    instances: (
+      (plane: (hidden: false, position: -10)),
+    ),
+  ),
+  zaxis: (
+    lim: (-10, 10),
+    instances: (
+      (plane: (hidden: false, position: -10)),
+    ),
+  ),
+  pt3d.plane3d((3,-2,3),10, fill: blue.transparentize(50%))
+)
+#pt3d.diagram(
   width: 3cm,
   height: 10cm,
   xaxis: (

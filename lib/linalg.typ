@@ -112,3 +112,28 @@
     (tx + dir * off-y, ty + pm * dir * off-y).map(i => i * 1%),
   )
 }
+
+#let atan2 = (x, y) => if x > 0 {
+  calc.atan(y / x).rad()
+} else if (x < 0 and y >= 0) {
+  calc.atan(y / x).rad() + calc.pi
+} else if x < 0 and y < 0 {
+  calc.atan(y / x).rad() - calc.pi
+} else if x == 0 and y > 0 {
+  calc.pi / 2
+} else if x == 0 and y < 0 {
+  -calc.pi / 2
+} else {
+  0
+}
+
+#let connect-circle-2d(..p) = {
+  let c = p
+    .pos()
+    .reduce(((ax, ay), (x, y)) => (ax + x, ay + y))
+    .map(i => float(i / p.pos().len()))
+  let angles = p
+    .pos()
+    .map(((x, y)) => (atan2(float(x) - c.at(0), float(y) - c.at(1)), (x, y)))
+  angles.sorted(key: it => it.at(0)).map(it => it.at(1))
+}
