@@ -21,40 +21,76 @@
   )
 }
 
-#let plane3d = (n, d, stroke: black, fill: none) => (
+#let plane3d = (n, d, stroke: black, fill: black.transparentize(80%)) => (
   plane: (n, d),
   stroke: stroke,
   fill: fill,
 )
 
-#let lineparam3d = (stroke: black, label: none, steps: auto, fn) => (
+#let lineparam3d = (
+  stroke: black,
+  label: none,
+  steps: auto,
+  stroke-color-fn: none,
+  fn,
+) => (
   lineparam: fn,
   stroke: stroke,
   label: label,
-  steps: steps
+  steps: steps,
+  stroke-color-fn: stroke-color-fn,
 )
 
-#let planeparam3d = (stroke: black, fill: none, steps: auto, color-fn: () => black, fn) => (
+#let planeparam3d = (
+  stroke: black,
+  fill: none,
+  steps: auto,
+  stroke-color-fn: none,
+  fill-color-fn: none,
+  fn,
+) => (
   planeparam: fn,
-  color-fn: color-fn,
+  stroke-color-fn: stroke-color-fn,
+  fill-color-fn: fill-color-fn,
   stroke: stroke,
   fill: fill,
-  steps: steps
+  steps: steps,
 )
 
+#let axisplane3d = (
+  position: auto,
+  hidden: true,
+  stroke: black.transparentize(40%),
+  fill: black.transparentize(95%),
+) => (position: position, hidden: hidden, stroke: stroke, fill: fill)
+
+#let axisline3d = (
+  position: (auto, auto),
+  hidden: false,
+  stroke: black.transparentize(40%),
+) => (
+  position: if type(position) != array {
+    (auto, auto)
+  } else { position },
+  hidden: hidden,
+  stroke: stroke,
+)
+
+// FIXME: wonky
 #let axis3d = (
   kind: "x",
-  stroke: black,
-  fill: black.transparentize(90%),
   label: none,
   hidden: false,
   plane: (
-    position: 0,
+    position: auto,
     hidden: true,
+    stroke: black.transparentize(40%),
+    fill: black.transparentize(95%),
   ),
   line: (
-    position: (0, 0),
+    position: (auto, auto),
     hidden: false,
+    stroke: black.transparentize(40%),
     // tip: auto,
     // toe: auto,
   ),
@@ -71,18 +107,12 @@
   tick-args: (:),
   subtick-args: (:),
 ) => (
+  axis: true,
   kind: kind,
   label: if label == none { kind } else { label },
   hidden: hidden,
-  stroke: stroke,
-  fill: fill,
-  plane: plane,
-  line: (
-    ..line,
-    position: if not "position" in line or type(line.position) != array {
-      (0, 0)
-    } else { line.position },
-  ),
+  plane: axisplane3d(..plane),
+  line: axisline3d(..line),
   ticks: ticks,
   nticks: nticks,
   // subticks: subticks,
@@ -105,7 +135,7 @@
   kind: "x",
   instances: (),
   scale: auto,
-  lim: auto,
+  lim: (auto,auto),
   inverted: false,
   mirror: auto,
   offset: auto,
@@ -119,11 +149,13 @@
   order: order,
   axis: true,
   kind: kind,
-  instances: if instances.len() == 0 { (axis3d(kind: kind),) } else {
+  instances: if instances.len() == 0 {
+    (axis3d(kind: kind, plane: (hidden: false)),)
+  } else {
     instances.map(i => axis3d(hidden: hidden, kind: kind, ..i))
   },
   // scale: scale,
-  lim: if lim == auto { (-1, 1) } else { lim },
+  lim: lim,
   // inverted: inverted,
   // mirror: mirror,
   // functions: functions,

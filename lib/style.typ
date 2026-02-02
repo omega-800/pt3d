@@ -1,4 +1,4 @@
-#let rgb-clamp = p => rgb(..p.map(i => calc.clamp(int(i), 0, 255)))
+#let rgb-clamp = (..p) => rgb(..p.pos().map(i => calc.clamp(int(i), 0, 255)))
 
 #let petroff10 = (
   rgb(63, 144, 218),
@@ -12,4 +12,3 @@
   rgb(113, 117, 129),
   rgb(146, 218, 221),
 )
-

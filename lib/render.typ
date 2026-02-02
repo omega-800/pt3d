@@ -7,25 +7,35 @@
 // https://en.wikipedia.org/wiki/Graph_drawing
 // https://computergraphics.stackexchange.com/questions/1761/strategy-for-connecting-2-points-without-intersecting-previously-drawn-segments
 
-#let n-points-on = (from, to, n) => range(0, n + 1).map(i => (
-  from + i * ((to - from) / n)
+#let z-intersection = (z, (x1, y1, z1), (x2, y2, z2)) => {
+  let t = (z - z1) / (z2 - z1)
+  (x1 + t * (x2 - x1), y1 + t * (y2 - y1), z1 + t * (z2 - z1))
+}
+
+#let n-points-on = (min, max, n) => range(0, n + 1).map(i => (
+  min + i * ((max - min) / n)
 ))
 // why did i do this exactly?
 #let n-points-on-cube = (
-  ((xfrom, xto), (yfrom, yto), (zfrom, zto)),
+  ((xmin, xmax), (ymin, ymax), (zmin, zmax)),
   n,
-) => n-points-on(xfrom, xto, n).zip(
-  n-points-on(yfrom, yto, n),
-  n-points-on(zfrom, zto, n),
+) => n-points-on(xmin, xmax, n).zip(
+  n-points-on(ymin, ymax, n),
+  n-points-on(zmin, zmax, n),
 )
-#let x-y-points = (((xfrom, xto), (yfrom, yto), ..x), n) => n-points-on(
-  xfrom,
-  xto,
+#let x-y-points = (((xmin, xmax), (ymin, ymax), ..x), n) => n-points-on(
+  xmin,
+  xmax,
   n,
-).map(x => n-points-on(yfrom, yto, n).map(y => (x, y)))
+).map(x => n-points-on(ymin, ymax, n).map(y => (x, y)))
 
-#let render-planeparam((on-canvas, _, dim, ..x), elem) = {
-  let ((xfrom, xto), (yfrom, yto), (zfrom, zto)) = dim
+#let apply-color-fn = (p, fn, def) => if fn != none { fn(..p) } else { def }
+
+#let render-planeparam(
+  (on-canvas, dim, out-of-bounds, clamp-to-bounds, ..x),
+  elem,
+) = {
+  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
   let steps = if elem.steps == auto { 5 } else { elem.steps }
   let p-x-y = x-y-points(dim, steps)
   let p-x-y-z = p-x-y.map(pa => pa.map(((x, y)) => (
@@ -33,96 +43,90 @@
     y,
     (elem.planeparam)(x, y),
   )))
-  let p-y-x-z = ()
-  // FIXME: nothing in this codebase is performant but this is just laziness
-  for i in range(0, p-x-y-z.at(0).len()) {
-    let row = ()
-    for pa in p-x-y-z {
-      row.push(pa.at(i))
-    }
-    p-y-x-z.push(row)
-  }
 
-
-  let color-fn = (p, fn, def) => if fn != none { fn(..p) } else { def }
-
-  // panic(p-x-y-z, p-y-x-z)
-  let p-x-y = p-x-y-z.map(p => p
-    .map(on-canvas)
-    .filter(p => not p.any(out-of-bounds)))
-  // let p-y-x = p-y-x-z.map(p => p
-  //   .map(on-canvas)
-  //   .filter(p => not p.any(out-of-bounds)))
-  // TODO: check bounds
+  let z-out-of-bounds = ((_, _, z)) => z < zmin or z > zmax
+  let z-plane = p => if p.at(2) > zmax { zmax } else { zmin }
   let r = p-x-y-z.rev()
   for (i, f) in r.slice(0, r.len() - 1).enumerate() {
     for (ii, ff) in f.slice(0, f.len() - 1).enumerate() {
-      let p1 = ff
-      let p2 = r.at(i + 1).at(ii + 1)
-      place(polygon(
-        stroke: color-fn(p1, elem.color-fn, elem.stroke),
-        fill: color-fn(p1, elem.color-fn, elem.fill),
-        on-canvas(ff),
-        on-canvas(f.at(ii + 1)),
-        on-canvas(r.at(i + 1).at(ii)),
-      ))
-      place(polygon(
-        stroke: color-fn(p2, elem.color-fn, elem.stroke),
-        fill: color-fn(p2, elem.color-fn, elem.fill),
-        on-canvas(f.at(ii + 1)),
-        on-canvas(r.at(i + 1).at(ii)),
-        on-canvas(r.at(i + 1).at(ii + 1)),
-      ))
-    }
+      let p11 = ff
+      let p12 = f.at(ii + 1)
+      let p13 = r.at(i + 1).at(ii)
 
-    //     for (ii, ff) in f.slice(0, f.len() - 1).enumerate() {
-    //       for (j, s) in p-y-x.slice(0, p-y-x.len() - 1).enumerate() {
-    //         for (jj, ss) in s.slice(0, s.len() - 1).enumerate() {
-    // //   panic(
-    // // f,s,
-    // //             ff,
-    // //             p-x-y.at(i+1).at(ii),
-    // //             p-y-x.at(j+1).at(jj),
-    // //             ss,
-    // //   )
-    //           place(polygon(
-    //             stroke: elem.stroke,
-    //             fill: elem.fill,
-    //             ff,
-    //             ss,
-    //             f.at(ii+1),
-    //             s.at(jj+1),
-    //           ))
-    //         }
-    //       }
-    //     }
+      let p21 = f.at(ii + 1)
+      let p22 = r.at(i + 1).at(ii)
+      let p23 = r.at(i + 1).at(ii + 1)
+
+      for pts in ((p11, p12, p13), (p21, p22, p23)) {
+        if pts.all(out-of-bounds) {
+          continue
+        }
+        if pts.any(z-out-of-bounds) {
+          let (overflow, ok) = pts.fold(((), ()), (
+            (ov, ok),
+            cur,
+          ) => if z-out-of-bounds(cur) { ((..ov, cur), ok) } else {
+            (ov, (..ok, cur))
+          })
+          if overflow.len() == 1 {
+            let p = overflow.at(0)
+            let z = z-plane(p)
+            let (p1, p4) = ok
+
+            place(polygon(
+              stroke: apply-color-fn(p1, elem.stroke-color-fn, elem.stroke),
+              fill: apply-color-fn(p1, elem.fill-color-fn, elem.fill),
+              on-canvas(p1),
+              on-canvas(z-intersection(z, p1, p)),
+              on-canvas(z-intersection(z, p4, p)),
+              on-canvas(p4),
+            ))
+          } else {
+            let p = overflow.at(0)
+            let z = z-plane(p)
+            let pp = overflow.at(1)
+            let zz = z-plane(pp)
+
+            let (p1,) = ok
+
+            place(polygon(
+              stroke: apply-color-fn(p1, elem.stroke-color-fn, elem.stroke),
+              fill: apply-color-fn(p1, elem.fill-color-fn, elem.fill),
+              on-canvas(p1),
+              on-canvas(z-intersection(z, p1, p)),
+              on-canvas(z-intersection(zz, p1, pp)),
+            ))
+          }
+        } else {
+          let (p1, p2, p3) = pts
+          place(polygon(
+            stroke: apply-color-fn(p1, elem.stroke-color-fn, elem.stroke),
+            fill: apply-color-fn(p1, elem.fill-color-fn, elem.fill),
+            on-canvas(p1),
+            on-canvas(p2),
+            on-canvas(p3),
+          ))
+        }
+      }
+    }
   }
-  // for l in p-x-y-z {
-  //   place(path(
-  //     stroke: elem.stroke,
-  //     ..l.map(on-canvas).filter(p => not p.any(out-of-bounds)),
-  //   ))
-  // }
-  // for l in p-y-x-z {
-  //   place(path(
-  //     stroke: elem.stroke,
-  //     ..l.map(on-canvas).filter(p => not p.any(out-of-bounds)),
-  //   ))
-  // }
 }
 
-#let render-lineparam((on-canvas, _, dim, ..x), elem) = {
-  let ((xfrom, xto), (yfrom, yto), (zfrom, zto)) = dim
+#let render-lineparam((on-canvas, dim, out-of-bounds, ..x), elem) = {
+  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
   let steps = if elem.steps == auto { 5 } else { elem.steps }
   let points = n-points-on-cube(dim, steps).map(p => (elem.lineparam)(..p))
   if elem.label != none {
     let (dx, dy) = on-canvas(points.last())
     place(dx: dx, dy: dy, elem.label)
   }
-  place(path(
-    stroke: elem.stroke,
-    ..points.map(on-canvas).filter(p => not p.any(out-of-bounds)),
-  ))
+  // TODO: handle out of bounds better
+  for ps in points.filter(p => not out-of-bounds(p)).windows(2) {
+    place(path(
+      stroke: apply-color-fn(ps.at(0), elem.stroke-color-fn, elem.stroke),
+      ..ps.map(on-canvas),
+    ))
+  }
 }
 
 #let render-path((on-canvas, ..x), elem) = {
@@ -161,24 +165,24 @@
 }
 
 #let render-axis(ctx, elem) = {
-  let (on-canvas, _, dim, (xas, yas, zas)) = ctx
-  let ((xfrom, xto), (yfrom, yto), (zfrom, zto)) = dim
+  let (on-canvas, dim, out-of-bounds, _, (xas, yas, zas), _) = ctx
+  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
 
   let axis-ticks = (kind: "x", ticks: auto, nticks: auto, ..x) => {
-    let (tto, tfrom) = if kind == "x" {
-      (xto, xfrom)
+    let (tmax, tmin) = if kind == "x" {
+      (xmax, xmin)
     } else if kind == "y" {
-      (yto, yfrom)
+      (ymax, ymin)
     } else {
-      (zto, zfrom)
+      (zmax, zmin)
     }
-    let span = tto - tfrom
+    let span = tmax - tmin
     if (
       ticks == auto and nticks == auto
     ) {
-      n-points-on(tfrom, tto, 10)
+      n-points-on(tmin, tmax, 10)
     } else if ticks == auto {
-      n-points-on(tfrom, tto, nticks)
+      n-points-on(tmin, tmax, nticks)
     } else {
       ticks
     }
@@ -200,155 +204,190 @@
 
   let first-tick-axis = a => {
     let ax = filter-tick-axes(a)
-    if ax == none { none } else { axis-ticks(..ax) }
+    if ax == none { () } else { axis-ticks(..ax) }
   }
 
   let xticks = first-tick-axis(xas)
   let yticks = first-tick-axis(yas)
   let zticks = first-tick-axis(zas)
 
-  let (point, point-p, point-r, point-n, cur, from, to) = if elem.kind == "x" {
-    (
-      x => (x, 0, 0),
-      ((x, y, z), n) => (x, y + n, z + n),
-      ((x, y, z), n) => (n, y, z),
-      ((y, z), n) => (n, y, z),
-      ((x, y, z)) => x,
-      xfrom,
-      xto,
-    )
-  } else if elem.kind == "y" {
-    (
-      y => (0, y, 0),
-      ((x, y, z), n) => (x + n, y, z + n),
-      ((x, y, z), n) => (x, n, z),
-      ((x, z), n) => (x, n, z),
-      ((x, y, z)) => y,
-      yfrom,
-      yto,
-    )
-  } else {
-    (
-      z => (0, 0, z),
-      ((x, y, z), n) => (x + n, y + n, z),
-      ((x, y, z), n) => (x, y, n),
-      ((x, y), n) => (x, y, n),
-      ((x, y, z)) => z,
-      zfrom,
-      zto,
-    )
-  }
-  let pfrom = point(from)
-  let pto = point(to)
-  let place-line = (start, end) => place(line(
-    stroke: elem.stroke,
+  let (
+    point,
+    point-p,
+    point-r,
+    point-n,
+    cur,
+    min,
+    max,
+    plane-points,
+  ) = axis-helper-fn(
+    ctx,
+    elem,
+  )
+
+  let pmin = point(min)
+  let pmax = point(max)
+  let place-line = (start, end, stroke: elem.plane.stroke) => place(line(
+    stroke: stroke,
     start: on-canvas(start),
     end: on-canvas(end),
   ))
   let mid = (f, s) => f.enumerate().map(((i, n)) => (s.at(i) + n) / 2)
-  let line-from = point-n(elem.line.position, from)
-  let line-to = point-n(elem.line.position, to)
+  let line-from = point-n(elem.line.position, min)
+  let line-to = point-n(elem.line.position, max)
   if not elem.plane.hidden {
-    let plane-points = if elem.kind == "x" {
-      (
-        (elem.plane.position, yfrom, zfrom),
-        (elem.plane.position, yto, zfrom),
-        (elem.plane.position, yto, zto),
-        (elem.plane.position, yfrom, zto),
-      )
-    } else if elem.kind == "y" {
-      (
-        (xfrom, elem.plane.position, zfrom),
-        (xto, elem.plane.position, zfrom),
-        (xto, elem.plane.position, zto),
-        (xfrom, elem.plane.position, zto),
-      )
-    } else {
-      (
-        (xfrom, yfrom, elem.plane.position),
-        (xto, yfrom, elem.plane.position),
-        (xto, yto, elem.plane.position),
-        (xfrom, yto, elem.plane.position),
-      )
-    }
     render-polygon(
       ctx,
-      polygon3d(..plane-points, stroke: elem.stroke, fill: elem.fill),
+      polygon3d(
+        ..plane-points,
+        stroke: elem.plane.stroke,
+        fill: elem.plane.fill,
+      ),
     )
     // render-plane(ctx, plane3d(
-    //   pto,
+    //   pmax,
     //   elem.position,
     //   stroke: elem.stroke,
     //   fill: elem.fill,
     // ))
   }
+
+  let relto = (min, max) => v => (v - min) / (max - min) * 100
+  let reltox = relto(xmin, xmax)
+  let reltoy = relto(ymin, ymax)
+  let reltoz = relto(zmin, zmax)
+
+  let label-left = {
+    // TODO: comparison must be relative
+    let (pos1, pos2) = elem.line.position
+    if elem.kind == "z" {
+      (
+        (
+          reltox(pos1) < 50 and reltox(pos1) <= reltoy(pos2)
+        )
+          or (
+            reltoy(pos2) > 50 and reltox(pos1) <= reltoy(pos2)
+          )
+      )
+    } else if elem.kind == "x" {
+      (
+        (
+          reltoy(pos1) > 50 and reltoy(pos1) >= 100 - reltoz(pos2)
+        )
+          or (
+            reltoz(pos2) > 50 and 100 - reltoy(pos1) <= reltoz(pos2)
+          )
+      )
+    } else {
+      (
+        (
+          reltox(pos1) < 50 and reltox(pos1) <= 100 - reltoz(pos2)
+        )
+          or (
+            reltoz(pos2) < 50 and reltox(pos1) <= 100 - reltoz(pos2)
+          )
+      )
+    }
+  }
+
   if not elem.line.hidden {
     let (dx, dy) = on-canvas(mid(line-from, line-to))
     if elem.label != none {
       // FIXME:
+      let (dx2, dy2) = if label-left {
+        if elem.kind == "x" {
+          (dx - 20pt, dy - 48pt)
+        } else if elem.kind == "y" {
+          (dx - 36pt, dy + 5pt)
+        } else {
+          (dx - 56pt, dy - 10pt)
+        }
+      } else {
+        if elem.kind == "x" {
+          (dx + 5pt, dy - 2pt)
+        } else if elem.kind == "y" {
+          (dx - 20pt, dy - 48pt)
+        } else {
+          (dx + 14pt, dy - 10pt)
+        }
+      }
+      // FIXME:
       place(
-        dx: if elem.kind == "z" { dx - 13% } else if elem.kind == "y" {
-          dx - 12% // proffeshunal
-        } else { dx - 2% },
-        dy: if elem.kind == "y" { dy } else if elem.kind == "z" {
-          dy - 4%
-        } else { dy },
+        dx: dx2,
+        dy: dy2,
         pad(16pt, elem.label),
       )
     }
     // TODO: tip, toe
-    place-line(line-from, line-to)
+    place-line(line-from, line-to, stroke: elem.line.stroke)
   }
   if elem.format-ticks != none {
     let ticks = ()
     if type(elem.ticks) == array {
-      ticks = elem.ticks.filter(t => t <= to and t >= from)
+      ticks = elem.ticks.filter(t => t <= max and t >= min)
     } else {
       let nticks = if elem.nticks == auto {
-        (to - from) / 10
+        (max - min) / 10
       } else { elem.nticks }
-      ticks = range(0, int((to - from) / nticks) + 1).map(i => (
-        from + i * nticks
+      ticks = range(0, int((max - min) / nticks) + 1).map(i => (
+        min + i * nticks
       ))
     }
 
     // if elem.format-subticks != none {}
 
     if not elem.line.hidden {
-      // FIXME: depends on position of axis
       for tick in ticks {
         let (px, py, pz) = point-r(line-from, tick)
 
         let (start, end) = (
-          if elem.line.position.at(0) - elem.line.position.at(1) > 0 {
+          if label-left {
             if elem.kind == "x" {
-              ((px, py, pz - 0.1), (px, py, pz + 0.1))
+              ((px, py, pz), (px, py, pz + 0.5))
             } else if elem.kind == "y" {
-              ((px - 0.1, py, pz), (px + 0.1, py, pz))
+              ((px - 0.5, py, pz), (px, py, pz))
             } else {
-              ((px - 0.1, py, pz), (px + 0.1, py, pz))
+              ((px - 0.5, py, pz), (px, py, pz))
             }
           } else {
             if elem.kind == "x" {
-              ((px, py - 0.1, pz), (px, py + 0.1, pz))
+              ((px, py - 0.5, pz), (px, py, pz))
             } else if elem.kind == "y" {
-              ((px, py, pz - 0.1), (px, py, pz + 0.1))
+              ((px, py, pz), (px, py, pz + 0.5))
             } else {
-              ((px, py - 0.1, pz), (px, py + 0.1, pz))
+              ((px, py, pz), (px, py - 0.5, pz))
             }
           }
         ).map(on-canvas)
 
         place(line(
-          stroke: elem.stroke,
+          stroke: elem.line.stroke,
           start: start,
           end: end,
         ))
+        let (sx, sy) = start
+        let (ex, ey) = end
         // FIXME:
-        let (dx, dy) = if elem.kind == "z" { end } else { start }
+        let (dx, dy) = if label-left {
+          if elem.kind == "x" {
+            (ex - 4pt, ey - 10pt)
+          } else if elem.kind == "y" {
+            (sx - 14pt, sy + 2pt)
+          } else {
+            (sx - 16pt, sy - 2pt)
+          }
+        } else {
+          if elem.kind == "x" {
+            (sx + 4pt, sy + 2pt)
+          } else if elem.kind == "y" {
+            (ex - 4pt, ey - 10pt)
+          } else {
+            (ex + 2pt, ey - 2pt)
+          }
+        }
         place(
-          dx: if elem.kind == "x" { dx } else { dx - 4% },
-          dy: if elem.kind == "z" { dy } else { dy + 2% },
+          dx: dx,
+          dy: dy,
           text(size: 0.75em)[#calc.round(tick, digits: 2)],
         )
       }
@@ -357,40 +396,40 @@
       if elem.kind == "z" {
         for tick in xticks {
           place-line(
-            (tick, yfrom, elem.plane.position),
-            (tick, yto, elem.plane.position),
+            (tick, ymin, elem.plane.position),
+            (tick, ymax, elem.plane.position),
           )
         }
         for tick in yticks {
           place-line(
-            (xfrom, tick, elem.plane.position),
-            (xto, tick, elem.plane.position),
+            (xmin, tick, elem.plane.position),
+            (xmax, tick, elem.plane.position),
           )
         }
       } else if elem.kind == "y" {
         for tick in xticks {
           place-line(
-            (tick, elem.plane.position, zfrom),
-            (tick, elem.plane.position, zto),
+            (tick, elem.plane.position, zmin),
+            (tick, elem.plane.position, zmax),
           )
         }
         for tick in zticks {
           place-line(
-            (xfrom, elem.plane.position, tick),
-            (xto, elem.plane.position, tick),
+            (xmin, elem.plane.position, tick),
+            (xmax, elem.plane.position, tick),
           )
         }
       } else {
         for tick in yticks {
           place-line(
-            (elem.plane.position, tick, zfrom),
-            (elem.plane.position, tick, zto),
+            (elem.plane.position, tick, zmin),
+            (elem.plane.position, tick, zmax),
           )
         }
         for tick in zticks {
           place-line(
-            (elem.plane.position, yfrom, tick),
-            (elem.plane.position, yto, tick),
+            (elem.plane.position, ymin, tick),
+            (elem.plane.position, ymax, tick),
           )
         }
       }

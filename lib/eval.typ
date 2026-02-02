@@ -1,8 +1,10 @@
 #import "linalg.typ": *
 
-#let eval-plane((on-canvas, _, dim, ..x), elem) = {
-  // FIXME: d doesn't adjust to scale?
+// TODO: huh, what did i do here again?
+#let eval-plane((on-canvas, dim, ..x), elem) = {
+  // FIXME: d doesn't adjust max scale?
   // TODO: use canonical cube?
+  // TODO: intersection-3d
   let ((a, b, c), d) = elem.plane
   let points = ()
   for ((x1, y1, z1), (x2, y2, z2)) in cube-edges(dim) {
@@ -25,4 +27,161 @@
   elem
 }
 
+#let axis-helper-fn = (ctx, elem) => {
+  let (on-canvas, dim, _, _, (xas, yas, zas), ..x) = ctx
+  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
 
+  if elem.kind == "x" {
+    (
+      x => (x, 0, 0),
+      ((x, y, z), n) => (x, y + n, z + n),
+      ((x, y, z), n) => (n, y, z),
+      ((y, z), n) => (n, y, z),
+      ((x, y, z)) => x,
+      xmin,
+      xmax,
+      (
+        (elem.plane.position, ymin, zmin),
+        (elem.plane.position, ymax, zmin),
+        (elem.plane.position, ymax, zmax),
+        (elem.plane.position, ymin, zmax),
+      ),
+    )
+  } else if elem.kind == "y" {
+    (
+      y => (0, y, 0),
+      ((x, y, z), n) => (x + n, y, z + n),
+      ((x, y, z), n) => (x, n, z),
+      ((x, z), n) => (x, n, z),
+      ((x, y, z)) => y,
+      ymin,
+      ymax,
+      (
+        (xmin, elem.plane.position, zmin),
+        (xmax, elem.plane.position, zmin),
+        (xmax, elem.plane.position, zmax),
+        (xmin, elem.plane.position, zmax),
+      ),
+    )
+  } else {
+    (
+      z => (0, 0, z),
+      ((x, y, z), n) => (x + n, y + n, z),
+      ((x, y, z), n) => (x, y, n),
+      ((x, y), n) => (x, y, n),
+      ((x, y, z)) => z,
+      zmin,
+      zmax,
+      (
+        (xmin, ymin, elem.plane.position),
+        (xmax, ymin, elem.plane.position),
+        (xmax, ymax, elem.plane.position),
+        (xmin, ymax, elem.plane.position),
+      ),
+    )
+  }
+}
+
+#let eval-axis(ctx, elem) = {
+  let (_, dim, _, _, (xas, yas, zas)) = ctx
+  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
+
+  let (
+    point,
+    point-p,
+    point-r,
+    point-n,
+    cur,
+    min,
+    max,
+    plane-points,
+  ) = axis-helper-fn(
+    ctx,
+    elem,
+  )
+
+  let res = ()
+
+  if (
+    not elem.line.hidden
+      and type(min) == int
+      and type(max) == int
+      and type(elem.line.position) == array
+      and elem.line.position.len() == 2
+      and elem.line.position.all(i => type(i) == int)
+  ) {
+    res.push(point-n(elem.line.position, min))
+    res.push(point-n(elem.line.position, max))
+  }
+  if (
+    not elem.plane.hidden
+      and plane-points.all(pp => pp.all(i => type(i) == int))
+  ) {
+    for p in plane-points {
+      res.push(p)
+    }
+  }
+
+  res
+}
+
+#let eval-points = (
+  ctx,
+  elem,
+) => {
+  if "axis" in elem {
+    eval-axis(ctx, elem)
+  } else if "path" in elem {
+    elem.path
+  } else if "polygon" in elem {
+    elem.polygon
+  } else if "line" in elem {
+    elem.line
+  } else {
+    ()
+    // } else if "plane" in elem {
+    // } else if "planeparam" in elem {
+    // } else if "lineparam" in elem {
+  }
+}
+
+#let minmax = (((xmin, ymin, zmin), (xmax, ymax, zmax)), (x, y, z)) => (
+  (calc.min(xmin, x), calc.min(ymin, y), calc.min(zmin, z)),
+  (calc.max(xmax, x), calc.max(ymax, y), calc.max(zmax, z)),
+)
+
+#let eval-min-bounds = (axes, ..children) => {
+  let (xaxis, yaxis, zaxis) = axes
+
+  let getlim = (lim: auto, ..x) => if type(lim) != array { (auto, auto) } else {
+    lim
+  }
+
+  let xlim = getlim(..xaxis)
+  let ylim = getlim(..yaxis)
+  let zlim = getlim(..zaxis)
+  let dim = (xlim, ylim, zlim)
+
+  // TODO: only evaluate if necessary
+
+  let ctx = (none, dim, none, none, axes)
+  let points = (
+    ..xaxis.instances,
+    ..yaxis.instances,
+    ..zaxis.instances,
+    ..children.pos(),
+  )
+    .map(elem => eval-points(ctx, elem))
+    .fold((), (acc, cur) => (..acc, ..cur))
+
+  points.fold(
+    (
+      points.at(0, default: (-10, -10, -10)),
+      points.at(0, default: (10, 10, 10)),
+    ),
+    (
+      acc,
+      cur,
+    ) => minmax(acc, cur),
+  )
+}

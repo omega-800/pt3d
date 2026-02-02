@@ -10,15 +10,15 @@
   x1 * y2 - y1 * x2,
 )
 
-#let cube-vertices = (((xfrom, xto), (yfrom, yto), (zfrom, zto))) => (
-  (xfrom, yfrom, zfrom),
-  (xto, yfrom, zfrom),
-  (xto, yto, zfrom),
-  (xfrom, yto, zfrom),
-  (xfrom, yfrom, zto),
-  (xto, yfrom, zto),
-  (xto, yto, zto),
-  (xfrom, yto, zto),
+#let cube-vertices = (((xmin, xmax), (ymin, ymax), (zmin, zmax))) => (
+  (xmin, ymin, zmin),
+  (xmax, ymin, zmin),
+  (xmax, ymax, zmin),
+  (xmin, ymax, zmin),
+  (xmin, ymin, zmax),
+  (xmax, ymin, zmax),
+  (xmax, ymax, zmax),
+  (xmin, ymax, zmax),
 )
 
 #let cube-edges = dim => {
@@ -37,35 +37,6 @@
     (vertices.at(2), vertices.at(6)),
     (vertices.at(3), vertices.at(7)),
   )
-}
-
-// TODO:
-#let bounds(elem) = {
-  ((-5, 5), (-5, 5), (-5, 5))
-}
-
-#let intersect-bounds(a, b, larger: true) = {
-  let new = ()
-  for n in (0, 1, 2) {
-    let an = a.at(n)
-    let bn = b.at(n)
-    if (an == auto) {
-      new.push(bn)
-    } else if (bn == auto) {
-      new.push(an)
-    } else if larger {
-      new.push((
-        calc.min(an.at(0), bn.at(0)),
-        calc.max(an.at(1), bn.at(1)),
-      ))
-    } else {
-      new.push((
-        calc.max(an.at(0), bn.at(0)),
-        calc.min(an.at(1), bn.at(1)),
-      ))
-    }
-  }
-  new
 }
 
 #let mat-rotate-x = x => (
@@ -102,9 +73,9 @@
 }
 
 #let perpendicular-2d(line-from, line-to, point, off-x, off-y) = {
-  let (pxfrom, pyfrom) = line-from
-  let (pxto, pyto) = line-to
-  let pm = -(pxfrom - pxto) / (pyfrom - pyto)
+  let (pxmin, pymin) = line-from
+  let (pxmax, pymax) = line-to
+  let pm = -(pxmin - pxmax) / (pymin - pymax)
   let dir = 1 / calc.sqrt(1 + calc.pow(pm, 2))
   let (tx, ty) = point
   (
@@ -136,4 +107,20 @@
     .pos()
     .map(((x, y)) => (atan2(float(x) - c.at(0), float(y) - c.at(1)), (x, y)))
   angles.sorted(key: it => it.at(0)).map(it => it.at(1))
+}
+
+#let intersection-3d = (
+  (x1f, y1f, z1f),
+  (x1t, y1t, z1t),
+  (x2f, y2f, z2f),
+  (x2t, y2t, z2t),
+) => {
+  let d1 = (x1t - x1f, y1t - y1f, z1t - z1f)
+  let d2 = (x2t - x2f, y2t - y2f, z2t - z2f)
+  let t = cross-product(d1, d2)
+  (
+    x1f + t * (x1t - x1f),
+    y1f + t * (y1t - y1f),
+    z1f + t * (z1t - z1f),
+  )
 }
