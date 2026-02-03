@@ -151,16 +151,16 @@
   ))
 }
 
-#let render-line((on-canvas, ..x), elem) = {
+#let render-vec((on-canvas, ..x), elem) = {
   if elem.label != none {
-    let (dx, dy) = on-canvas(elem.line.at(1))
+    let (dx, dy) = on-canvas(elem.vec.at(1))
     place(dx: dx, dy: dy, elem.label)
   }
 
   place(line(
     stroke: elem.stroke,
-    start: on-canvas(elem.line.at(0)),
-    end: on-canvas(elem.line.at(1)),
+    start: on-canvas(elem.vec.at(0)),
+    end: on-canvas(elem.vec.at(1)),
   ))
 }
 
@@ -336,32 +336,34 @@
 
     // if elem.format-subticks != none {}
 
+    let (length, offset) = elem.format-ticks
+    let from = (length / 2) + offset
+    let to = (length / 2) - offset
     if not elem.line.hidden {
       for tick in ticks {
         let (px, py, pz) = point-r(line-from, tick)
-
         let (start, end) = (
           if label-left {
             if elem.kind == "x" {
-              ((px, py, pz), (px, py, pz + 0.5))
+              ((px, py, pz - from), (px, py, pz + to))
             } else if elem.kind == "y" {
-              ((px - 0.5, py, pz), (px, py, pz))
+              ((px - from, py, pz), (px + to, py, pz))
             } else {
-              ((px - 0.5, py, pz), (px, py, pz))
+              ((px - from, py, pz), (px + to, py, pz))
             }
           } else {
             if elem.kind == "x" {
-              ((px, py - 0.5, pz), (px, py, pz))
+              ((px, py - from, pz), (px, py + to, pz))
             } else if elem.kind == "y" {
-              ((px, py, pz), (px, py, pz + 0.5))
+              ((px, py, pz - from), (px, py, pz + to))
             } else {
-              ((px, py, pz), (px, py - 0.5, pz))
+              ((px, py + from, pz), (px, py - to, pz))
             }
           }
         ).map(on-canvas)
 
         place(line(
-          stroke: elem.line.stroke,
+          stroke: elem.format-ticks.stroke,
           start: start,
           end: end,
         ))
@@ -388,7 +390,7 @@
         place(
           dx: dx,
           dy: dy,
-          text(size: 0.75em)[#calc.round(tick, digits: 2)],
+          (elem.format-ticks.label-format)(tick),
         )
       }
     }
@@ -451,8 +453,8 @@
     render-plane(ctx, elem)
   } else if "planeparam" in elem {
     render-planeparam(ctx, elem)
-  } else if "line" in elem {
-    render-line(ctx, elem)
+  } else if "vec" in elem {
+    render-vec(ctx, elem)
   } else if "lineparam" in elem {
     render-lineparam(ctx, elem)
   }

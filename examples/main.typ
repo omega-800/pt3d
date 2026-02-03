@@ -2,6 +2,7 @@
 
 #pt3d.diagram(
   title: "test",
+  stroke: blue,
   width: 12cm,
   height: 12cm,
   xaxis: (lim: (-2, 5)),
@@ -9,8 +10,6 @@
   zaxis: (lim: (-5, 5)),
   pt3d.planeparam3d(
     (x, y) => y * calc.sin(x) - x * calc.cos(y),
-    stroke: blue,
-    fill: blue.transparentize(90%),
     stroke-color-fn: (x, y, z) => pt3d.rgb-clamp(0, 0, -z * 50 + 120),
     fill-color-fn: (x, y, z) => pt3d.rgb-clamp(150, 50, -z * 50 + 150),
     steps: 50,
@@ -114,17 +113,17 @@
     (-1, -1, -1),
     (-1, 1, -1),
   ),
-  pt3d.line3d(
+  pt3d.vec3d(
     label: "1",
     (3, 3, 3),
     stroke: gradient.linear(yellow, black),
   ),
-  pt3d.line3d(
+  pt3d.vec3d(
     label: "2",
     (2, 2, 1),
     stroke: gradient.linear(yellow, black),
   ),
-  pt3d.line3d(
+  pt3d.vec3d(
     label: "3",
     (1, 1, 0),
     stroke: gradient.linear(yellow, black),

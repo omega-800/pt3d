@@ -135,8 +135,8 @@
     elem.path
   } else if "polygon" in elem {
     elem.polygon
-  } else if "line" in elem {
-    elem.line
+  } else if "vec" in elem {
+    elem.vec
   } else {
     ()
     // } else if "plane" in elem {

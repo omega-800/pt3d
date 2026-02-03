@@ -7,6 +7,7 @@
 // https://www.mauriciopoppe.com/notes/computer-graphics/viewing/projection-transform/
 // http://www.songho.ca/opengl/gl_projectionmatrix.html
 
+// FIXME: wonky
 #let def-lim = (min, max, lim: (-1, 1), ..x) => {
   let def = (i, def) => if type(i) == int { i } else { def }
   (def(def(lim.at(0), min), 1), def(def(lim.at(1), max), -1))
@@ -49,7 +50,6 @@
   )
 
   // FIXME: wonky
-  // TODO: refactor axis creation, fill in defaults only as soon as known
   let (ox, oz, oy) = (xas, zas, yas)
     .enumerate()
     .map(((i, a)) => if a.order != auto { a.order } else { i })
@@ -85,6 +85,48 @@
     ),
   )
 
+  // TODO: this is wrong and has to be properly implemented for all axis positions and label formats
+  /*
+   let get-tick-format = a => a
+     .instances
+     .filter(i => not i.line.hidden)
+     .map(i => i.format-ticks)
+     .sorted(key: i => i.length)
+     .at(0, default: (:))
+   let get-tick-size = (
+     kind: "x",
+     length: 0,
+     offset: 0,
+     label-format: i => text()[#i],
+     ..x,
+   ) => {
+     let from = length / 2 + offset
+     let (width, height) = measure(label-format(-10.99))
+     if kind == "x" {
+       let (x, y) = on-canvas((xmax, ymin - from, zmin))
+       (x + width - 100%, height)
+     } else if kind == "y" {
+       let (x, y) = on-canvas((xmin + from, ymax, zmin))
+       // panic(on-canvas((xmin, ymax, zmin)))
+       // panic(x, y)
+       (x + width, height)
+     } else {
+       let (x, y) = on-canvas((xmin - from, ymax, zmin))
+       (x + width, height)
+     }
+   }
+
+   let (xw, xh) = get-tick-size(..get-tick-format(xas), kind: "x")
+   let (yw, yh) = get-tick-size(..get-tick-format(yas), kind: "y")
+   let (zw, zh) = get-tick-size(..get-tick-format(zas), kind: "z")
+   // panic(xw, xh, yw, yh, zw, zh)
+   // let tick-width = calc.max(xw, yw, zw)
+   // let tick-height = calc.max(xh, yh, zh)
+   let tick-width = 0%
+   let tick-height = 0%
+   // panic(tick-width, tick-height)
+  */
+
   let ctx = (
     on-canvas,
     dim,
@@ -119,7 +161,17 @@
 
   // FIXME: width/height of axis labels
   content.push(
-    block(fill: fill, width: 100%, height: 100% - offset, stroke: stroke, plot),
+    place(
+      top + right,
+      dx: - 2em,
+      block(
+        fill: fill,
+        // we do a little cheating over here
+        width: 100% - 6em, /* tick-width */
+        height: 100% - offset - 2em, /* tick-height */
+        plot,
+      ),
+    ),
   )
-  box(height: height, width: width, stack(..content))
+  box(height: height, width: width, stroke: stroke, stack(..content))
 }

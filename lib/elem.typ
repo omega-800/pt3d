@@ -9,17 +9,33 @@
   fill: fill,
 )
 
-#let line3d = (stroke: black, label: none, ..points) => {
+#let lineparam = (point, direction) => (param: (point, direction))
+#let linecoord = (x, y, z, d) => (coord: (x, y, z, d))
+#let linenorm = (point, direction) => (norm: (point, direction))
+#let linehesse = (norm, distance) => (hesse: (norm, distance))
+
+#let line3d = (stroke: black, label: none, form) => (
+  line: form,
+  stroke: stroke,
+  label: label,
+)
+
+#let vec3d = (stroke: black, label: none, ..points) => {
   let pts = points.pos()
   if pts.len() < 2 {
     pts.insert(0, (0, 0, 0))
   }
   (
-    line: pts,
+    vec: pts,
     stroke: stroke,
     label: label,
   )
 }
+
+#let planeparam = (point, ab, ac) => (param: (point, ab, ac))
+#let planecoord = (x, y, z, d) => (coord: (x, y, z, d))
+#let planenorm = (point, direction) => (norm: (point, direction))
+#let planehesse = (norm, distance) => (hesse: (norm, distance))
 
 #let plane3d = (n, d, stroke: black, fill: black.transparentize(80%)) => (
   plane: (n, d),
@@ -76,10 +92,22 @@
   stroke: stroke,
 )
 
+#let tickformat = (
+  stroke: black.transparentize(40%),
+  length: 0.5,
+  offset: 0.25,
+  label-format: tick => text(size: 0.75em)[#calc.round(tick, digits: 2)],
+) => (
+  stroke: stroke,
+  length: length,
+  offset: offset,
+  label-format: label-format,
+)
+
 // FIXME: wonky
 #let axis3d = (
   kind: "x",
-  label: none,
+  label: auto,
   hidden: false,
   plane: (
     position: auto,
@@ -99,17 +127,17 @@
   subticks: auto,
   tick-distance: auto,
   locate-ticks: auto,
-  format-ticks: auto,
+  format-ticks: (:),
   locate-subticks: auto,
-  format-subticks: none,
+  format-subticks: (:),
   extra-ticks: (),
-  format-extra-ticks: none,
-  tick-args: (:),
-  subtick-args: (:),
+  format-extra-ticks: (:),
+  // tick-args: (:),
+  // subtick-args: (:),
 ) => (
   axis: true,
   kind: kind,
-  label: if label == none { kind } else { label },
+  label: if label == auto { kind } else { label },
   hidden: hidden,
   plane: axisplane3d(..plane),
   line: axisline3d(..line),
@@ -121,7 +149,7 @@
   // exponent: exponent,
   // auto-exponent-threshold: auto-exponent-threshold,
   // locate-ticks: locate-ticks,
-  format-ticks: format-ticks,
+  format-ticks: tickformat(..format-ticks),
   // locate-subticks: locate-subticks,
   // format-subticks: format-subticks,
   // extra-ticks: extra-ticks,
@@ -135,7 +163,7 @@
   kind: "x",
   instances: (),
   scale: auto,
-  lim: (auto,auto),
+  lim: (auto, auto),
   inverted: false,
   mirror: auto,
   offset: auto,
