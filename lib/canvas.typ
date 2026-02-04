@@ -8,9 +8,9 @@
 #let clamp-to-bounds-3d = ((xmin, xmax), (ymin, ymax), (zmin, zmax)) => (
   (x, y, z),
 ) => (
-  calc.clamp(x,xmin, xmax),
-  calc.clamp(y,ymin, ymax),
-  calc.clamp(z,zmin, zmax),
+  calc.clamp(x, xmin, xmax),
+  calc.clamp(y, ymin, ymax),
+  calc.clamp(z, zmin, zmax),
 )
 
 #let out-of-bounds-3d = ((xmin, xmax), (ymin, ymax), (zmin, zmax)) => (
@@ -23,22 +23,14 @@
   let low = calc.min(s.first(default: 0%), 0%)
   let span = high - low
   (
-    span / 2,
     -low / span * 100%,
-    (100% - high) / span * 100%,
     (100% / span) * 100%,
   )
 }
 
-#let rescale = ((xtrsh, xlo, xhi, xscale), (ytrsh, ylo, yhi, yscale)) => (
+#let rescale = ((xo, xscale), (yo, yscale)) => (
   (x, y),
-) => {
-  let adjust = (val, trsh, ol, oh, s) => {
-    let av = s * val
-    (if av > trsh { av + oh } else { av + ol })
-  }
-  (adjust(x, xtrsh, xlo, xhi, xscale), adjust(y, ytrsh, ylo, yhi, yscale))
-}
+) => (x * xscale + xo, y * yscale + yo)
 
 #let order-axes = ((xo, yo, zo)) => ((x, y, z)) => (
   // FIXME: flip z properly

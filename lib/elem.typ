@@ -1,27 +1,29 @@
-#let path3d = (stroke: black, ..points) => (
+#import "linalg.typ": *
+
+#let path3d = (stroke: auto, label: none, ..points) => (
   path: points.pos(),
-  stroke: stroke,
-)
-
-#let polygon3d = (stroke: black, fill: none, ..points) => (
-  polygon: points.pos(),
-  stroke: stroke,
-  fill: fill,
-)
-
-#let lineparam = (point, direction) => (param: (point, direction))
-#let linecoord = (x, y, z, d) => (coord: (x, y, z, d))
-#let linenorm = (point, direction) => (norm: (point, direction))
-#let linehesse = (norm, distance) => (hesse: (norm, distance))
-
-#let line3d = (stroke: black, label: none, form) => (
-  line: form,
   stroke: stroke,
   label: label,
 )
 
-#let vec3d = (stroke: black, label: none, ..points) => {
+#let polygon3d = (stroke: auto, fill: none, label: none, ..points) => (
+  polygon: points.pos(),
+  stroke: stroke,
+  fill: fill,
+  label: label,
+)
+
+#let line3d = (stroke: auto, label: none, point-normal) => (
+  line: point-normal,
+  stroke: stroke,
+  label: label,
+)
+
+#let vec3d = (stroke: auto, label: none, ..points) => {
   let pts = points.pos()
+  // TODO: more error handling around the codebase
+  assert(pts.len() > 0, message: "Vector must be provided at least one point")
+  assert(pts.len() < 3, message: "Vector must have at most two points")
   if pts.len() < 2 {
     pts.insert(0, (0, 0, 0))
   }
@@ -32,22 +34,23 @@
   )
 }
 
-#let planeparam = (point, ab, ac) => (param: (point, ab, ac))
-#let planecoord = (x, y, z, d) => (coord: (x, y, z, d))
-#let planenorm = (point, direction) => (norm: (point, direction))
-#let planehesse = (norm, distance) => (hesse: (norm, distance))
-
-#let plane3d = (n, d, stroke: black, fill: black.transparentize(80%)) => (
-  plane: (n, d),
+#let plane3d = (
+  point-normal,
+  stroke: auto,
+  fill: auto,
+  label: none,
+) => (
+  plane: point-normal,
   stroke: stroke,
   fill: fill,
+  label: label,
 )
 
 #let lineparam3d = (
-  stroke: black,
-  label: none,
+  stroke: auto,
   steps: auto,
   stroke-color-fn: none,
+  label: none,
   fn,
 ) => (
   lineparam: fn,
@@ -58,11 +61,12 @@
 )
 
 #let planeparam3d = (
-  stroke: black,
+  stroke: auto,
   fill: none,
   steps: auto,
   stroke-color-fn: none,
   fill-color-fn: none,
+  label: none,
   fn,
 ) => (
   planeparam: fn,
@@ -71,6 +75,7 @@
   stroke: stroke,
   fill: fill,
   steps: steps,
+  label: label,
 )
 
 #let axisplane3d = (
@@ -189,4 +194,18 @@
   // functions: functions,
   hidden: hidden,
   // filter: filter,
+)
+
+#let legend-def(
+  position: top + left,
+  label-format: it => text(size: 0.75em)[#it],
+  stroke: black.transparentize(40%),
+  fill: black.transparentize(95%),
+  dir: ttb
+) = (
+  position: position,
+  label-format: label-format,
+  stroke: stroke,
+  fill: fill,
+  dir: dir
 )

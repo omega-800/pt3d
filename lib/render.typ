@@ -7,6 +7,27 @@
 // https://en.wikipedia.org/wiki/Graph_drawing
 // https://computergraphics.stackexchange.com/questions/1761/strategy-for-connecting-2-points-without-intersecting-previously-drawn-segments
 
+// TODO: handle overflow on all elems
+
+#let path-curve(
+  fill: none,
+  fill-rule: "non-zero",
+  stroke: none,
+  closed: false,
+  ..p,
+) = {
+  let pts = p.pos().slice(1)
+  let close = if closed { (curve.close()) } else { () }
+  curve(
+    fill: fill,
+    stroke: stroke,
+    fill-rule: fill-rule,
+    curve.move(p.pos().at(0)),
+    ..pts.map(curve.line),
+    ..close,
+  )
+}
+
 #let z-intersection = (z, (x1, y1, z1), (x2, y2, z2)) => {
   let t = (z - z1) / (z2 - z1)
   (x1 + t * (x2 - x1), y1 + t * (y2 - y1), z1 + t * (z2 - z1))
@@ -61,7 +82,7 @@
         if pts.all(out-of-bounds) {
           continue
         }
-        if pts.any(z-out-of-bounds) {
+        let points = if pts.any(z-out-of-bounds) {
           let (overflow, ok) = pts.fold(((), ()), (
             (ov, ok),
             cur,
@@ -72,41 +93,24 @@
             let p = overflow.at(0)
             let z = z-plane(p)
             let (p1, p4) = ok
-
-            place(polygon(
-              stroke: apply-color-fn(p1, elem.stroke-color-fn, elem.stroke),
-              fill: apply-color-fn(p1, elem.fill-color-fn, elem.fill),
-              on-canvas(p1),
-              on-canvas(z-intersection(z, p1, p)),
-              on-canvas(z-intersection(z, p4, p)),
-              on-canvas(p4),
-            ))
+            (p1, z-intersection(z, p1, p), z-intersection(z, p4, p), p4)
           } else {
             let p = overflow.at(0)
             let z = z-plane(p)
             let pp = overflow.at(1)
             let zz = z-plane(pp)
-
             let (p1,) = ok
-
-            place(polygon(
-              stroke: apply-color-fn(p1, elem.stroke-color-fn, elem.stroke),
-              fill: apply-color-fn(p1, elem.fill-color-fn, elem.fill),
-              on-canvas(p1),
-              on-canvas(z-intersection(z, p1, p)),
-              on-canvas(z-intersection(zz, p1, pp)),
-            ))
+            (p1, z-intersection(z, p1, p), z-intersection(zz, p1, pp))
           }
         } else {
-          let (p1, p2, p3) = pts
-          place(polygon(
-            stroke: apply-color-fn(p1, elem.stroke-color-fn, elem.stroke),
-            fill: apply-color-fn(p1, elem.fill-color-fn, elem.fill),
-            on-canvas(p1),
-            on-canvas(p2),
-            on-canvas(p3),
-          ))
+          pts
         }
+        let p1 = points.at(0)
+        place(polygon(
+          stroke: apply-color-fn(p1, elem.stroke-color-fn, elem.stroke),
+          fill: apply-color-fn(p1, elem.fill-color-fn, elem.fill),
+          ..points.map(on-canvas),
+        ))
       }
     }
   }
@@ -116,21 +120,27 @@
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
   let steps = if elem.steps == auto { 5 } else { elem.steps }
   let points = n-points-on-cube(dim, steps).map(p => (elem.lineparam)(..p))
-  if elem.label != none {
-    let (dx, dy) = on-canvas(points.last())
-    place(dx: dx, dy: dy, elem.label)
-  }
   // TODO: handle out of bounds better
   for ps in points.filter(p => not out-of-bounds(p)).windows(2) {
-    place(path(
+    place(path-curve(
       stroke: apply-color-fn(ps.at(0), elem.stroke-color-fn, elem.stroke),
       ..ps.map(on-canvas),
     ))
   }
 }
 
+#let render-line(ctx, elem) = {
+  let (on-canvas, ..x) = ctx
+  let elem-eval = eval-line(ctx, elem)
+  if elem-eval.line.len() > 1 {
+    place(path-curve(stroke: elem.stroke, ..elem-eval.line.map(on-canvas)))
+  } else {
+    // TODO: warn
+  }
+}
+
 #let render-path((on-canvas, ..x), elem) = {
-  place(path(stroke: elem.stroke, ..elem.path.map(on-canvas)))
+  place(path-curve(stroke: elem.stroke, ..elem.path.map(on-canvas)))
 }
 
 #let render-polygon((on-canvas, ..x), elem) = {
@@ -144,38 +154,47 @@
 #let render-plane(ctx, elem) = {
   let (on-canvas, ..x) = ctx
   let elem-eval = eval-plane(ctx, elem)
-  place(polygon(
-    fill: elem-eval.fill,
-    stroke: elem-eval.stroke,
-    ..connect-circle-2d(..elem-eval.plane.map(on-canvas)),
-  ))
-}
-
-#let render-vec((on-canvas, ..x), elem) = {
-  if elem.label != none {
-    let (dx, dy) = on-canvas(elem.vec.at(1))
-    place(dx: dx, dy: dy, elem.label)
+  if elem-eval.plane.len() > 2 {
+    place(polygon(
+      fill: elem-eval.fill,
+      stroke: elem-eval.stroke,
+      ..connect-circle-2d(..elem-eval.plane.map(on-canvas)),
+    ))
+  } else {
+    // TODO: warn
   }
-
-  place(line(
-    stroke: elem.stroke,
-    start: on-canvas(elem.vec.at(0)),
-    end: on-canvas(elem.vec.at(1)),
-  ))
 }
+
+#let render-vec((on-canvas, ..x), elem) = place(line(
+  stroke: elem.stroke,
+  start: on-canvas(elem.vec.at(0)),
+  end: on-canvas(elem.vec.at(1)),
+))
 
 #let render-axis(ctx, elem) = {
-  let (on-canvas, dim, out-of-bounds, _, (xas, yas, zas), _) = ctx
+  let (on-canvas, dim, out-of-bounds, axes) = ctx
+  let (xas, yas, zas) = axes
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
 
+  let (
+    point,
+    point-p,
+    point-r,
+    point-n,
+    cur,
+    min,
+    max,
+    plane-points,
+  ) = axis-helper-fn(
+    ctx,
+    elem,
+  )
+
   let axis-ticks = (kind: "x", ticks: auto, nticks: auto, ..x) => {
-    let (tmax, tmin) = if kind == "x" {
-      (xmax, xmin)
-    } else if kind == "y" {
-      (ymax, ymin)
-    } else {
-      (zmax, zmin)
-    }
+    let (_, _, _, _, _, tmin, tmax, _) = axis-helper-fn(ctx, (
+      kind: kind,
+      ..x.named(),
+    ))
     let span = tmax - tmin
     if (
       ticks == auto and nticks == auto
@@ -207,23 +226,10 @@
     if ax == none { () } else { axis-ticks(..ax) }
   }
 
+  // TODO: better auto ticks
   let xticks = first-tick-axis(xas)
   let yticks = first-tick-axis(yas)
   let zticks = first-tick-axis(zas)
-
-  let (
-    point,
-    point-p,
-    point-r,
-    point-n,
-    cur,
-    min,
-    max,
-    plane-points,
-  ) = axis-helper-fn(
-    ctx,
-    elem,
-  )
 
   let pmin = point(min)
   let pmax = point(max)
@@ -455,7 +461,42 @@
     render-planeparam(ctx, elem)
   } else if "vec" in elem {
     render-vec(ctx, elem)
+  } else if "line" in elem {
+    render-line(ctx, elem)
   } else if "lineparam" in elem {
     render-lineparam(ctx, elem)
   }
+}
+
+#let label-img(elem, height) = {
+  box(width: 1em, height: height, place(horizon + center, if "polygon" in elem
+    or "plane" in elem
+    or "planeparam" in elem {
+    rect(width: 1em, height: height, stroke: elem.stroke, fill: elem.fill)
+  } else if (
+    "path" in elem or "vec" in elem or "line" in elem or "lineparam" in elem
+  ) {
+    line(length: 1em, stroke: elem.stroke)
+  }))
+}
+
+#let render-legend(
+  ctx,
+  legend-params,
+  legend-elems,
+) = {
+  let (dir, position, label-format, stroke, fill) = legend-params
+  let content = legend-elems.map(elem => [
+    #let lbl = label-format(elem.label)
+    #label-img(elem, measure(lbl).height) #lbl
+  ])
+  place(
+    position,
+    block(
+      inset: 1em / 4,
+      fill: fill,
+      stroke: stroke,
+      stack(spacing: 1em / 2, dir: dir, ..content),
+    ),
+  )
 }

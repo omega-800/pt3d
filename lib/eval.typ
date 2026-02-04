@@ -1,7 +1,46 @@
 #import "linalg.typ": *
 
+// TODO: check if intersects with cube at all
+#let eval-line((dim, out-of-bounds), elem) = {
+  let (p, d) = elem.line
+  let points = ()
+  for (dir, ddim) in dim.enumerate() {
+    if d.at(dir) == 0 { continue }
+    for m in (0, 1) {
+      let t = (ddim.at(m) - p.at(dir)) / d.at(dir)
+      let v = sum-vec(p, d.map(i => i * t))
+      if not out-of-bounds(v) {
+        points.push(v)
+      }
+    }
+  }
+  elem.line = points
+  elem
+}
+
+// TODO: check if intersects with cube at all
+#let eval-plane((dim,..x), elem) = {
+  let (n, p) = elem.plane
+  let points = ()
+  for (a, b) in cube-edges(dim) {
+    let a-b-diff = sum-vec(b, a.map(i => -i))
+    let denom = dot-product(n, a-b-diff)
+    if denom == 0 {
+      continue
+    }
+    let t = (
+      dot-product(n.map(i => -i), sum-vec(a, p.map(i => -i))) / denom
+    )
+    if t >= 0 and t <= 1 {
+      points.push(sum-vec(a, a-b-diff.map(i => i * t)))
+    }
+  }
+  elem.plane = points
+  elem
+}
+
 // TODO: huh, what did i do here again?
-#let eval-plane((on-canvas, dim, ..x), elem) = {
+#let eval-plane-norm((on-canvas, dim), elem) = {
   // FIXME: d doesn't adjust max scale?
   // TODO: use canonical cube?
   // TODO: intersection-3d
@@ -28,7 +67,8 @@
 }
 
 #let axis-helper-fn = (ctx, elem) => {
-  let (on-canvas, dim, _, _, (xas, yas, zas), ..x) = ctx
+  let (dim, axes) = ctx
+  let (xas, yas, zas) = axes
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
 
   if elem.kind == "x" {
@@ -83,7 +123,8 @@
 }
 
 #let eval-axis(ctx, elem) = {
-  let (_, dim, _, _, (xas, yas, zas)) = ctx
+  let (dim, axes) = ctx
+  let (xas, yas, zas) = axes
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
 
   let (
@@ -140,6 +181,7 @@
   } else {
     ()
     // } else if "plane" in elem {
+    // } else if "line" in elem {
     // } else if "planeparam" in elem {
     // } else if "lineparam" in elem {
   }
@@ -164,7 +206,7 @@
 
   // TODO: only evaluate if necessary
 
-  let ctx = (none, dim, none, none, axes)
+  let ctx = (dim: dim, axes: axes)
   let points = (
     ..xaxis.instances,
     ..yaxis.instances,

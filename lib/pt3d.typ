@@ -14,8 +14,8 @@
 }
 
 #let diagram(
-  width: 6cm,
-  height: 4cm,
+  width: 8cm,
+  height: 6cm,
   title: none,
   legend: (:),
   grid: auto,
@@ -72,7 +72,6 @@
     rotate-canvas,
     x => x.map(i => i * 100%),
   ))
-
   let on-canvas = canvas(
     dim,
     transform-canvas,
@@ -84,6 +83,13 @@
       overflow-correction(plot-extremes.map(((x, y)) => y)),
     ),
   )
+
+  // panic(
+  //   cube-vertices(dim),
+  //   plot-extremes,
+  //   overflow-correction(plot-extremes.map(((x, y)) => x)),
+  //   overflow-correction(plot-extremes.map(((x, y)) => y)),
+  // )
 
   // TODO: this is wrong and has to be properly implemented for all axis positions and label formats
   /*
@@ -128,12 +134,12 @@
   */
 
   let ctx = (
-    on-canvas,
-    dim,
-    out-of-bounds-3d(..dim),
-    clamp-to-bounds-3d(..dim),
-    (xas, yas, zas),
-    rotate-canvas,
+    on-canvas: on-canvas,
+    dim: dim,
+    out-of-bounds: out-of-bounds-3d(..dim),
+    clamp-to-bounds: clamp-to-bounds-3d(..dim),
+    axes: (xas, yas, zas),
+    rotate-canvas: rotate-canvas,
   )
   let content = ()
   let offset = 0pt
@@ -142,6 +148,20 @@
     content.push(title-elem)
     offset = measure(title-elem).height
   }
+  let elems = children
+    .pos()
+    .enumerate()
+    .map(((i, elem)) => {
+      let color = cycle.at(calc.rem(i, cycle.len()))
+      if "stroke" in elem and elem.stroke == auto {
+        elem.stroke = color
+      }
+      if "fill" in elem and elem.fill == auto {
+        elem.fill = color.transparentize(80%)
+      }
+      elem
+    })
+  let legend-elems = elems.filter(elem => elem.label != none)
 
   let plot = [
     #for xa in xas.instances {
@@ -153,24 +173,28 @@
     #for za in zas.instances {
       render(ctx, za)
     }
-
-    #for c in children.pos() {
+    #for c in elems {
       render(ctx, c)
     }
   ]
+
+  content.push([#if legend-elems.len() > 0 {
+    render-legend(ctx, legend-def(..legend), legend-elems)
+  }])
 
   // FIXME: width/height of axis labels
   content.push(
     place(
       top + right,
-      dx: - 2em,
-      block(
-        fill: fill,
-        // we do a little cheating over here
-        width: 100% - 6em, /* tick-width */
-        height: 100% - offset - 2em, /* tick-height */
-        plot,
-      ),
+      dx: -2em,
+      [
+        #block(
+          fill: fill,
+          // we do a little cheating over here
+          width: 100% - 6em, /* tick-width */
+          height: 100% - offset - 2em, /* tick-height */
+          plot,
+        )],
     ),
   )
   box(height: height, width: width, stroke: stroke, stack(..content))

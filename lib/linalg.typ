@@ -10,6 +10,10 @@
   x1 * y2 - y1 * x2,
 )
 
+#let dot-product = ((x1, y1, z1), (x2, y2, z2)) => (
+  x1 * x2 + y1 * y2 + z1 * z2
+)
+
 #let cube-vertices = (((xmin, xmax), (ymin, ymax), (zmin, zmax))) => (
   (xmin, ymin, zmin),
   (xmax, ymin, zmin),
@@ -124,3 +128,68 @@
     z1f + t * (z1t - z1f),
   )
 }
+
+#let perpendicular-3d = v => {
+  let (x, y, z) = v
+  let u = if y == z and x != y {
+    (0, 1, 0)
+  } else {
+    (1, 0, 0)
+  }
+  cross-product(v, u)
+}
+
+#let sum-vec = (..v) => (
+  v.pos().reduce((acc, cur) => acc.enumerate().map(((i, n)) => (n + cur.at(i))))
+)
+
+#let length-vec = v => calc.sqrt(v.map(i => i * i).sum())
+#let normalize-vec = v => v.map(i => i / length-vec(v))
+
+#let assert-n-vec = n => assert(
+  n.any(i => i != 0),
+  message: "Normal vector cannot be zero vector",
+)
+#let plane-point-normal = (n, p) => {
+  assert-n-vec(n)
+  (n, p)
+}
+#let plane-parametric = (p, v, w) => {
+  let n = cross-product(v, w)
+  assert-n-vec(n)
+  (n, p)
+}
+#let plane-points = (a, b, c) => {
+  let a-inv = a.map(i => -i)
+  let n = cross-product(sum-vec(b, a-inv), sum-vec(c, a-inv))
+  assert-n-vec(n)
+  (n, a)
+}
+#let plane-coordinate = (x, y, z, d) => {
+  assert-n-vec((x, y, z))
+  (
+    (x, y, z),
+    if x != 0 {
+      (-d / x, 0, 0)
+    } else if y != 0 {
+      (0, -d / y, 0)
+    } else {
+      (0, 0, -d / z)
+    },
+  )
+}
+#let plane-hesse = ((x, y, z), d) => plane-coordinate(x, y, z, -d)
+#let plane-normal = plane-hesse
+
+#let points-on-plane = (p, n) => {
+  let v2 = pt3d.cross-product((1, 0, 0), n)
+  let v3 = pt3d.cross-product((0, 1, 0), n)
+  let p2 = pt3d.sum-vec(p, v2)
+  let p3 = pt3d.sum-vec(p, v3)
+  (p, p2, p3)
+}
+
+#let line-parametric = (p, d) => (p, d)
+#let line-point-normal = line-parametric
+#let line-symmetric = (x, dx, y, dy, z, dz) => ((x, y, z), (dx, dy, dz))
+#let line-points = (a, b) => (a, sum-vec(b, a.map(i => -i)))
