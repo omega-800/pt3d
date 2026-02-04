@@ -50,13 +50,12 @@
           projectRootFile = "flake.nix";
           programs = {
             # typst
-            # typstyle.enable = true;
+            typstyle.enable = true;
             # markdown
             mdformat.enable = true;
             # nix
             nixfmt.enable = true;
             statix.enable = true;
-            # TODO: plantuml
           };
         })
       );
@@ -73,10 +72,7 @@
             typstOpts.root = ".";
             typstOutput = "examples/main.pdf";
             typstSource = builtins.elemAt sources 0;
-            fontPaths = with pkgs; [
-              "${nerd-fonts.jetbrains-mono}/share/fonts/truetype"
-              "${fira-math}/share/fonts/opentype"
-            ];
+            fontPaths = [ ];
             virtualPaths = [ ];
           };
           extraArgs = {
@@ -111,20 +107,38 @@
             name = "typst-watch-all";
           };
           watch-open = pkgs.writeShellApplication {
-            text = "${pkgs.writeShellScript "watch-with-zathura" ''
+            text = ''
               (trap 'kill 0' SIGINT; ${pkgs.zathura}/bin/zathura "$PWD/${
                 builtins.replaceStrings [ ".typ" ] [ "" ] commonArgs.typstSource
               }.pdf" &
               ${(mkApp watch-script).program})
-            ''}";
+            '';
             name = "typst-watch-open";
           };
         };
     in
     {
-      packages = eachSystem (pkgs: {
-        default = (typixPkgs pkgs).build-drv;
-      });
+      packages = eachSystem (
+        pkgs:
+        let
+          inherit (pkgs.lib.fileset) toSource unions;
+          pt3d = pkgs.buildTypstPackage {
+            pname = "pt3d";
+            version = "0.0.1";
+            src = toSource {
+              root = ./.;
+              fileset = unions [
+                ./lib
+                ./typst.toml
+              ];
+            };
+          };
+        in
+        {
+          inherit pt3d;
+          default = pt3d;
+        }
+      );
 
       apps = eachSystem (
         pkgs:
@@ -171,7 +185,6 @@
 
       checks = eachSystem (pkgs: {
         pre-commit-check = pre-commit-hooks.lib.${pkgs.system}.run {
-          # TODO: filter src
           src = ./.;
           hooks = {
             treefmt = {
