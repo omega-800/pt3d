@@ -8,5 +8,5 @@ repository = "https://github.com/omega-800/pt3d.git"
 categories = [ "visualization" ]
 keywords = [ "3d", "plot", "graph" ]
 entrypoint = "lib/pt3d.typ"
-compiler = "0.14.2"
+compiler = "0.14.0"
 exclude = [ "examples/*" ]
