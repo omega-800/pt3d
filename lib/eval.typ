@@ -1,6 +1,5 @@
 #import "linalg.typ": *
 
-// TODO: check if intersects with cube at all
 #let eval-line((dim, out-of-bounds), elem) = {
   let (p, d) = elem.line
   let points = ()
@@ -18,8 +17,7 @@
   elem
 }
 
-// TODO: check if intersects with cube at all
-#let eval-plane((dim,..x), elem) = {
+#let eval-plane((dim, ..x), elem) = {
   let (n, p) = elem.plane
   let points = ()
   for (a, b) in cube-edges(dim) {
@@ -67,64 +65,71 @@
 }
 
 #let axis-helper-fn = (ctx, elem) => {
-  let (dim, axes) = ctx
-  let (xas, yas, zas) = axes
+  let (dim, ..x) = ctx
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
 
   if elem.kind == "x" {
-    (
-      x => (x, 0, 0),
-      ((x, y, z), n) => (x, y + n, z + n),
-      ((x, y, z), n) => (n, y, z),
-      ((y, z), n) => (n, y, z),
-      ((x, y, z)) => x,
-      xmin,
-      xmax,
+    let pp = if "plane" in elem {
       (
         (elem.plane.position, ymin, zmin),
         (elem.plane.position, ymax, zmin),
         (elem.plane.position, ymax, zmax),
         (elem.plane.position, ymin, zmax),
-      ),
+      )
+    } else { () }
+    (
+      point: x => (x, 0, 0),
+      point-p: ((x, y, z), n) => (x, y + n, z + n),
+      point-r: ((x, y, z), n) => (n, y, z),
+      point-n: ((y, z), n) => (n, y, z),
+      cur: ((x, y, z)) => x,
+      min: xmin,
+      max: xmax,
+      plane-points: pp,
     )
   } else if elem.kind == "y" {
-    (
-      y => (0, y, 0),
-      ((x, y, z), n) => (x + n, y, z + n),
-      ((x, y, z), n) => (x, n, z),
-      ((x, z), n) => (x, n, z),
-      ((x, y, z)) => y,
-      ymin,
-      ymax,
+    let pp = if "plane" in elem {
       (
         (xmin, elem.plane.position, zmin),
         (xmax, elem.plane.position, zmin),
         (xmax, elem.plane.position, zmax),
         (xmin, elem.plane.position, zmax),
-      ),
+      )
+    }
+    (
+      point: y => (0, y, 0),
+      point-p: ((x, y, z), n) => (x + n, y, z + n),
+      point-r: ((x, y, z), n) => (x, n, z),
+      point-n: ((x, z), n) => (x, n, z),
+      cur: ((x, y, z)) => y,
+      min: ymin,
+      max: ymax,
+      plane-points: pp,
     )
   } else {
-    (
-      z => (0, 0, z),
-      ((x, y, z), n) => (x + n, y + n, z),
-      ((x, y, z), n) => (x, y, n),
-      ((x, y), n) => (x, y, n),
-      ((x, y, z)) => z,
-      zmin,
-      zmax,
+    let pp = if "plane" in elem {
       (
         (xmin, ymin, elem.plane.position),
         (xmax, ymin, elem.plane.position),
         (xmax, ymax, elem.plane.position),
         (xmin, ymax, elem.plane.position),
-      ),
+      )
+    }
+    (
+      point: z => (0, 0, z),
+      point-p: ((x, y, z), n) => (x + n, y + n, z),
+      point-r: ((x, y, z), n) => (x, y, n),
+      point-n: ((x, y), n) => (x, y, n),
+      cur: ((x, y, z)) => z,
+      min: zmin,
+      max: zmax,
+      plane-points: pp,
     )
   }
 }
 
 #let eval-axis(ctx, elem) = {
-  let (dim, axes) = ctx
-  let (xas, yas, zas) = axes
+  let (dim, ..x) = ctx
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
 
   let (
@@ -178,6 +183,9 @@
     elem.polygon
   } else if "vec" in elem {
     elem.vec
+  } else if "plot" in elem {
+    let (x, y, z) = elem.plot
+    x.zip(y, z)
   } else {
     ()
     // } else if "plane" in elem {

@@ -2,6 +2,7 @@
 #import "linalg.typ": *
 #import "canvas.typ": *
 #import "eval.typ": *
+#import "util.typ": *
 
 // FIXME:
 // https://en.wikipedia.org/wiki/Graph_drawing
@@ -9,48 +10,96 @@
 
 // TODO: handle overflow on all elems
 
-#let path-curve(
-  fill: none,
-  fill-rule: "non-zero",
-  stroke: none,
-  closed: false,
-  ..p,
-) = {
-  let pts = p.pos().slice(1)
-  let close = if closed { (curve.close()) } else { () }
-  curve(
-    fill: fill,
-    stroke: stroke,
-    fill-rule: fill-rule,
-    curve.move(p.pos().at(0)),
-    ..pts.map(curve.line),
-    ..close,
+
+#let axis-tick-pos = (
+  (dim, on-canvas, canvas-dim, map-point-pt),
+  kind,
+  position,
+  from-3d,
+  label-off,
+  label,
+  from-off: 0,
+  to-off: 0,
+  label-left-override: auto,
+) => {
+  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
+  let relto = (min, max) => v => (v - min) / (max - min) * 100
+  let reltox = relto(xmin, xmax)
+  let reltoy = relto(ymin, ymax)
+  let reltoz = relto(zmin, zmax)
+
+  // TODO: parametarizeable positions other than "left/right"
+  let label-left = {
+    let (pos1, pos2) = position
+    if kind == "z" {
+      (
+        (
+          reltox(pos1) < 50 and reltox(pos1) <= reltoy(pos2)
+        )
+          or (
+            reltoy(pos2) > 50 and reltox(pos1) <= reltoy(pos2)
+          )
+      )
+    } else if kind == "x" {
+      (
+        (
+          reltoy(pos1) > 50 and reltoy(pos1) >= 100 - reltoz(pos2)
+        )
+          or (
+            reltoz(pos2) > 50 and 100 - reltoy(pos1) <= reltoz(pos2)
+          )
+      )
+    } else {
+      (
+        (
+          reltox(pos1) < 50 and reltox(pos1) <= 100 - reltoz(pos2)
+        )
+          or (
+            reltoz(pos2) < 50 and reltox(pos1) <= 100 - reltoz(pos2)
+          )
+      )
+    }
+  }
+
+  let (px, py, pz) = from-3d
+  let to-3d = if label-left {
+    if kind == "x" {
+      (px, py - 1, pz)
+    } else if kind == "y" {
+      (px + 1, py, pz)
+    } else {
+      (px, py - 1, pz)
+    }
+  } else {
+    if kind == "x" {
+      (px, py + 1, pz)
+    } else if kind == "y" {
+      (px, py, pz - 1)
+    } else {
+      (px, py + 1, pz)
+    }
+  }
+  let ((fx, fy), (tx, ty)) = (from-3d, to-3d).map(on-canvas).map(map-point-pt)
+  let (nx, ny) = normalize-vec((tx - fx, ty - fy))
+  let start = (fx - from-off * nx, fy - from-off * ny).map(i => i * 1pt)
+  let end = (fx + to-off * nx, fy + to-off * ny).map(i => i * 1pt)
+
+  let (sx, sy) = start
+  let (dx, dy) = (sx - nx * label-off, sy - ny * label-off)
+  let (width, height) = measure(label)
+  (
+    start: start,
+    end: end,
+    label-x: dx - width / 2,
+    label-y: dy - height / 2,
+    label-max: (
+      dx - width,
+      dx + width,
+      dy - height,
+      dy + height,
+    ),
   )
 }
-
-#let z-intersection = (z, (x1, y1, z1), (x2, y2, z2)) => {
-  let t = (z - z1) / (z2 - z1)
-  (x1 + t * (x2 - x1), y1 + t * (y2 - y1), z1 + t * (z2 - z1))
-}
-
-#let n-points-on = (min, max, n) => range(0, n + 1).map(i => (
-  min + i * ((max - min) / n)
-))
-// why did i do this exactly?
-#let n-points-on-cube = (
-  ((xmin, xmax), (ymin, ymax), (zmin, zmax)),
-  n,
-) => n-points-on(xmin, xmax, n).zip(
-  n-points-on(ymin, ymax, n),
-  n-points-on(zmin, zmax, n),
-)
-#let x-y-points = (((xmin, xmax), (ymin, ymax), ..x), n) => n-points-on(
-  xmin,
-  xmax,
-  n,
-).map(x => n-points-on(ymin, ymax, n).map(y => (x, y)))
-
-#let apply-color-fn = (p, fn, def) => if fn != none { fn(..p) } else { def }
 
 #let render-planeparam(
   (on-canvas, dim, out-of-bounds, clamp-to-bounds, ..x),
@@ -139,6 +188,14 @@
   }
 }
 
+#let render-plot(ctx, elem) = {
+  let (on-canvas, ..x) = ctx
+  let (x, y, z) = elem.plot
+  let points = x.zip(y, z)
+  // TODO: overflow
+  place(path-curve(stroke: elem.stroke, ..points.map(on-canvas)))
+}
+
 #let render-path((on-canvas, ..x), elem) = {
   place(path-curve(stroke: elem.stroke, ..elem.path.map(on-canvas)))
 }
@@ -172,7 +229,7 @@
 ))
 
 #let render-axis(ctx, elem) = {
-  let (on-canvas, dim, out-of-bounds, axes) = ctx
+  let (on-canvas, canvas-dim, dim, out-of-bounds, axes) = ctx
   let (xas, yas, zas) = axes
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
 
@@ -190,11 +247,23 @@
     elem,
   )
 
-  let axis-ticks = (kind: "x", ticks: auto, nticks: auto, ..x) => {
-    let (_, _, _, _, _, tmin, tmax, _) = axis-helper-fn(ctx, (
-      kind: kind,
-      ..x.named(),
-    ))
+  let axis-ticks = a => {
+    let axis = a
+      .instances
+      .filter(
+        i => (
+          (not i.plane.hidden or not i.line.hidden)
+            and not i.hidden
+            and i.format-ticks != none
+            and (i.ticks != none or i.nticks != none)
+        ),
+      )
+      .at(0, default: none)
+    if axis == none { () }
+    let (kind, ticks, nticks) = axis
+    let h = axis-helper-fn(ctx, axis)
+    let tmin = h.min
+    let tmax = h.max
     let span = tmax - tmin
     if (
       ticks == auto and nticks == auto
@@ -207,29 +276,10 @@
     }
   }
 
-  let filter-tick-axes = a => (
-    a
-      .instances
-      .filter(
-        i => (
-          (not i.plane.hidden or not i.line.hidden)
-            and not i.hidden
-            and i.format-ticks != none
-            and (i.ticks != none or i.nticks != none)
-        ),
-      )
-      .at(0, default: none)
-  )
-
-  let first-tick-axis = a => {
-    let ax = filter-tick-axes(a)
-    if ax == none { () } else { axis-ticks(..ax) }
-  }
-
   // TODO: better auto ticks
-  let xticks = first-tick-axis(xas)
-  let yticks = first-tick-axis(yas)
-  let zticks = first-tick-axis(zas)
+  let xticks = axis-ticks(xas)
+  let yticks = axis-ticks(yas)
+  let zticks = axis-ticks(zas)
 
   let pmin = point(min)
   let pmax = point(max)
@@ -238,7 +288,6 @@
     start: on-canvas(start),
     end: on-canvas(end),
   ))
-  let mid = (f, s) => f.enumerate().map(((i, n)) => (s.at(i) + n) / 2)
   let line-from = point-n(elem.line.position, min)
   let line-to = point-n(elem.line.position, max)
   if not elem.plane.hidden {
@@ -250,153 +299,62 @@
         fill: elem.plane.fill,
       ),
     )
-    // render-plane(ctx, plane3d(
-    //   pmax,
-    //   elem.position,
-    //   stroke: elem.stroke,
-    //   fill: elem.fill,
-    // ))
-  }
-
-  let relto = (min, max) => v => (v - min) / (max - min) * 100
-  let reltox = relto(xmin, xmax)
-  let reltoy = relto(ymin, ymax)
-  let reltoz = relto(zmin, zmax)
-
-  let label-left = {
-    // TODO: comparison must be relative
-    let (pos1, pos2) = elem.line.position
-    if elem.kind == "z" {
-      (
-        (
-          reltox(pos1) < 50 and reltox(pos1) <= reltoy(pos2)
-        )
-          or (
-            reltoy(pos2) > 50 and reltox(pos1) <= reltoy(pos2)
-          )
-      )
-    } else if elem.kind == "x" {
-      (
-        (
-          reltoy(pos1) > 50 and reltoy(pos1) >= 100 - reltoz(pos2)
-        )
-          or (
-            reltoz(pos2) > 50 and 100 - reltoy(pos1) <= reltoz(pos2)
-          )
-      )
-    } else {
-      (
-        (
-          reltox(pos1) < 50 and reltox(pos1) <= 100 - reltoz(pos2)
-        )
-          or (
-            reltoz(pos2) < 50 and reltox(pos1) <= 100 - reltoz(pos2)
-          )
-      )
-    }
   }
 
   if not elem.line.hidden {
-    let (dx, dy) = on-canvas(mid(line-from, line-to))
+    // TODO: show label if line hidden
     if elem.label != none {
-      // FIXME:
-      let (dx2, dy2) = if label-left {
-        if elem.kind == "x" {
-          (dx - 20pt, dy - 48pt)
-        } else if elem.kind == "y" {
-          (dx - 36pt, dy + 5pt)
-        } else {
-          (dx - 56pt, dy - 10pt)
-        }
-      } else {
-        if elem.kind == "x" {
-          (dx + 5pt, dy - 2pt)
-        } else if elem.kind == "y" {
-          (dx - 20pt, dy - 48pt)
-        } else {
-          (dx + 14pt, dy - 10pt)
-        }
-      }
-      // FIXME:
+      let from-3d = mid(line-from, line-to)
+      // FIXME: depends on tick label & offset
+      let loff = 1em.to-absolute().pt() * 3.5pt
+
+      let (label-x, label-y) = axis-tick-pos(
+        ctx,
+        elem.kind,
+        elem.line.position,
+        mid(line-from, line-to),
+        loff,
+        elem.label,
+      )
+
       place(
-        dx: dx2,
-        dy: dy2,
-        pad(16pt, elem.label),
+        dx: label-x,
+        dy: label-y,
+        elem.label,
       )
     }
     // TODO: tip, toe
     place-line(line-from, line-to, stroke: elem.line.stroke)
   }
   if elem.format-ticks != none {
-    let ticks = ()
-    if type(elem.ticks) == array {
-      ticks = elem.ticks.filter(t => t <= max and t >= min)
-    } else {
-      let nticks = if elem.nticks == auto {
-        (max - min) / 10
-      } else { elem.nticks }
-      ticks = range(0, int((max - min) / nticks) + 1).map(i => (
-        min + i * nticks
-      ))
-    }
-
     // if elem.format-subticks != none {}
-
     let (length, offset) = elem.format-ticks
-    let from = (length / 2) + offset
-    let to = (length / 2) - offset
+    let from = ((length / 2) + offset) / 1pt
+    let to = ((length / 2) - offset) / 1pt
     if not elem.line.hidden {
-      for tick in ticks {
-        let (px, py, pz) = point-r(line-from, tick)
-        let (start, end) = (
-          if label-left {
-            if elem.kind == "x" {
-              ((px, py, pz - from), (px, py, pz + to))
-            } else if elem.kind == "y" {
-              ((px - from, py, pz), (px + to, py, pz))
-            } else {
-              ((px - from, py, pz), (px + to, py, pz))
-            }
-          } else {
-            if elem.kind == "x" {
-              ((px, py - from, pz), (px, py + to, pz))
-            } else if elem.kind == "y" {
-              ((px, py, pz - from), (px, py, pz + to))
-            } else {
-              ((px, py + from, pz), (px, py - to, pz))
-            }
-          }
-        ).map(on-canvas)
+      for tick in elem.ticks {
+        let loff = 1em.to-absolute().pt() * 1pt
+        let label = (elem.format-ticks.label-format)(tick)
+        let (start, end, label-x, label-y) = axis-tick-pos(
+          ctx,
+          elem.kind,
+          elem.line.position,
+          point-r(line-from, tick),
+          loff,
+          label,
+          from-off: from,
+          to-off: to,
+        )
 
         place(line(
           stroke: elem.format-ticks.stroke,
           start: start,
           end: end,
         ))
-        let (sx, sy) = start
-        let (ex, ey) = end
-        // FIXME:
-        let (dx, dy) = if label-left {
-          if elem.kind == "x" {
-            (ex - 4pt, ey - 10pt)
-          } else if elem.kind == "y" {
-            (sx - 14pt, sy + 2pt)
-          } else {
-            (sx - 16pt, sy - 2pt)
-          }
-        } else {
-          if elem.kind == "x" {
-            (sx + 4pt, sy + 2pt)
-          } else if elem.kind == "y" {
-            (ex - 4pt, ey - 10pt)
-          } else {
-            (ex + 2pt, ey - 2pt)
-          }
-        }
         place(
-          dx: dx,
-          dy: dy,
-          (elem.format-ticks.label-format)(tick),
+          dx: label-x,
+          dy: label-y,
+          label,
         )
       }
     }
@@ -465,6 +423,8 @@
     render-line(ctx, elem)
   } else if "lineparam" in elem {
     render-lineparam(ctx, elem)
+  } else if "plot" in elem {
+    render-plot(ctx, elem)
   }
 }
 

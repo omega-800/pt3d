@@ -1,3 +1,6 @@
+#import "util.typ": *
+#import "eval.typ": *
+
 #let ortho-proj = (((xmin, xmax), (ymin, ymax), _), (x, y, z)) => (
   (2 * x - xmax - xmin) / (xmax - xmin),
   (2 * y - ymax - ymin) / (ymax - ymin),
@@ -47,18 +50,17 @@
 // TODO:
 #let axis-instance-defaults = (
   i,
-  ((xmin, xmax), (ymin, ymax), (zmin, zmax)),
+  ctx,
 ) => {
-  if not i.plane.hidden and i.plane.position == auto {
-    i.plane.position = if i.kind == "x" {
-      xmax
-    } else if i.kind == "y" {
-      ymax
-    } else {
-      zmin
-    }
+  let (dim, canvas-dim, on-canvas, map-point-pt) = ctx
+  let (width, height) = canvas-dim
+  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
+  let (min, max, point-n) = axis-helper-fn(ctx, i)
+
+  if i.plane.position == auto {
+    i.plane.position = if i.kind == "z" { min } else { max }
   }
-  if not i.line.hidden and i.line.position.any(p => p == auto) {
+  if i.line.position.any(p => p == auto) {
     let def = (defmin, defmax) => {
       let (min, max) = i.line.position
       (
@@ -74,25 +76,69 @@
       def(xmin, ymax)
     }
   }
+
+  let tick-l-ratio = none
+  if i.format-ticks != none {
+    if i.format-ticks.length == auto {
+      i.format-ticks.length = 10pt
+    }
+    if i.format-ticks.offset == auto {
+      i.format-ticks.offset = i.format-ticks.length / 2
+    }
+    if i.format-ticks.label-format != none {
+      // TODO: calculate this properly
+      let tick-l-size = measure((i.format-ticks.label-format)(-10.2))
+      let (start, end) = (
+        point-n(i.line.position, min),
+        point-n(i.line.position, max),
+      )
+        .map(
+          on-canvas,
+        )
+        .map(map-point-pt)
+      let axis-size = length-vec(sum-vec(start, end.map(i => -i)))
+      tick-l-ratio = int(calc.min(
+        axis-size / tick-l-size.width.pt(),
+        axis-size / tick-l-size.height.pt(),
+      ))
+    }
+  }
+  i.ticks = if type(i.ticks) == array {
+    i.ticks.filter(t => t <= max and t >= min)
+  } else {
+    let n = if i.nticks == auto and tick-l-ratio == none {
+      10
+    } else if i.nticks == auto { tick-l-ratio } else { i.nticks }
+    n-points-on(min, max, if n == 0 { 10 } else { n })
+  }
   i
 }
 
-#let axes-defaults = (xaxis, yaxis, zaxis, dim) => {
-  let (xlim, ylim, zlim) = dim
+#let axes-defaults = (xaxis, yaxis, zaxis, ctx) => {
+  let (xlim, ylim, zlim) = ctx.dim
   let xas = (
     ..xaxis,
     lim: xlim,
-    instances: xaxis.instances.map(i => axis-instance-defaults(i, dim)),
+    instances: xaxis.instances.map(i => axis-instance-defaults(
+      i,
+      ctx,
+    )),
   )
   let yas = (
     ..yaxis,
     lim: ylim,
-    instances: yaxis.instances.map(i => axis-instance-defaults(i, dim)),
+    instances: yaxis.instances.map(i => axis-instance-defaults(
+      i,
+      ctx,
+    )),
   )
   let zas = (
     ..zaxis,
     lim: zlim,
-    instances: zaxis.instances.map(i => axis-instance-defaults(i, dim)),
+    instances: zaxis.instances.map(i => axis-instance-defaults(
+      i,
+      ctx,
+    )),
   )
 
   (xas, yas, zas)

@@ -6,25 +6,45 @@
 #let p2 = pt3d.sum-vec(p1, v2)
 #let p3 = pt3d.sum-vec(p1, v3)
 
+#let xp = pt3d.linspace(1, 100)
 #pt3d.diagram(
-  pt3d.plane3d(pt3d.plane-point-normal((4, -7, 2), (0, 1, 2))),
-  pt3d.plane3d(pt3d.plane-parametric((0, 1, 2), (3, 2, 1), (-1, 0, 2))),
-  pt3d.plane3d(pt3d.plane-coordinate(4, -7, 2, 3)),
-  pt3d.plane3d(pt3d.plane-normal((4, -7, 2), -3)),
-  pt3d.plane3d(pt3d.plane-hesse(
-    pt3d.normalize-vec((4, -7, 2)),
-    -3 / pt3d.length-vec((4, -7, 2)),
-  )),
-  pt3d.plane3d(pt3d.plane-points(p1, p2, p3)),
-  pt3d.vec3d((4,-7,2)),
+  stroke: blue,
+  width: 15em,
+  height: 15em,
+  xaxis: (instances: ((line: (position: (200, 200)), plane: (hidden: false)),)),
+  yaxis: (instances: ((line: (position: (100, 200)), plane: (hidden: false)),)),
+  zaxis: (instances: ((line: (position: (100, 0)), plane: (hidden: false)),)),
+  pt3d.plot3d(xp, xp.map(x => calc.log(x) * 100), xp.map(x => (
+    calc.log(x) * 100
+  ))),
+  pt3d.vec3d((100, 0, 0), (100, 100, 100)),
 )
-#pt3d.diagram(
-  title: "asdf",
-  pt3d.plane3d(pt3d.plane-normal((1, 2, 4), 1), label: "plane"),
-  pt3d.line3d(pt3d.line-parametric((1,2,3), (2,0,1)), label: "line"),
-  pt3d.line3d(pt3d.line-parametric((1,2,3), (2,0,0))),
-  pt3d.line3d(pt3d.line-parametric((1,2,3), (2,0,2))),
-)
+
+// #pt3d.diagram(
+//   stroke: blue,
+//   xaxis: (lim: (-400,400)),
+//   yaxis: (lim: (-400,400)),
+//   zaxis: (lim: (-400,400)),
+//   title: "something",
+//   pt3d.plane3d(pt3d.plane-point-normal((4, -7, 2), (0, 1, 2))),
+//   pt3d.plane3d(pt3d.plane-parametric((0, 1, 2), (3, 2, 1), (-1, 0, 2))),
+//   pt3d.plane3d(pt3d.plane-coordinate(4, -7, 2, 3)),
+//   pt3d.plane3d(pt3d.plane-normal((4, -7, 2), -3)),
+//   pt3d.plane3d(pt3d.plane-hesse(
+//     pt3d.normalize-vec((4, -7, 2)),
+//     -3 / pt3d.length-vec((4, -7, 2)),
+//   )),
+//   pt3d.plane3d(pt3d.plane-points(p1, p2, p3)),
+//   pt3d.vec3d((4, -7, 2)),
+// )
+// #pt3d.diagram(
+//   title: "asdf",
+//   stroke: blue,
+//   pt3d.plane3d(pt3d.plane-normal((1, 2, 4), 1), label: "plane"),
+//   pt3d.line3d(pt3d.line-parametric((1, 2, 3), (2, 0, 1)), label: "line"),
+//   pt3d.line3d(pt3d.line-parametric((1, 2, 3), (2, 0, 0))),
+//   pt3d.line3d(pt3d.line-parametric((1, 2, 3), (2, 0, 2))),
+// )
 //
 // #pt3d.diagram(
 //   title: "test",

@@ -1,23 +1,58 @@
 #import "linalg.typ": *
+#import "util.typ": *
 
-#let path3d = (stroke: auto, label: none, ..points) => (
-  path: points.pos(),
-  stroke: stroke,
-  label: label,
+#let plot3d = (stroke: auto, label: none, x, y, z) => {
+  assert(
+    x.len() == y.len() and x.len() == z.len(),
+    message: "x, y and z points must have same length",
+  )
+  (
+    plot: (x, y, z),
+    stroke: stroke,
+    label: label,
+  )
+}
+
+#let path3d = (stroke: auto, label: none, ..points) => {
+  assert(
+    points.pos().len() > 1,
+    message: "At least 2 points must be provided",
+  )
+  (
+    path: points.pos(),
+    stroke: stroke,
+    label: label,
+  )
+}
+
+#let polygon3d = (stroke: auto, fill: none, label: none, ..points) => {
+  assert(
+    points.pos().len() > 2,
+    message: "At least 3 points must be provided",
+  )
+  (
+    polygon: points.pos(),
+    stroke: stroke,
+    fill: fill,
+    label: label,
+  )
+}
+
+#let is-point-normal = p => (
+  p.len() == 2 and p.at(0).len() == 3 and p.at(1).len() == 3
 )
 
-#let polygon3d = (stroke: auto, fill: none, label: none, ..points) => (
-  polygon: points.pos(),
-  stroke: stroke,
-  fill: fill,
-  label: label,
-)
-
-#let line3d = (stroke: auto, label: none, point-normal) => (
-  line: point-normal,
-  stroke: stroke,
-  label: label,
-)
+#let line3d = (stroke: auto, label: none, point-normal) => {
+  assert(
+    is-point-normal(point-normal.len()),
+    message: "Line must be in point-normal form",
+  )
+  (
+    line: point-normal,
+    stroke: stroke,
+    label: label,
+  )
+}
 
 #let vec3d = (stroke: auto, label: none, ..points) => {
   let pts = points.pos()
@@ -39,12 +74,18 @@
   stroke: auto,
   fill: auto,
   label: none,
-) => (
-  plane: point-normal,
-  stroke: stroke,
-  fill: fill,
-  label: label,
-)
+) => {
+  assert(
+    is-point-normal(point-normal),
+    message: "Plane must be in point-normal form",
+  )
+  (
+    plane: point-normal,
+    stroke: stroke,
+    fill: fill,
+    label: label,
+  )
+}
 
 #let lineparam3d = (
   stroke: auto,
@@ -89,18 +130,20 @@
   position: (auto, auto),
   hidden: false,
   stroke: black.transparentize(40%),
+  label-left: auto,
 ) => (
   position: if type(position) != array {
     (auto, auto)
   } else { position },
   hidden: hidden,
   stroke: stroke,
+  label-left: label-left,
 )
 
 #let tickformat = (
   stroke: black.transparentize(40%),
-  length: 0.5,
-  offset: 0.25,
+  length: auto,
+  offset: auto,
   label-format: tick => text(size: 0.75em)[#calc.round(tick, digits: 2)],
 ) => (
   stroke: stroke,
@@ -124,6 +167,7 @@
     position: (auto, auto),
     hidden: false,
     stroke: black.transparentize(40%),
+    label-left: auto,
     // tip: auto,
     // toe: auto,
   ),
@@ -201,11 +245,11 @@
   label-format: it => text(size: 0.75em)[#it],
   stroke: black.transparentize(40%),
   fill: black.transparentize(95%),
-  dir: ttb
+  dir: ttb,
 ) = (
   position: position,
   label-format: label-format,
   stroke: stroke,
   fill: fill,
-  dir: dir
+  dir: dir,
 )
