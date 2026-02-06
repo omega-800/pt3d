@@ -3,15 +3,29 @@
 
 // TODO: marks
 
-#let plot3d = (stroke: auto, label: none, x, y, z) => {
+// TODO: stroke-color-fn, fill-color-fn
+#let lineplot3d = (stroke: auto, label: none, x, y, z) => {
   assert(
     x.len() == y.len() and x.len() == z.len(),
     message: "x, y and z points must have same length",
   )
   (
-    plot: (x, y, z),
+    lineplot: (x, y, z),
     stroke: stroke,
     label: label,
+  )
+}
+// TODO: stroke-color-fn, fill-color-fn
+#let planeplot3d = (stroke: auto, fill: auto, label: none, x, y, z) => {
+  assert(
+    x.len() == y.len() and x.len() == z.len(),
+    message: "x, y and z points must have same length",
+  )
+  (
+    planeplot: (x, y, z),
+    stroke: stroke,
+    label: label,
+    fill: fill,
   )
 }
 

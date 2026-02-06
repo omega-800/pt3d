@@ -53,6 +53,12 @@
   )
 }
 
+#let mat-rotate-iso = (
+  (calc.sqrt(3), 0, -calc.sqrt(3)),
+  (-1, 2, -1),
+  (calc.sqrt(2), calc.sqrt(2), calc.sqrt(2)),
+).map(r => r.map(i => i / calc.sqrt(6)))
+
 #let mat-rotate-x = x => (
   (1, 0, 0),
   (0, calc.cos(x), -calc.sin(x)),

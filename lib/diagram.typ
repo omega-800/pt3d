@@ -13,6 +13,8 @@
   (def(def(lim.at(0), min), 1), def(def(lim.at(1), max), -1))
 }
 
+// TODO: make the stuff that's badly implemented better
+
 #let diagram(
   width: 8cm,
   height: 6cm,
@@ -26,17 +28,7 @@
   cycle: petroff10,
   fill: none,
   stroke: none,
-  rotations: (
-    (
-      (calc.sqrt(3), 0, -calc.sqrt(3)),
-      (-1, 2, -1),
-      (
-        calc.sqrt(2),
-        calc.sqrt(2),
-        calc.sqrt(2),
-      ),
-    ).map(r => r.map(i => i / calc.sqrt(6))),
-  ),
+  rotations: (mat-rotate-iso,),
   ..children,
 ) = context {
   // FIXME: wonky

@@ -4,6 +4,7 @@
   min + i * ((max - min) / n)
 ))
 
+// FIXME:
 #let linspace = (from, to, num: auto, step: auto, include-end: true) => {
   assert(num == auto or step == auto, message: "'num' and 'auto' are exclusive")
   let n = if num == auto and step == auto {
@@ -11,7 +12,7 @@
   } else if num == auto {
     (to - from) / step
   } else {
-    num
+    num - 1
   }
   let t = if include-end { to } else { to - 1 }
   n-points-on(from, t, n)
@@ -55,3 +56,4 @@
 ).map(x => n-points-on(ymin, ymax, n).map(y => (x, y)))
 
 #let apply-color-fn = (p, fn, def) => if fn != none { fn(..p) } else { def }
+

@@ -183,8 +183,11 @@
     elem.polygon
   } else if "vec" in elem {
     elem.vec
-  } else if "plot" in elem {
-    let (x, y, z) = elem.plot
+  } else if "lineplot" in elem {
+    let (x, y, z) = elem.lineplot
+    x.zip(y, z)
+  } else if "planeplot" in elem {
+    let (x, y, z) = elem.planeplot
     x.zip(y, z)
   } else {
     ()

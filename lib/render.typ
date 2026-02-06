@@ -101,8 +101,11 @@
   )
 }
 
+// TODO:
+// #let render-plane-points() = {}
+
 #let render-planeparam(
-  (on-canvas, dim, out-of-bounds, clamp-to-bounds, ..x),
+  (on-canvas, dim, out-of-bounds, clamp-to-bounds),
   elem,
 ) = {
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
@@ -188,9 +191,22 @@
   }
 }
 
-#let render-plot(ctx, elem) = {
+#let render-planeplot(ctx, elem) = {
   let (on-canvas, ..x) = ctx
-  let (x, y, z) = elem.plot
+  let (x, y, z) = elem.planeplot
+  let points = x.zip(y, z)
+  // TODO: overflow
+  place(polygon(
+    fill: elem.fill,
+    stroke: elem.stroke,
+    // ..connect-circle-2d(..points.map(on-canvas)),
+    ..points.map(on-canvas),
+  ))
+}
+
+#let render-lineplot(ctx, elem) = {
+  let (on-canvas, ..x) = ctx
+  let (x, y, z) = elem.lineplot
   let points = x.zip(y, z)
   // TODO: overflow
   place(path-curve(stroke: elem.stroke, ..points.map(on-canvas)))
@@ -461,14 +477,16 @@
     render-plane(ctx, elem)
   } else if "planeparam" in elem {
     render-planeparam(ctx, elem)
+  } else if "planeplot" in elem {
+    render-planeplot(ctx, elem)
   } else if "vec" in elem {
     render-vec(ctx, elem)
   } else if "line" in elem {
     render-line(ctx, elem)
   } else if "lineparam" in elem {
     render-lineparam(ctx, elem)
-  } else if "plot" in elem {
-    render-plot(ctx, elem)
+  } else if "lineplot" in elem {
+    render-lineplot(ctx, elem)
   }
 }
 
@@ -476,6 +494,7 @@
   // TODO: parametric fn colors
   box(width: 1em, height: height, place(horizon + center, if "polygon" in elem
     or "plane" in elem
+    or "planeplot" in elem
     or "planeparam" in elem {
     rect(width: 1em, height: height, stroke: elem.stroke, fill: elem.fill)
   } else if (
@@ -483,7 +502,7 @@
       or "vec" in elem
       or "line" in elem
       or "lineparam" in elem
-      or "plot" in elem
+      or "lineplot" in elem
   ) {
     line(length: 1em, stroke: elem.stroke)
   }))

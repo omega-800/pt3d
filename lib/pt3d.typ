@@ -3,7 +3,8 @@
 )
 #import "diagram.typ": diagram
 #import "elem.typ": (
-  line3d, lineparam3d, path3d, plane3d, planeparam3d, plot3d, polygon3d, vec3d,
+  line3d, lineparam3d, lineplot3d, path3d, plane3d, planeparam3d, planeplot3d,
+  polygon3d, vec3d,
 )
 #import "eval.typ": minmax
 #import "linalg.typ": *
