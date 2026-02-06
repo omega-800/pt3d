@@ -21,16 +21,16 @@
   let (n, p) = elem.plane
   let points = ()
   for (a, b) in cube-edges(dim) {
-    let a-b-diff = sum-vec(b, a.map(i => -i))
-    let denom = dot-product(n, a-b-diff)
+    let a-b = direction-vec(a, b)
+    let denom = dot-product(n, a-b)
     if denom == 0 {
       continue
     }
     let t = (
-      dot-product(n.map(i => -i), sum-vec(a, p.map(i => -i))) / denom
+      dot-product(n.map(i => -i), direction-vec(p, a)) / denom
     )
     if t >= 0 and t <= 1 {
-      points.push(sum-vec(a, a-b-diff.map(i => i * t)))
+      points.push(sum-vec(a, a-b.map(i => i * t)))
     }
   }
   elem.plane = points

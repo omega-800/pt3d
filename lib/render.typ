@@ -222,11 +222,54 @@
   }
 }
 
-#let render-vec((on-canvas, ..x), elem) = place(line(
-  stroke: elem.stroke,
-  start: on-canvas(elem.vec.at(0)),
-  end: on-canvas(elem.vec.at(1)),
-))
+#let render-tip((on-canvas, map-point-pt), tip, start, end, stroke) = {
+  let ptstart = map-point-pt(start)
+  let ptend = map-point-pt(end)
+  if type(tip) == function {
+    let (x, y) = end
+    let mark = tip(stroke, end)
+    let (width, height) = measure(mark)
+    place(dx: x - width / 2, dy: y - height / 2, mark)
+  } else {
+    let (x, y) = ptend
+    let d = map-point-pt(direction-vec(end, start))
+    let theta = atan2(..d.rev())
+    let phi = calc.pi / 6
+    let (l1, l2) = (theta + phi, theta - phi).map(a => (
+      (x + 5 * calc.sin(a)) * 1pt,
+      (y + 5 * calc.cos(a)) * 1pt,
+    ))
+    if tip == ">" {
+      place(path-curve(stroke: stroke, l1, end, l2))
+    } else if tip == "|>" {
+      place(polygon(stroke: stroke, fill: stroke, l1, end, l2))
+    } else if tip == "|" {
+      let (f, t) = perpendicular-2d(
+        ptstart,
+        ptend,
+        ptend,
+        6,
+      ).map(v => v.map(i => i * 1pt))
+      place(line(stroke: stroke, start: f, end: t))
+    }
+  }
+}
+
+#let render-vec(ctx, elem) = {
+  let (on-canvas, ..x) = ctx
+  let (start, end) = elem.vec.map(on-canvas)
+  if elem.toe != none {
+    render-tip(ctx, elem.toe, end, start, elem.stroke)
+  }
+  if elem.tip != none {
+    render-tip(ctx, elem.tip, start, end, elem.stroke)
+  }
+  place(line(
+    stroke: elem.stroke,
+    start: start,
+    end: end,
+  ))
+}
 
 #let render-axis(ctx, elem) = {
   let (on-canvas, canvas-dim, dim, out-of-bounds, axes) = ctx
@@ -323,6 +366,7 @@
         elem.label,
       )
     }
+
     // TODO: tip, toe
     place-line(line-from, line-to, stroke: elem.line.stroke)
   }
@@ -429,12 +473,17 @@
 }
 
 #let label-img(elem, height) = {
+  // TODO: parametric fn colors
   box(width: 1em, height: height, place(horizon + center, if "polygon" in elem
     or "plane" in elem
     or "planeparam" in elem {
     rect(width: 1em, height: height, stroke: elem.stroke, fill: elem.fill)
   } else if (
-    "path" in elem or "vec" in elem or "line" in elem or "lineparam" in elem
+    "path" in elem
+      or "vec" in elem
+      or "line" in elem
+      or "lineparam" in elem
+      or "plot" in elem
   ) {
     line(length: 1em, stroke: elem.stroke)
   }))

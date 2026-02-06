@@ -1,6 +1,8 @@
 #import "linalg.typ": *
 #import "util.typ": *
 
+// TODO: marks
+
 #let plot3d = (stroke: auto, label: none, x, y, z) => {
   assert(
     x.len() == y.len() and x.len() == z.len(),
@@ -39,12 +41,15 @@
 }
 
 #let is-point-normal = p => (
-  p.len() == 2 and p.at(0).len() == 3 and p.at(1).len() == 3
+  type(p) == array
+    and p.len() == 2
+    and p.at(0).len() == 3
+    and p.at(1).len() == 3
 )
 
 #let line3d = (stroke: auto, label: none, point-normal) => {
   assert(
-    is-point-normal(point-normal.len()),
+    is-point-normal(point-normal),
     message: "Line must be in point-normal form",
   )
   (
@@ -54,7 +59,7 @@
   )
 }
 
-#let vec3d = (stroke: auto, label: none, ..points) => {
+#let vec3d = (stroke: auto, label: none, tip: none, toe: none, ..points) => {
   let pts = points.pos()
   // TODO: more error handling around the codebase
   assert(pts.len() > 0, message: "Vector must be provided at least one point")
@@ -66,6 +71,8 @@
     vec: pts,
     stroke: stroke,
     label: label,
+    tip: tip,
+    toe: toe,
   )
 }
 
@@ -152,6 +159,7 @@
   label-format: label-format,
 )
 
+// TODO: clean this up
 // FIXME: wonky
 #let axis3d = (
   kind: "x",

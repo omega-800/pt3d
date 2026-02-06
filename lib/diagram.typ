@@ -213,26 +213,31 @@
     }
   ]
 
+  // FIXME:
   if legend-elems.len() > 0 {
-    content.push(
-      render-legend(ctx, legend-def(..legend), legend-elems),
-    )
+    content.push(place(block(
+      width: 100%,
+      height: 100% - offset,
+      render-legend(
+        ctx,
+        legend-def(..legend),
+        legend-elems,
+      ),
+    )))
   }
-
   // FIXME: width/height of axis labels
   content.push(
     place(
       top + left,
       dx: xpad,
       dy: ypad,
-      [
-        #block(
-          fill: fill,
-          // we do a little cheating over here
-          width: canvas-dim.width, /* tick-width */
-          height: canvas-dim.height, /* tick-height */
-          plot,
-        )],
+      block(
+        fill: fill,
+        // we do a little cheating over here
+        width: canvas-dim.width, /* tick-width */
+        height: canvas-dim.height, /* tick-height */
+        plot,
+      ),
     ),
   )
   box(height: height, width: width, stroke: stroke, stack(..content))

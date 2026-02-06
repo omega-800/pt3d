@@ -1,3 +1,13 @@
+#let sum-vec = (..v) => (
+  v.pos().reduce((acc, cur) => acc.enumerate().map(((i, n)) => (n + cur.at(i))))
+)
+
+#let direction-vec = (from, to) => sum-vec(to, from.map(i => -i))
+
+#let length-vec = v => calc.sqrt(v.map(i => i * i).sum())
+
+#let normalize-vec = v => v.map(i => i / length-vec(v))
+
 #let mat-mult-vec = (((a, b, c), (d, e, f), (g, h, i)), (x, y, z)) => (
   a * x + b * y + c * z,
   d * x + e * y + f * z,
@@ -76,15 +86,15 @@
   v3
 }
 
-#let perpendicular-2d(line-from, line-to, point, off-x, off-y) = {
-  let (pxmin, pymin) = line-from
-  let (pxmax, pymax) = line-to
-  let pm = -(pxmin - pxmax) / (pymin - pymax)
-  let dir = 1 / calc.sqrt(1 + calc.pow(pm, 2))
-  let (tx, ty) = point
+#let perpendicular-2d(line-from, line-to, point, off) = {
+  let (x, y) = direction-vec(line-from, line-to)
+  let (pnx, pny) = normalize-vec((-y, x))
+  let (px, py) = point
+  let offy = off / 2 * pny
+  let offx = off / 2 * pnx
   (
-    (tx - dir * off-x, ty - pm * dir * off-x).map(i => i * 1%),
-    (tx + dir * off-y, ty + pm * dir * off-y).map(i => i * 1%),
+    (px + offx, py + offy),
+    (px - offx, py - offy),
   )
 }
 
@@ -139,13 +149,6 @@
   cross-product(v, u)
 }
 
-#let sum-vec = (..v) => (
-  v.pos().reduce((acc, cur) => acc.enumerate().map(((i, n)) => (n + cur.at(i))))
-)
-
-#let length-vec = v => calc.sqrt(v.map(i => i * i).sum())
-#let normalize-vec = v => v.map(i => i / length-vec(v))
-
 #let assert-n-vec = n => assert(
   n.any(i => i != 0),
   message: "Normal vector cannot be zero vector",
@@ -160,8 +163,7 @@
   (n, p)
 }
 #let plane-points = (a, b, c) => {
-  let a-inv = a.map(i => -i)
-  let n = cross-product(sum-vec(b, a-inv), sum-vec(c, a-inv))
+  let n = cross-product(direction-vec(a, b), sum-vec(a, c))
   assert-n-vec(n)
   (n, a)
 }
@@ -181,15 +183,15 @@
 #let plane-hesse = ((x, y, z), d) => plane-coordinate(x, y, z, -d)
 #let plane-normal = plane-hesse
 
-#let points-on-plane = (p, n) => {
-  let v2 = pt3d.cross-product((1, 0, 0), n)
-  let v3 = pt3d.cross-product((0, 1, 0), n)
-  let p2 = pt3d.sum-vec(p, v2)
-  let p3 = pt3d.sum-vec(p, v3)
+#let points-on-plane = (n, p) => {
+  let v2 = cross-product((1, 0, 0), n)
+  let v3 = cross-product((0, 0, 1), n)
+  let p2 = sum-vec(p, v2)
+  let p3 = sum-vec(p, v3)
   (p, p2, p3)
 }
 
 #let line-parametric = (p, d) => (p, d)
 #let line-point-normal = line-parametric
 #let line-symmetric = (x, dx, y, dy, z, dz) => ((x, y, z), (dx, dy, dz))
-#let line-points = (a, b) => (a, sum-vec(b, a.map(i => -i)))
+#let line-points = (a, b) => (a, direction-vec(a, b))

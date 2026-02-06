@@ -96,7 +96,7 @@
           on-canvas,
         )
         .map(map-point-pt)
-      let axis-size = length-vec(sum-vec(start, end.map(i => -i)))
+      let axis-size = length-vec(direction-vec(end, start))
       tick-l-ratio = int(calc.min(
         axis-size / tick-l-size.width.pt(),
         axis-size / tick-l-size.height.pt(),
