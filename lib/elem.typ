@@ -1,6 +1,7 @@
 #import "linalg.typ": *
 #import "util.typ": *
 
+// TODO: obj
 // TODO: vector field?
 // TODO: marks
 
@@ -97,7 +98,7 @@
   )
 }
 
-#let vec3d = (stroke: auto, label: none, tip: none, toe: none, ..points) => {
+#let vec3d = (stroke: auto, label: none, tip: ">", toe: none, ..points) => {
   let pts = points.pos()
   // TODO: more error handling around the codebase
   assert(pts.len() > 0, message: "Vector must be provided at least one point")

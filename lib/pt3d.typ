@@ -10,6 +10,7 @@
 #import "eval.typ": minmax
 #import "linalg.typ": *
 #import "style.typ": *
+#import "fs.typ": *
 #import "util.typ": (
-  linspace, mid, n-points-on, n-points-on-cube, path-curve, x-y-points,
+  domain, linspace, mid, n-points-on, n-points-on-cube, path-curve, x-y-points,
 )

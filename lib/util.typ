@@ -4,7 +4,7 @@
   min + i * ((max - min) / n)
 ))
 
-// FIXME:
+// FIXME: num + 1
 #let linspace = (from, to, num: auto, step: auto, include-end: true) => {
   assert(num == auto or step == auto, message: "'num' and 'auto' are exclusive")
   let n = if num == auto and step == auto {
@@ -17,6 +17,29 @@
   let t = if include-end { to } else { to - 1 }
   n-points-on(from, t, n)
 }
+
+#let domain = (
+  (u-from, u-to),
+  (v-from, v-to),
+  u-num: auto,
+  u-step: auto,
+  u-include-end: true,
+  v-num: auto,
+  v-step: auto,
+  v-include-end: true,
+) => (
+  linspace(u-from, u-to, num: u-num, step: u-step, include-end: u-include-end)
+    .map(u => linspace(
+      v-from,
+      v-to,
+      num: v-num,
+      step: v-step,
+      include-end: v-include-end,
+    ).map(
+      v => (u, v),
+    ))
+    .join()
+)
 
 #let path-curve(
   fill: none,
@@ -56,4 +79,3 @@
 ).map(x => n-points-on(ymax, ymin, n).map(y => (x, y)))
 
 #let apply-color-fn = (p, fn, def) => if fn != none { fn(..p) } else { def }
-

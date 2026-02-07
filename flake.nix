@@ -22,7 +22,8 @@
             }
           )
         );
-      sources = [ "examples/main.typ" ];
+      fs = nixpkgs.lib.fileset;
+      sources = map nixpkgs.lib.toString (fs.toList (fs.fileFilter (f: f.hasExt "typ") ./examples));
       names = map (s: builtins.elemAt (builtins.match ".*/([^/]+)\\.typ$" s) 0) sources;
     in
     {

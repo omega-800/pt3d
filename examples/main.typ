@@ -195,9 +195,7 @@
   pt.vec3d((0, 100, 100), (100, 150, 150), toe: "|", tip: ">", label: "vec2"),
 )
 #let num = 30
-#let udomain = pt.linspace(0, calc.pi, num: 30)
-#let vdomain = pt.linspace(0, 2 * calc.pi, num: num)
-#let domain = udomain.map(u => vdomain.map(v => (u, v))).join()
+#let domain = pt.domain((0, calc.pi), (0, 2 * calc.pi), v-num: num)
 #pt.diagram(
   title: [the *\*cone\**],
   width: 30em,
@@ -211,6 +209,8 @@
     domain.map(((u, v)) => u * calc.cos(v)),
     domain.map(((u, v)) => u),
     num: num,
+    stroke: none,
+    fill-color-fn: (x, y, z) => pt.rgb-clamp(50, y * 40 + 50, 50),
   ),
 )
 
