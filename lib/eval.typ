@@ -1,19 +1,7 @@
 #import "linalg.typ": *
 
-#let eval-line((dim, out-of-bounds), elem) = {
-  let (p, d) = elem.line
-  let points = ()
-  for (dir, ddim) in dim.enumerate() {
-    if d.at(dir) == 0 { continue }
-    for m in (0, 1) {
-      let t = (ddim.at(m) - p.at(dir)) / d.at(dir)
-      let v = sum-vec(p, d.map(i => i * t))
-      if not out-of-bounds(v) {
-        points.push(v)
-      }
-    }
-  }
-  elem.line = points
+#let eval-line(ctx, elem) = {
+  elem.line = intersections-line-dim(elem.line, ctx.dim)
   elem
 }
 

@@ -1,3 +1,4 @@
+// TODO: export the things that need to be exported after code changes
 #import "canvas.typ": (
   clamp-to-bounds-3d, ortho-proj, out-of-bounds-2d, out-of-bounds-3d, rescale,
 )
@@ -11,5 +12,4 @@
 #import "style.typ": *
 #import "util.typ": (
   linspace, mid, n-points-on, n-points-on-cube, path-curve, x-y-points,
-  z-intersection,
 )

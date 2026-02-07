@@ -87,6 +87,53 @@
   )
 }
 
+#let assert-n-vec = n => assert(
+  n.any(i => i != 0),
+  message: "Normal vector cannot be zero vector",
+)
+#let plane-point-normal = (n, p) => {
+  assert-n-vec(n)
+  (n, p)
+}
+#let plane-parametric = (p, v, w) => {
+  let n = cross-product(v, w)
+  assert-n-vec(n)
+  (n, p)
+}
+#let plane-points = (a, b, c) => {
+  let n = cross-product(direction-vec(a, b), sum-vec(a, c))
+  assert-n-vec(n)
+  (n, a)
+}
+#let plane-coordinate = (x, y, z, d) => {
+  assert-n-vec((x, y, z))
+  (
+    (x, y, z),
+    if x != 0 {
+      (-d / x, 0, 0)
+    } else if y != 0 {
+      (0, -d / y, 0)
+    } else {
+      (0, 0, -d / z)
+    },
+  )
+}
+#let plane-hesse = ((x, y, z), d) => plane-coordinate(x, y, z, -d)
+#let plane-normal = plane-hesse
+
+#let points-on-plane = (n, p) => {
+  let v2 = cross-product((1, 0, 0), n)
+  let v3 = cross-product((0, 0, 1), n)
+  let p2 = sum-vec(p, v2)
+  let p3 = sum-vec(p, v3)
+  (p, p2, p3)
+}
+
+#let line-parametric = (p, d) => (p, d)
+#let line-point-normal = line-parametric
+#let line-symmetric = (x, dx, y, dy, z, dz) => ((x, y, z), (dx, dy, dz))
+#let line-points = (a, b) => (a, direction-vec(a, b))
+
 #let mat-rotate-iso = (
   (calc.sqrt(3), 0, -calc.sqrt(3)),
   (-1, 2, -1),
@@ -163,34 +210,65 @@
   angles.sorted(key: it => it.at(0)).map(it => it.at(1))
 }
 
-#let intersection-3d-cube = (
+#let intersections-line-dim((p, d), dim) = {
+  let out-of-bounds = out-of-bounds-3d(..dim)
+  let points = ()
+  for (dir, ddim) in dim.enumerate() {
+    if d.at(dir) == 0 { continue }
+    for m in (0, 1) {
+      let t = (ddim.at(m) - p.at(dir)) / d.at(dir)
+      let v = sum-vec(p, d.map(i => i * t))
+      if not out-of-bounds(v) {
+        points.push(v)
+      }
+    }
+  }
+  points
+}
+#let is-point-on-line-prime((from, to), p) = {
+  let d-f-t = distance-vec(from, to)
+  let d-f-p = distance-vec(from, p)
+  let d-p-t = distance-vec(p, to)
+  // FIXME: floating point imprecision?
+  // d-f-t == d-f-p + d-p-t + 1
+  d-f-t <= d-f-p + d-p-t + 1 and d-f-t >= d-f-p + d-p-t - 1
+}
+
+#let is-point-on-line((from, to), p) = {
+  let f-t = direction-vec(from, to)
+  let f-p = direction-vec(from, p)
+  let dot-f-p = dot-product(f-p, f-t)
+  let dot-f-f = dot-product(f-t, f-t)
+  let s-c = cross-product(f-p, f-t).sum()
+  // FIXME: floating point imprecision?
+  // s-c == 0 and 0 <= dot-f-p and dot-f-p <= dot-f-f
+  s-c <= 1 and s-c >= -1 and 0 <= dot-f-p and dot-f-p <= dot-f-f
+}
+// FIXME: wtf typst, i thought you were like rust
+// TODO: add return statements where values have to be returned
+
+#let intersection-3d-cube(
   (from, to),
   dim,
-) => {
+) = {
   let out-of-bounds = out-of-bounds-3d(..dim)
   let from-out = out-of-bounds(from)
   let to-out = out-of-bounds(to)
   if not from-out and not to-out {
-    (from, to)
+    return (from, to)
   }
-  let intersections = ()
-  let dir = direction-vec(from, to)
-  for (n, d) in cube-planes(dim) {
-    let denom = dot-product(n, dir)
-    if denom == 0 { continue }
-    let t = (d - dot-product(n, from)) / denom
-    if 0 <= t and t <= 1 {
-      intersections.push(sum-vec(from, dir.map(i => i * t)))
-    }
-  }
+  let intersections = intersections-line-dim(line-points(from, to), dim).filter(
+    p => is-point-on-line((from, to), p),
+  )
   if intersections.len() == 0 {
     none
   } else if from-out and to-out {
-    (intersections.at(0), intersections.at(1))
+    // FIXME:
+    (intersections.at(0), intersections.at(1, default: intersections.at(0)))
   } else if from-out {
-    (intersections.at(0), to)
+    (intersections.find(p => p != to), to)
   } else if to-out {
-    (from, intersections.at(0))
+    (from, intersections.find(p => p != from))
   }
 }
 
@@ -227,20 +305,16 @@
   (0, 1, 2).map(i => inside.at(i) + intert * dir.at(i))
 }
 
-#let intersection-3d = (
-  (x1f, y1f, z1f),
-  (x1t, y1t, z1t),
-  (x2f, y2f, z2f),
-  (x2t, y2t, z2t),
+#let intersection-3d-lines = (
+  from1,
+  to1,
+  from2,
+  to2,
 ) => {
-  let d1 = (x1t - x1f, y1t - y1f, z1t - z1f)
-  let d2 = (x2t - x2f, y2t - y2f, z2t - z2f)
+  let d1 = distance-vec(from1, to1)
+  let d2 = distance-vec(from2, to2)
   let t = cross-product(d1, d2)
-  (
-    x1f + t * (x1t - x1f),
-    y1f + t * (y1t - y1f),
-    z1f + t * (z1t - z1f),
-  )
+  sum-vec(from1, d1.map(i => i * t))
 }
 
 #let perpendicular-3d = v => {
@@ -252,50 +326,3 @@
   }
   cross-product(v, u)
 }
-
-#let assert-n-vec = n => assert(
-  n.any(i => i != 0),
-  message: "Normal vector cannot be zero vector",
-)
-#let plane-point-normal = (n, p) => {
-  assert-n-vec(n)
-  (n, p)
-}
-#let plane-parametric = (p, v, w) => {
-  let n = cross-product(v, w)
-  assert-n-vec(n)
-  (n, p)
-}
-#let plane-points = (a, b, c) => {
-  let n = cross-product(direction-vec(a, b), sum-vec(a, c))
-  assert-n-vec(n)
-  (n, a)
-}
-#let plane-coordinate = (x, y, z, d) => {
-  assert-n-vec((x, y, z))
-  (
-    (x, y, z),
-    if x != 0 {
-      (-d / x, 0, 0)
-    } else if y != 0 {
-      (0, -d / y, 0)
-    } else {
-      (0, 0, -d / z)
-    },
-  )
-}
-#let plane-hesse = ((x, y, z), d) => plane-coordinate(x, y, z, -d)
-#let plane-normal = plane-hesse
-
-#let points-on-plane = (n, p) => {
-  let v2 = cross-product((1, 0, 0), n)
-  let v3 = cross-product((0, 0, 1), n)
-  let p2 = sum-vec(p, v2)
-  let p3 = sum-vec(p, v3)
-  (p, p2, p3)
-}
-
-#let line-parametric = (p, d) => (p, d)
-#let line-point-normal = line-parametric
-#let line-symmetric = (x, dx, y, dy, z, dz) => ((x, y, z), (dx, dy, dz))
-#let line-points = (a, b) => (a, direction-vec(a, b))

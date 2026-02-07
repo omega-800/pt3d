@@ -6,7 +6,14 @@
 
 // TODO: accept x, y, z functions
 // TODO: stroke-color-fn, fill-color-fn
-#let lineplot3d = (stroke: auto, label: none, x, y, z) => {
+#let lineplot3d = (
+  stroke: auto,
+  label: none,
+  stroke-color-fn: none,
+  x,
+  y,
+  z,
+) => {
   assert(
     x.len() == y.len() and x.len() == z.len(),
     message: "x, y and z points must have same length",
@@ -15,6 +22,7 @@
     lineplot: (x, y, z),
     stroke: stroke,
     label: label,
+    stroke-color-fn: stroke-color-fn,
   )
 }
 // TODO: accept x, y, z functions
@@ -44,7 +52,7 @@
   )
 }
 
-#let path3d = (stroke: auto, label: none, ..points) => {
+#let path3d = (stroke: auto, label: none, stroke-color-fn: none, ..points) => {
   assert(
     points.pos().len() > 1,
     message: "At least 2 points must be provided",
@@ -53,6 +61,7 @@
     path: points.pos(),
     stroke: stroke,
     label: label,
+    stroke-color-fn: stroke-color-fn,
   )
 }
 

@@ -34,6 +34,7 @@
   fill: none,
   stroke: none,
   rotations: (mat-rotate-iso,),
+  noclip: false,
   ..children,
 ) = context {
   // FIXME: wonky
@@ -87,7 +88,6 @@
     offset = measure(title-elem).height
   }
 
-  // TODO: include label/title offset etc.
   let canvas-dim = (
     width: width.to-absolute().pt() * 1pt,
     height: (height.to-absolute().pt() - offset.pt()) * 1pt,
@@ -104,6 +104,7 @@
     out-of-bounds: out-of-bounds-3d(..dim),
     clamp-to-bounds: clamp-to-bounds-3d(..dim),
     rotate-canvas: rotate-canvas,
+    noclip: noclip,
   )
   let (xas, yas, zas) = axes-defaults(xas, yas, zas, ctx)
   ctx.axes = (xas, yas, zas)
