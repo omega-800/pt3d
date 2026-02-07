@@ -101,25 +101,117 @@
   )
 }
 
+// FIXME:
+#let sort-by-distance(points, reference) = {
+  points.sorted(key: p => distance-vec-squared(p, reference))
+}
+// #let sort-plane-chunks(points) = {
+//   points
+// .sorted(key: p => p)
+// .fold((), (acc, (x, y, z)) => {
+//   let arr = acc.find(r => r.at(0).at(0) == x)
+//   if arr != none {
+//     let pos = arr.position(((_, ay, _)) => ay > y)
+//     arr.insert(if pos != none { pos } else { arr.len() }, (x, y, z))
+//   } else {
+//     let pos = acc.position(a => a.at(0).at(0) > x)
+//     acc.insert(if pos != none { pos } else { acc.len() }, ((x, y, z),))
+//   }
+//   acc
+// })
+// }
+
 // TODO:
-// #let render-plane-points() = {}
-
-#let render-planeparam(
-  (on-canvas, dim, out-of-bounds, clamp-to-bounds),
-  elem,
+#let render-clip-line(
+  (on-canvas, out-of-bounds, dim, intersection-canvas),
+  pts,
+  stroke-param,
 ) = {
-  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
-  let steps = if elem.steps == auto { 5 } else { elem.steps }
-  let p-x-y = x-y-points(dim, steps)
-  let p-x-y-z = p-x-y.map(pa => pa.map(((x, y)) => (
-    x,
-    y,
-    (elem.planeparam)(x, y),
-  )))
+  let lines = ((),)
+  let i = 0
+  for p in pts {
+    if out-of-bounds(p) {
+      lines.at(i).push(p)
+      i += 1
+      lines.push((p,))
+    } else {
+      lines.at(i).push(p)
+    }
+  }
+  // place(path-curve(stroke: elem.stroke, ..elem-eval.line.map(on-canvas)))
+}
+// TODO:
+#let clip-plane(
+  (out-of-bounds, dim, intersection-canvas),
+  pts,
+) = {
+  // FIXME: wrong
+  if pts.all(out-of-bounds) {
+    ()
+  }
+  let points = if not pts.any(out-of-bounds) {
+    pts
+  } else {
+    // FIXME: somewhat wrong
+    let newpts = ()
+    let prev-out = false
+    let first-out = none
+    for (i, p) in pts.enumerate() {
+      if not out-of-bounds(p) {
+        prev-out = false
+        newpts.push(p)
+        continue
+      }
+      if i == 0 {
+        prev-out = true
+        first-out = p
+        continue
+      }
+      if not prev-out {
+        prev-out = true
+        newpts.push(intersection-canvas(newpts.last(), p))
+      }
+      if i == pts.len() - 1 {
+        // TODO: probably wrong
+        newpts.push(intersection-canvas(newpts.first(), p))
+      } else if not out-of-bounds(pts.at(i + 1)) {
+        newpts.push(intersection-canvas(pts.at(i + 1), p))
+      }
+    }
+    if first-out != none {
+      newpts.insert(0, intersection-canvas(newpts.last(), first-out))
+    }
+    newpts
+  }
+}
+#let render-clip-plane(
+  ctx,
+  pts,
+  stroke-param,
+  fill-param,
+) = {
+  // FIXME: these points must be included if plane intersects
+  let points = clip-plane(ctx, pts)
+  // panic(pts, points)
+  let p1 = points.at(0)
+  place(polygon(
+    stroke: apply-color-fn(p1, ..stroke-param),
+    fill: apply-color-fn(p1, ..fill-param),
+    ..points.map(ctx.on-canvas),
+  ))
+}
 
+// TODO:
+#let render-plane-points(
+  ctx,
+  points,
+  stroke-param,
+  fill-param,
+) = {
+  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = ctx.dim
   let z-out-of-bounds = ((_, _, z)) => z < zmin or z > zmax
   let z-plane = p => if p.at(2) > zmax { zmax } else { zmin }
-  let r = p-x-y-z.rev()
+  let r = points
   for (i, f) in r.slice(0, r.len() - 1).enumerate() {
     for (ii, ff) in f.slice(0, f.len() - 1).enumerate() {
       let p11 = ff
@@ -131,41 +223,63 @@
       let p23 = r.at(i + 1).at(ii + 1)
 
       for pts in ((p11, p12, p13), (p21, p22, p23)) {
-        if pts.all(out-of-bounds) {
-          continue
-        }
-        let points = if pts.any(z-out-of-bounds) {
-          let (overflow, ok) = pts.fold(((), ()), (
-            (ov, ok),
-            cur,
-          ) => if z-out-of-bounds(cur) { ((..ov, cur), ok) } else {
-            (ov, (..ok, cur))
-          })
-          if overflow.len() == 1 {
-            let p = overflow.at(0)
-            let z = z-plane(p)
-            let (p1, p4) = ok
-            (p1, z-intersection(z, p1, p), z-intersection(z, p4, p), p4)
-          } else {
-            let p = overflow.at(0)
-            let z = z-plane(p)
-            let pp = overflow.at(1)
-            let zz = z-plane(pp)
-            let (p1,) = ok
-            (p1, z-intersection(z, p1, p), z-intersection(zz, p1, pp))
-          }
-        } else {
-          pts
-        }
-        let p1 = points.at(0)
-        place(polygon(
-          stroke: apply-color-fn(p1, elem.stroke-color-fn, elem.stroke),
-          fill: apply-color-fn(p1, elem.fill-color-fn, elem.fill),
-          ..points.map(on-canvas),
-        ))
+        render-clip-plane(ctx, pts, stroke-param, fill-param)
+        // if pts.all(out-of-bounds) {
+        //   continue
+        // }
+        // let points = if pts.any(z-out-of-bounds) {
+        //   let (overflow, ok) = pts.fold(((), ()), (
+        //     (ov, ok),
+        //     cur,
+        //   ) => if z-out-of-bounds(cur) { ((..ov, cur), ok) } else {
+        //     (ov, (..ok, cur))
+        //   })
+        //   if overflow.len() == 1 {
+        //     let p = overflow.at(0)
+        //     let z = z-plane(p)
+        //     let (p1, p4) = ok
+        //     (p1, z-intersection(z, p1, p), z-intersection(z, p4, p), p4)
+        //   } else {
+        //     let p = overflow.at(0)
+        //     let z = z-plane(p)
+        //     let pp = overflow.at(1)
+        //     let zz = z-plane(pp)
+        //     let (p1,) = ok
+        //     (p1, z-intersection(z, p1, p), z-intersection(zz, p1, pp))
+        //   }
+        // } else {
+        //   pts
+        // }
+        // let p1 = points.at(0)
+        // place(polygon(
+        //   stroke: apply-color-fn(p1, ..stroke-param),
+        //   fill: apply-color-fn(p1, ..fill-param),
+        //   ..points.map(on-canvas),
+        // ))
       }
     }
   }
+}
+
+#let render-planeparam(
+  ctx,
+  elem,
+) = {
+  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = ctx.dim
+  let steps = if elem.steps == auto { 5 } else { elem.steps }
+  let p-x-y = x-y-points(ctx.dim, steps)
+  let p-x-y-z = p-x-y.map(ps => ps.map(((x, y)) => (
+    x,
+    y,
+    (elem.planeparam)(x, y),
+  )))
+  render-plane-points(
+    ctx,
+    // FIXME:
+    p-x-y-z,
+    (elem.stroke-color-fn, elem.stroke),
+    (elem.fill-color-fn, elem.fill),
+  )
 }
 
 #let render-lineparam((on-canvas, dim, out-of-bounds, ..x), elem) = {
@@ -192,16 +306,42 @@
 }
 
 #let render-planeplot(ctx, elem) = {
-  let (on-canvas, ..x) = ctx
-  let (x, y, z) = elem.planeplot
+  let (dim, on-canvas) = ctx
+  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
+  let (x, y, z, num) = elem.planeplot
   let points = x.zip(y, z)
-  // TODO: overflow
-  place(polygon(
-    fill: elem.fill,
-    stroke: elem.stroke,
-    // ..connect-circle-2d(..points.map(on-canvas)),
-    ..points.map(on-canvas),
-  ))
+  if num != none {
+    // TODO:
+    render-plane-points(
+      ctx,
+      points.chunks(num),
+      (elem.stroke-color-fn, elem.stroke),
+      (elem.fill-color-fn, elem.fill),
+    )
+  } else {
+    // TODO:
+    place(polygon(
+      fill: elem.fill,
+      stroke: elem.stroke,
+      // ..connect-circle-2d(..points.map(on-canvas)),
+      ..points.map(on-canvas),
+    ))
+  }
+
+  // render-plane-points(
+  //   ctx,
+  //   // FIXME:
+  //   sort-by-distance(points),
+  //   p => elem.stroke,
+  //   p => elem.fill,
+  // )
+  // for triangle in points.windows(3) {
+  //   place(polygon(
+  //     fill: elem.fill,
+  //     stroke: elem.stroke,
+  //     ..triangle.map(on-canvas),
+  //   ))
+  // }
 }
 
 #let render-lineplot(ctx, elem) = {
@@ -216,12 +356,18 @@
   place(path-curve(stroke: elem.stroke, ..elem.path.map(on-canvas)))
 }
 
-#let render-polygon((on-canvas, ..x), elem) = {
-  place(polygon(
-    fill: elem.fill,
-    stroke: elem.stroke,
-    ..elem.polygon.map(on-canvas),
-  ))
+#let render-polygon(ctx, elem) = {
+  // place(polygon(
+  //   fill: elem.fill,
+  //   stroke: elem.stroke,
+  //   ..elem.polygon.map(on-canvas),
+  // ))
+  render-clip-plane(
+    ctx,
+    elem.polygon,
+    (none, elem.stroke),
+    (none, elem.fill),
+  )
 }
 
 #let render-plane(ctx, elem) = {
@@ -350,14 +496,11 @@
   let line-from = point-n(elem.line.position, min)
   let line-to = point-n(elem.line.position, max)
   if not elem.plane.hidden {
-    render-polygon(
-      ctx,
-      polygon3d(
-        ..plane-points,
-        stroke: elem.plane.stroke,
-        fill: elem.plane.fill,
-      ),
-    )
+    place(polygon(
+      fill: elem.plane.fill,
+      stroke: elem.plane.stroke,
+      ..plane-points.map(on-canvas),
+    ))
   }
 
   if not elem.line.hidden {

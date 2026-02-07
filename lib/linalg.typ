@@ -1,3 +1,22 @@
+#let ortho-proj = (((xmin, xmax), (ymin, ymax), _), (x, y, z)) => (
+  (2 * x - xmax - xmin) / (xmax - xmin),
+  (2 * y - ymax - ymin) / (ymax - ymin),
+)
+
+#let out-of-bounds-2d = x => x > 100% or x < 0%
+
+#let clamp-to-bounds-3d = ((xmin, xmax), (ymin, ymax), (zmin, zmax)) => (
+  (x, y, z),
+) => (
+  calc.clamp(x, xmin, xmax),
+  calc.clamp(y, ymin, ymax),
+  calc.clamp(z, zmin, zmax),
+)
+
+#let out-of-bounds-3d = ((xmin, xmax), (ymin, ymax), (zmin, zmax)) => (
+  (x, y, z),
+) => x < xmin or x > xmax or y < ymin or y > ymax or z < zmin or z > zmax
+
 #let sum-vec = (..v) => (
   v.pos().reduce((acc, cur) => acc.enumerate().map(((i, n)) => (n + cur.at(i))))
 )
@@ -7,6 +26,12 @@
 #let length-vec = v => calc.sqrt(v.map(i => i * i).sum())
 
 #let normalize-vec = v => v.map(i => i / length-vec(v))
+
+#let distance-vec = (from, to) => length-vec(direction-vec(to, from))
+
+#let distance-vec-squared = (from, to) => (
+  direction-vec(to, from).map(i => i * i).sum()
+)
 
 #let mat-mult-vec = (((a, b, c), (d, e, f), (g, h, i)), (x, y, z)) => (
   a * x + b * y + c * z,
@@ -22,6 +47,15 @@
 
 #let dot-product = ((x1, y1, z1), (x2, y2, z2)) => (
   x1 * x2 + y1 * y2 + z1 * z2
+)
+
+#let cube-planes = (((xmin, xmax), (ymin, ymax), (zmin, zmax))) => (
+  ((1, 0, 0), xmin),
+  ((-1, 0, 0), xmax),
+  ((0, 1, 0), ymin),
+  ((0, -1, 0), ymax),
+  ((0, 0, 1), zmin),
+  ((0, 0, -1), zmax),
 )
 
 #let cube-vertices = (((xmin, xmax), (ymin, ymax), (zmin, zmax))) => (
@@ -127,6 +161,70 @@
     .pos()
     .map(((x, y)) => (atan2(float(x) - c.at(0), float(y) - c.at(1)), (x, y)))
   angles.sorted(key: it => it.at(0)).map(it => it.at(1))
+}
+
+#let intersection-3d-cube = (
+  (from, to),
+  dim,
+) => {
+  let out-of-bounds = out-of-bounds-3d(..dim)
+  let from-out = out-of-bounds(from)
+  let to-out = out-of-bounds(to)
+  if not from-out and not to-out {
+    (from, to)
+  }
+  let intersections = ()
+  let dir = direction-vec(from, to)
+  for (n, d) in cube-planes(dim) {
+    let denom = dot-product(n, dir)
+    if denom == 0 { continue }
+    let t = (d - dot-product(n, from)) / denom
+    if 0 <= t and t <= 1 {
+      intersections.push(sum-vec(from, dir.map(i => i * t)))
+    }
+  }
+  if intersections.len() == 0 {
+    none
+  } else if from-out and to-out {
+    (intersections.at(0), intersections.at(1))
+  } else if from-out {
+    (intersections.at(0), to)
+  } else if to-out {
+    (from, intersections.at(0))
+  }
+}
+
+// FIXME: wrong
+#let intersection-3d-cube-prime = (
+  (inside, outside),
+  dim,
+) => {
+  let dir = direction-vec(inside, outside)
+  let ts = ()
+  for (i, d) in dim.enumerate() {
+    if dir.at(i) == 0 {
+      continue
+    }
+    for m in d {
+      let t = (m - inside.at(i)) / dir.at(i)
+      if t < 0 or t > 1 {
+        continue
+      }
+      let i2 = calc.rem(i + 1, 3)
+      let i3 = calc.rem(i + 2, 3)
+      let inter1 = inside.at(i2) + t * dir.at(i2)
+      let inter2 = inside.at(i3) + t * dir.at(i3)
+      let (min1, max1) = dim.at(i2)
+      let (min2, max2) = dim.at(i3)
+      if (
+        min1 <= inter1 and inter1 <= max1 and min2 <= inter2 and inter2 <= max2
+      ) {
+        ts.push(t)
+      }
+    }
+  }
+  let intert = calc.min(..ts)
+  (0, 1, 2).map(i => inside.at(i) + intert * dir.at(i))
 }
 
 #let intersection-3d = (

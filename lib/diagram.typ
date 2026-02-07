@@ -10,7 +10,12 @@
 // FIXME: wonky
 #let def-lim = (min, max, lim: (-1, 1), ..x) => {
   let def = (i, def) => if type(i) == float or type(i) == int { i } else { def }
-  (def(def(lim.at(0), min), 1), def(def(lim.at(1), max), -1))
+  let lim = (def(def(lim.at(0), min), 1), def(def(lim.at(1), max), -1))
+  if lim.at(0) == lim.at(1) {
+    lim.at(0) -= 1
+    lim.at(1) += 1
+  }
+  lim
 }
 
 // TODO: make the stuff that's badly implemented better
@@ -95,6 +100,7 @@
       (y * canvas-dim.height) / 1pt,
     ),
     dim: dim,
+    intersection-canvas: (from, to) => intersection-3d-cube((from, to), dim),
     out-of-bounds: out-of-bounds-3d(..dim),
     clamp-to-bounds: clamp-to-bounds-3d(..dim),
     rotate-canvas: rotate-canvas,

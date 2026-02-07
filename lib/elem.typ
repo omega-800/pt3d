@@ -1,8 +1,10 @@
 #import "linalg.typ": *
 #import "util.typ": *
 
+// TODO: vector field?
 // TODO: marks
 
+// TODO: accept x, y, z functions
 // TODO: stroke-color-fn, fill-color-fn
 #let lineplot3d = (stroke: auto, label: none, x, y, z) => {
   assert(
@@ -15,17 +17,30 @@
     label: label,
   )
 }
+// TODO: accept x, y, z functions
 // TODO: stroke-color-fn, fill-color-fn
-#let planeplot3d = (stroke: auto, fill: auto, label: none, x, y, z) => {
+#let planeplot3d = (
+  stroke: auto,
+  fill: auto,
+  label: none,
+  num: none,
+  stroke-color-fn: none,
+  fill-color-fn: none,
+  x,
+  y,
+  z,
+) => {
   assert(
     x.len() == y.len() and x.len() == z.len(),
     message: "x, y and z points must have same length",
   )
   (
-    planeplot: (x, y, z),
+    planeplot: (x, y, z, num),
     stroke: stroke,
     label: label,
     fill: fill,
+    stroke-color-fn: stroke-color-fn,
+    fill-color-fn: fill-color-fn,
   )
 }
 

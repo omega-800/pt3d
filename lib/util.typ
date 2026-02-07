@@ -50,10 +50,10 @@
   n-points-on(zmin, zmax, n),
 )
 #let x-y-points = (((xmin, xmax), (ymin, ymax), ..x), n) => n-points-on(
-  xmin,
   xmax,
+  xmin,
   n,
-).map(x => n-points-on(ymin, ymax, n).map(y => (x, y)))
+).map(x => n-points-on(ymax, ymin, n).map(y => (x, y)))
 
 #let apply-color-fn = (p, fn, def) => if fn != none { fn(..p) } else { def }
 

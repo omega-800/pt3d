@@ -1,24 +1,6 @@
 #import "util.typ": *
 #import "eval.typ": *
 
-#let ortho-proj = (((xmin, xmax), (ymin, ymax), _), (x, y, z)) => (
-  (2 * x - xmax - xmin) / (xmax - xmin),
-  (2 * y - ymax - ymin) / (ymax - ymin),
-)
-
-#let out-of-bounds-2d = x => x > 100% or x < 0%
-
-#let clamp-to-bounds-3d = ((xmin, xmax), (ymin, ymax), (zmin, zmax)) => (
-  (x, y, z),
-) => (
-  calc.clamp(x, xmin, xmax),
-  calc.clamp(y, ymin, ymax),
-  calc.clamp(z, zmin, zmax),
-)
-
-#let out-of-bounds-3d = ((xmin, xmax), (ymin, ymax), (zmin, zmax)) => (
-  (x, y, z),
-) => x < xmin or x > xmax or y < ymin or y > ymax or z < zmin or z > zmax
 
 #let overflow-correction = ns => {
   let s = ns.filter(out-of-bounds-2d).sorted()

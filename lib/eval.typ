@@ -187,7 +187,7 @@
     let (x, y, z) = elem.lineplot
     x.zip(y, z)
   } else if "planeplot" in elem {
-    let (x, y, z) = elem.planeplot
+    let (x, y, z, _) = elem.planeplot
     x.zip(y, z)
   } else {
     ()
