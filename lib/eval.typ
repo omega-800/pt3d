@@ -1,7 +1,96 @@
 #import "linalg.typ": *
+#import "axes.typ": *
+#import "clip.typ": *
+
+#let plane-points-to-vertices(ctx, points) = {
+  let vertices = ()
+  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = ctx.dim
+  for (i, f) in points.slice(0, points.len() - 1).enumerate() {
+    for (ii, ff) in f.slice(0, f.len() - 1).enumerate() {
+      let p11 = ff
+      let p12 = f.at(ii + 1)
+      let p13 = points.at(i + 1).at(ii)
+
+      let p21 = f.at(ii + 1)
+      let p22 = points.at(i + 1).at(ii)
+      let p23 = points.at(i + 1).at(ii + 1)
+
+      for triangle in ((p11, p12, p13), (p21, p22, p23)) {
+        let clipped = clip-plane(ctx, triangle)
+        if clipped.len() > 0 {
+          vertices.push(clipped)
+        }
+      }
+    }
+  }
+  vertices
+}
+
+#let eval-planeparam(ctx, elem) = {
+  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = ctx.dim
+  let steps = if elem.steps == auto { 5 } else { elem.steps }
+  let p-x-y-z = x-y-points(ctx.dim, steps).map(ps => ps.map((
+    (x, y),
+  ) => (
+    x,
+    y,
+    (elem.planeparam)(x, y),
+  )))
+  // FIXME:
+  elem.eval-points = plane-points-to-vertices(ctx, p-x-y-z)
+  elem
+}
+
+#let eval-lineparam(ctx, elem) = {
+  let steps = if elem.steps == auto { 5 } else { elem.steps }
+  elem.eval-points = clip-line(
+    ctx,
+    n-points-on-cube(ctx.dim, steps).map(p => (elem.lineparam)(
+      ..p,
+    )),
+  )
+  elem
+}
 
 #let eval-line(ctx, elem) = {
-  elem.line = intersections-line-dim(elem.line, ctx.dim)
+  elem.eval-points = (intersections-line-dim(elem.line, ctx.dim),)
+  elem
+}
+
+#let eval-planeplot(ctx, elem) = {
+  let (x, y, z, num) = elem.planeplot
+  let pts = x.zip(y, z)
+  elem.eval-points = if num != none {
+    // TODO:
+    plane-points-to-vertices(
+      ctx,
+      pts.chunks(num),
+    )
+  } else {
+    // TODO:
+    (clip-plane(ctx, pts),)
+  }
+  elem
+}
+
+#let eval-lineplot(ctx, elem) = {
+  let (x, y, z) = elem.lineplot
+  elem.eval-points = clip-line(ctx, x.zip(y, z))
+  elem
+}
+
+#let eval-path(ctx, elem) = {
+  elem.eval-points = clip-line(ctx, elem.path)
+  elem
+}
+
+#let eval-vertices(ctx, elem) = {
+  elem.eval-points = clip-vertices(ctx, elem.vertices)
+  elem
+}
+
+#let eval-polygon(ctx, elem) = {
+  elem.eval-points = (clip-plane(ctx, elem.polygon),)
   elem
 }
 
@@ -21,7 +110,12 @@
       points.push(sum-vec(a, a-b.map(i => i * t)))
     }
   }
-  elem.plane = points
+  elem.eval-points = (points,)
+  elem
+}
+
+#let eval-vec(ctx, elem) = {
+  elem.eval-points = clip-line(ctx, elem.vec)
   elem
 }
 
@@ -52,71 +146,7 @@
   elem
 }
 
-#let axis-helper-fn = (ctx, elem) => {
-  let (dim, ..x) = ctx
-  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
-
-  if elem.kind == "x" {
-    let pp = if "plane" in elem {
-      (
-        (elem.plane.position, ymin, zmin),
-        (elem.plane.position, ymax, zmin),
-        (elem.plane.position, ymax, zmax),
-        (elem.plane.position, ymin, zmax),
-      )
-    } else { () }
-    (
-      point: x => (x, 0, 0),
-      point-p: ((x, y, z), n) => (x, y + n, z + n),
-      point-r: ((x, y, z), n) => (n, y, z),
-      point-n: ((y, z), n) => (n, y, z),
-      cur: ((x, y, z)) => x,
-      min: xmin,
-      max: xmax,
-      plane-points: pp,
-    )
-  } else if elem.kind == "y" {
-    let pp = if "plane" in elem {
-      (
-        (xmin, elem.plane.position, zmin),
-        (xmax, elem.plane.position, zmin),
-        (xmax, elem.plane.position, zmax),
-        (xmin, elem.plane.position, zmax),
-      )
-    }
-    (
-      point: y => (0, y, 0),
-      point-p: ((x, y, z), n) => (x + n, y, z + n),
-      point-r: ((x, y, z), n) => (x, n, z),
-      point-n: ((x, z), n) => (x, n, z),
-      cur: ((x, y, z)) => y,
-      min: ymin,
-      max: ymax,
-      plane-points: pp,
-    )
-  } else {
-    let pp = if "plane" in elem {
-      (
-        (xmin, ymin, elem.plane.position),
-        (xmax, ymin, elem.plane.position),
-        (xmax, ymax, elem.plane.position),
-        (xmin, ymax, elem.plane.position),
-      )
-    }
-    (
-      point: z => (0, 0, z),
-      point-p: ((x, y, z), n) => (x + n, y + n, z),
-      point-r: ((x, y, z), n) => (x, y, n),
-      point-n: ((x, y), n) => (x, y, n),
-      cur: ((x, y, z)) => z,
-      min: zmin,
-      max: zmax,
-      plane-points: pp,
-    )
-  }
-}
-
-#let eval-axis(ctx, elem) = {
+#let eval-axis-points(ctx, elem) = {
   let (dim, ..x) = ctx
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
 
@@ -159,39 +189,46 @@
   res
 }
 
+// FIXME: this made compiling *VERY* slow for some reason?
+#let eval-elem = (
+  // TODO: eval-axis
+  "axis": (ctx, a) => a,
+  "path": eval-path,
+  "polygon": eval-polygon,
+  "vertices": eval-vertices,
+  "vec": eval-vec,
+  "lineplot": eval-lineplot,
+  "planeplot": eval-planeplot,
+  "plane": eval-plane,
+  "planeparam": eval-planeparam,
+  "line": eval-line,
+  "lineparam": eval-lineparam,
+)
+
 #let eval-points = (
   ctx,
   elem,
 ) => {
-  if "axis" in elem {
-    eval-axis(ctx, elem)
-  } else if "path" in elem {
+  if elem.type == "axis" {
+    eval-axis-points(ctx, elem)
+  } else if elem.type == "path" {
     elem.path
-  } else if "polygon" in elem {
+  } else if elem.type == "polygon" {
     elem.polygon
-  } else if "vertices" in elem {
+  } else if elem.type == "vertices" {
     elem.vertices.join()
-  } else if "vec" in elem {
+  } else if elem.type == "vec" {
     elem.vec
-  } else if "lineplot" in elem {
+  } else if elem.type == "lineplot" {
     let (x, y, z) = elem.lineplot
     x.zip(y, z)
-  } else if "planeplot" in elem {
+  } else if elem.type == "planeplot" {
     let (x, y, z, _) = elem.planeplot
     x.zip(y, z)
   } else {
     ()
-    // } else if "plane" in elem {
-    // } else if "line" in elem {
-    // } else if "planeparam" in elem {
-    // } else if "lineparam" in elem {
   }
 }
-
-#let minmax = (((xmin, ymin, zmin), (xmax, ymax, zmax)), (x, y, z)) => (
-  (calc.min(xmin, x), calc.min(ymin, y), calc.min(zmin, z)),
-  (calc.max(xmax, x), calc.max(ymax, y), calc.max(zmax, z)),
-)
 
 #let eval-min-bounds = (axes, ..children) => {
   let (xaxis, yaxis, zaxis) = axes
@@ -222,9 +259,6 @@
       points.at(0, default: (-10, -10, -10)),
       points.at(0, default: (10, 10, 10)),
     ),
-    (
-      acc,
-      cur,
-    ) => minmax(acc, cur),
+    minmax-vec,
   )
 }

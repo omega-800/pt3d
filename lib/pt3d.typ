@@ -4,13 +4,15 @@
 )
 #import "diagram.typ": diagram
 #import "elem.typ": (
-  line3d, lineparam3d, lineplot3d, path3d, plane3d, planeparam3d, planeplot3d,
-  polygon3d, vec3d, vertices3d,
+  line3d as line, lineparam3d as lineparam, lineplot3d as lineplot,
+  path3d as path, plane3d as plane, planeparam3d as planeparam,
+  planeplot3d as planeplot, polygon3d as polygon, vec3d as vec,
+  vertices3d as vertices,
 )
-#import "eval.typ": minmax
 #import "linalg.typ": *
 #import "style.typ": *
 #import "fs.typ": *
 #import "util.typ": (
-  domain, linspace, mid, n-points-on, n-points-on-cube, path-curve, x-y-points,
+  domain, linspace, mid-vec, minmax-vec, n-points-on, n-points-on-cube,
+  path-curve, x-y-points,
 )

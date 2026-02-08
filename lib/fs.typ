@@ -1,7 +1,6 @@
-#let load-obj(path) = {
+#let load-obj(txt) = {
   // TODO: bruh i could've just used split(" ") and split("/")...
   // TODO: redo if i get the time to
-  let txt = read(path)
   let df = "(-?\\d\\.?\\d*)"
   let dn = "\\d\\d?\\d?"
   let fc = "((" + dn + ")(/(\\d?\\d?\\d?))?(/(" + dn + "))?)"
@@ -58,4 +57,28 @@
     }
   }
   vertices
+}
+
+#let load-csv(txt, sep: ",", with-labels: false) = {
+  let dr = "-?\\d\\.?\\d*"
+  let reg = regex(dr + sep + dr + sep + dr)
+  let points = ()
+  let labels = ()
+  let lines = txt.split("\n")
+  if lines.first().match(reg) == none and with-labels {
+    let parts = lines.first().split(sep)
+    if parts.len() == 3 {
+      labels = parts
+    }
+  }
+  for line in lines {
+    if line.match(reg) != none {
+      points.push(line.split(sep).map(float))
+    }
+  }
+  if with-labels {
+    (labels, points)
+  } else {
+    points
+  }
 }

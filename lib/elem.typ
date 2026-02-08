@@ -13,6 +13,7 @@
   ..vertices,
 ) => {
   (
+    type: "vertices",
     vertices: vertices.pos(),
     stroke: stroke,
     label: label,
@@ -37,6 +38,7 @@
     message: "x, y and z points must have same length",
   )
   (
+    type: "lineplot",
     lineplot: (x, y, z),
     stroke: stroke,
     label: label,
@@ -61,6 +63,7 @@
     message: "x, y and z points must have same length",
   )
   (
+    type: "planeplot",
     planeplot: (x, y, z, num),
     stroke: stroke,
     label: label,
@@ -77,6 +80,7 @@
     message: "At least 2 points must be provided",
   )
   (
+    type: "path",
     path: points.pos(),
     stroke: stroke,
     label: label,
@@ -90,6 +94,7 @@
     message: "At least 3 points must be provided",
   )
   (
+    type: "polygon",
     polygon: points.pos(),
     stroke: stroke,
     fill: fill,
@@ -97,19 +102,13 @@
   )
 }
 
-#let is-point-normal = p => (
-  type(p) == array
-    and p.len() == 2
-    and p.at(0).len() == 3
-    and p.at(1).len() == 3
-)
-
 #let line3d = (stroke: auto, label: none, point-normal) => {
   assert(
     is-point-normal(point-normal),
     message: "Line must be in point-normal form",
   )
   (
+    type: "line",
     line: point-normal,
     stroke: stroke,
     label: label,
@@ -125,6 +124,7 @@
     pts.insert(0, (0, 0, 0))
   }
   (
+    type: "vec",
     vec: pts,
     stroke: stroke,
     label: label,
@@ -144,6 +144,7 @@
     message: "Plane must be in point-normal form",
   )
   (
+    type: "plane",
     plane: point-normal,
     stroke: stroke,
     fill: fill,
@@ -158,6 +159,7 @@
   label: none,
   fn,
 ) => (
+  type: "lineparam",
   lineparam: fn,
   stroke: stroke,
   label: label,
@@ -174,6 +176,7 @@
   label: none,
   fn,
 ) => (
+  type: "planeparam",
   planeparam: fn,
   stroke-color-fn: stroke-color-fn,
   fill-color-fn: fill-color-fn,
@@ -249,7 +252,7 @@
   // tick-args: (:),
   // subtick-args: (:),
 ) => (
-  axis: true,
+  type: "axis",
   kind: kind,
   label: if label == auto { kind } else { label },
   hidden: hidden,
@@ -283,18 +286,18 @@
   offset: auto,
   exponent: auto,
   auto-exponent-threshold: 3,
+  label: auto,
   functions: auto,
   hidden: false,
   filter: (value, distance) => true,
   ..plots,
 ) => (
   order: order,
-  axis: true,
   kind: kind,
   instances: if instances.len() == 0 {
-    (axis3d(kind: kind, plane: (hidden: false)),)
+    (axis3d(kind: kind, plane: (hidden: false), label: label),)
   } else {
-    instances.map(i => axis3d(hidden: hidden, kind: kind, ..i))
+    instances.map(i => axis3d(hidden: hidden, kind: kind, label: label, ..i))
   },
   // scale: scale,
   lim: lim,
@@ -305,16 +308,35 @@
   // filter: filter,
 )
 
+#let legend-label(
+  format: (it, stroke, fill) => text(size: 0.75em)[#it],
+  width: 1em,
+  spacing: 0.5em,
+  dir: ltr,
+) = (
+  width: width,
+  format: format,
+  dir: dir,
+  spacing: spacing,
+)
+
 #let legend-def(
   position: top + left,
-  label-format: it => text(size: 0.75em)[#it],
   stroke: black.transparentize(40%),
   fill: black.transparentize(95%),
   dir: ttb,
+  spacing: 0.5em,
+  inset: 0.25em,
+  label: (:),
+  // separate: false
 ) = (
   position: position,
-  label-format: label-format,
+  label: legend-label(..label),
   stroke: stroke,
   fill: fill,
   dir: dir,
+  spacing: spacing,
+  inset: inset,
+  // separate: separate
+  separate: false,
 )

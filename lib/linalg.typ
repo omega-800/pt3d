@@ -1,6 +1,9 @@
 #let ortho-proj = (((xmin, xmax), (ymin, ymax), _), (x, y, z)) => (
-  (2 * x - xmax - xmin) / (xmax - xmin),
-  (2 * y - ymax - ymin) / (ymax - ymin),
+  // FIXME: huh.
+  x,
+  y,
+  // (2 * x - xmax - xmin) / (xmax - xmin),
+  // (2 * y - ymax - ymin) / (ymax - ymin),
 )
 
 #let out-of-bounds-2d = x => x > 100% or x < 0%

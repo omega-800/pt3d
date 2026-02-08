@@ -1,4 +1,16 @@
-#let mid = (v, w) => v.enumerate().map(((i, n)) => (w.at(i) + n) / 2)
+#let is-point-normal = p => (
+  type(p) == array
+    and p.len() == 2
+    and p.at(0).len() == 3
+    and p.at(1).len() == 3
+)
+
+#let mid-vec = (v, w) => v.enumerate().map(((i, n)) => (w.at(i) + n) / 2)
+
+#let minmax-vec = (((xmin, ymin, zmin), (xmax, ymax, zmax)), (x, y, z)) => (
+  (calc.min(xmin, x), calc.min(ymin, y), calc.min(zmin, z)),
+  (calc.max(xmax, x), calc.max(ymax, y), calc.max(zmax, z)),
+)
 
 #let n-points-on = (min, max, n) => range(0, n + 1).map(i => (
   min + i * ((max - min) / n)
