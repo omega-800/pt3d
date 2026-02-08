@@ -1,9 +1,26 @@
 #import "linalg.typ": *
 #import "util.typ": *
 
-// TODO: obj
 // TODO: vector field?
 // TODO: marks
+
+#let vertices3d = (
+  stroke: auto,
+  fill: auto,
+  label: none,
+  stroke-color-fn: none,
+  fill-color-fn: none,
+  ..vertices,
+) => {
+  (
+    vertices: vertices.pos(),
+    stroke: stroke,
+    label: label,
+    fill: fill,
+    stroke-color-fn: stroke-color-fn,
+    fill-color-fn: fill-color-fn,
+  )
+}
 
 // TODO: accept x, y, z functions
 // TODO: stroke-color-fn, fill-color-fn
@@ -52,6 +69,7 @@
     fill-color-fn: fill-color-fn,
   )
 }
+
 
 #let path3d = (stroke: auto, label: none, stroke-color-fn: none, ..points) => {
   assert(

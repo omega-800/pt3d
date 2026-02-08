@@ -366,6 +366,16 @@
   render-clip-line(ctx, elem.path, (elem.stroke-color-fn, elem.stroke))
 }
 
+#let render-vertices(ctx, elem) = {
+  for v in elem.vertices {
+    render-clip-plane(
+      ctx,
+      v,
+      (elem.stroke-color-fn, elem.stroke),
+      (elem.fill-color-fn, elem.fill),
+    )
+  }
+}
 #let render-polygon(ctx, elem) = {
   // place(polygon(
   //   fill: elem.fill,
@@ -622,6 +632,8 @@
 ) => {
   if "axis" in elem {
     render-axis(ctx, elem)
+  } else if "vertices" in elem {
+    render-vertices(ctx, elem)
   } else if "path" in elem {
     render-path(ctx, elem)
   } else if "polygon" in elem {
@@ -648,6 +660,7 @@
   box(width: 1em, height: height, place(horizon + center, if "polygon" in elem
     or "plane" in elem
     or "planeplot" in elem
+    or "vertices" in elem
     or "planeparam" in elem {
     rect(width: 1em, height: height, stroke: elem.stroke, fill: elem.fill)
   } else if (

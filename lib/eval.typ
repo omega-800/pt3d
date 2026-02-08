@@ -169,6 +169,8 @@
     elem.path
   } else if "polygon" in elem {
     elem.polygon
+  } else if "vertices" in elem {
+    elem.vertices.join()
   } else if "vec" in elem {
     elem.vec
   } else if "lineplot" in elem {
