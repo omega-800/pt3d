@@ -198,6 +198,8 @@
   hidden: false,
   stroke: black.transparentize(40%),
   label-left: auto,
+  tip: none,
+  toe: none,
 ) => (
   position: if type(position) != array {
     (auto, auto)
@@ -205,6 +207,8 @@
   hidden: hidden,
   stroke: stroke,
   label-left: label-left,
+  tip: tip,
+  toe: toe,
 )
 
 #let tickformat = (
@@ -236,8 +240,8 @@
     hidden: false,
     stroke: black.transparentize(40%),
     label-left: auto,
-    // tip: auto,
-    // toe: auto,
+    tip: none,
+    toe: none,
   ),
   ticks: auto,
   nticks: auto,
