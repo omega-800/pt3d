@@ -26,7 +26,7 @@
 ) = context {
   let legend = legend-def(..legend)
 
-  let ((xpad, xadj, ypad, yadj, title-offset), ctx) = gen-ctx(
+  let (title-offset, ctx) = gen-ctx(
     title,
     (width, height),
     (xaxis, yaxis, zaxis),
@@ -66,56 +66,79 @@
     ..elems.map(render-with-ctx),
   ) { i }]
 
-  let plot-elem = block(
-    // TODO: remove
-    stroke: black,
-    fill: fill,
-    width: ctx.canvas-dim.width,
-    height: ctx.canvas-dim.height,
-    plot,
-  )
-
   // FIXME: less scuffedness please
   if legend-elems.len() > 0 {
-    let legend-x = legend.position.x
-    let legend-y = legend.position.y
-    let legend-dir = if legend-x == none and legend-y == none {
-      btt
-    } else if (legend-x == none) {
-      if legend-y == top { ttb } else { btt }
-    } else {
-      if legend-x == left { ltr } else { rtl }
-    }
-
-    let legend-elem = render-legend(
-      ctx,
-      legend,
-      legend-elems,
-    )
-    legend-elem = if legend.separate { legend-elem } else {
-      place(legend.position, legend-elem)
-    }
     if legend.separate {
+      let legend-x = legend.position.x
+      let legend-y = legend.position.y
+      let legend-dir = if legend-x == none and legend-y == none {
+        btt
+      } else if (legend-y == none) {
+        if legend-x == left { ltr } else { rtl }
+      } else {
+        if legend-y == top { ttb } else { btt }
+      }
+      let (l-w, l-h) = if legend-dir == ltr or legend-dir == rtl {
+        (auto, ctx.canvas-dim.height)
+      } else {
+        (ctx.canvas-dim.width, auto)
+      }
+      let legend-elem = render-legend(
+        ctx,
+        legend,
+        legend-elems,
+        width: l-w,
+        height: l-h,
+      )
+      let (width, height) = measure(legend-elem)
+      let (off-w, off-h) = if legend-dir == ltr or legend-dir == rtl {
+        (width, 0pt)
+      } else {
+        (0pt, height)
+      }
+
+      let plot-elem = block(
+        fill: fill,
+        width: ctx.canvas-dim.width - off-w,
+        height: ctx.canvas-dim.height - off-h,
+        plot,
+      )
+
       content.push(
         place(
-          stack(dir: legend-dir, legend-elem, block(
-            inset: (x: xpad, y: ypad),
-            plot-elem,
-          )),
+          stack(
+            dir: legend-dir,
+            legend-elem,
+            block(
+              // inset: (x: xpad, y: ypad),
+              plot-elem,
+            ),
+          ),
         ),
       )
     } else {
+      let legend-elem = render-legend(
+        ctx,
+        legend,
+        legend-elems,
+      )
+      let plot-elem = block(
+        fill: fill,
+        width: ctx.canvas-dim.width,
+        height: ctx.canvas-dim.height,
+        plot,
+      )
+
       content.push(
         block(
           width: 100%,
           height: 100% - title-offset,
-          stroke: red,
           [
-            #legend-elem
+            #place(legend.position, legend-elem)
             #place(
               top + left,
-              dx: xpad,
-              dy: ypad,
+              // dx: xpad,
+              // dy: ypad,
               plot-elem,
             )
           ],
@@ -123,16 +146,21 @@
       )
     }
   } else {
+    let plot-elem = block(
+      fill: fill,
+      width: ctx.canvas-dim.width,
+      height: ctx.canvas-dim.height,
+      plot,
+    )
+
     content.push(
       block(
-        // TODO: remove
-        stroke: red,
         width: 100%,
         height: 100% - title-offset,
         place(
           top + left,
-          dx: xpad,
-          dy: ypad,
+          // dx: xpad,
+          // dy: ypad,
           plot-elem,
         ),
       ),

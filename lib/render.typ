@@ -77,55 +77,6 @@
   }
 }
 
-#let render-tip((on-canvas, map-point-pt), tip, start, end, stroke) = {
-  let ptstart = map-point-pt(start)
-  let ptend = map-point-pt(end)
-  if type(tip) == function {
-    let (x, y) = end
-    let mark = tip(stroke, end)
-    let (width, height) = measure(mark)
-    place(dx: x - width / 2, dy: y - height / 2, mark)
-  } else {
-    let (x, y) = ptend
-    let d = map-point-pt(direction-vec(end, start))
-    let theta = atan2(..d.rev())
-    let phi = calc.pi / 6
-    let (l1, l2) = (theta + phi, theta - phi).map(a => (
-      (x + 5 * calc.sin(a)) * 1pt,
-      (y + 5 * calc.cos(a)) * 1pt,
-    ))
-    if tip == ">" {
-      place(path-curve(stroke: stroke, l1, end, l2))
-    } else if tip == "|>" {
-      place(polygon(stroke: stroke, fill: stroke, l1, end, l2))
-    } else if tip == "|" {
-      let (f, t) = perpendicular-2d(
-        ptstart,
-        ptend,
-        ptend,
-        6,
-      ).map(v => v.map(i => i * 1pt))
-      place(line(stroke: stroke, start: f, end: t))
-    }
-  }
-}
-
-#let render-vec(ctx, elem) = {
-  let (on-canvas, ..x) = ctx
-  let (start, end) = elem.eval-points.at(0).map(on-canvas)
-  if elem.toe != none {
-    render-tip(ctx, elem.toe, end, start, elem.stroke)
-  }
-  if elem.tip != none {
-    render-tip(ctx, elem.tip, start, end, elem.stroke)
-  }
-  place(line(
-    stroke: elem.stroke,
-    start: start,
-    end: end,
-  ))
-}
-
 #let render-label((on-canvas, ..x), (label, position)) = {
   let (dx, dy) = on-canvas(position)
   let (width, height) = measure(label)
@@ -134,6 +85,54 @@
     dy: dy - height / 2,
     label,
   )
+}
+
+#let render-tip(ctx, tip, start, end, stroke) = {
+  let (on-canvas, map-point-pt, pt-to-ratio) = ctx
+  let c-start = on-canvas(start)
+  let c-end = on-canvas(end)
+  let ptstart = map-point-pt(c-start)
+  let ptend = map-point-pt(c-end)
+  if type(tip) == function {
+    render-label(ctx, (label: tip(stroke, end), position: end))
+  } else {
+    let (x, y) = ptend
+    let d = map-point-pt(direction-vec(c-end, c-start))
+    let theta = atan2(..d.rev())
+    let phi = calc.pi / 6
+    let (l1, l2) = (theta + phi, theta - phi).map(a => pt-to-ratio(
+      ((x + 5 * calc.sin(a)) * 1pt, (y + 5 * calc.cos(a)) * 1pt),
+    ))
+    if tip == ">" {
+      place(path-curve(stroke: stroke, l1, c-end, l2))
+    } else if tip == "|>" {
+      place(polygon(stroke: stroke, fill: stroke, l1, c-end, l2))
+    } else if tip == "|" {
+      let (f, t) = perpendicular-2d(
+        ptstart,
+        ptend,
+        ptend,
+        6,
+      ).map(v => pt-to-ratio(v.map(i => i * 1pt)))
+      place(line(stroke: stroke, start: f, end: t))
+    }
+  }
+}
+
+#let render-vec(ctx, elem) = {
+  let (on-canvas, ..x) = ctx
+  let (start, end) = elem.eval-points.at(0)
+  if elem.toe != none {
+    render-tip(ctx, elem.toe, end, start, elem.stroke)
+  }
+  if elem.tip != none {
+    render-tip(ctx, elem.tip, start, end, elem.stroke)
+  }
+  place(line(
+    stroke: elem.stroke,
+    start: on-canvas(start),
+    end: on-canvas(end),
+  ))
 }
 
 #let render-ticks(ctx, ticks) = {
@@ -153,9 +152,10 @@
 
 #let render-axisline(ctx, elem) = {
   let (on-canvas, ..x) = ctx
-  let (start, end) = elem.eval-points.map(on-canvas)
+  let (start, end) = elem.eval-points
 
-  place(line(start: start, end: end, stroke: elem.stroke))
+  place(line(start: on-canvas(start), end: on-canvas(end), stroke: elem.stroke))
+
   if elem.tip != none {
     render-tip(ctx, elem.tip, start, end, elem.stroke)
   }
@@ -273,6 +273,8 @@
   ctx,
   legend-params,
   legend-elems,
+  width: auto,
+  height: auto,
 ) = {
   let (dir, position, label, stroke, fill, spacing, inset) = legend-params
   let content = legend-elems.map(elem => render-legend-label(elem, label))
@@ -280,6 +282,8 @@
     inset: inset,
     fill: fill,
     stroke: stroke,
+    width: width,
+    height: height,
     stack(spacing: spacing, dir: dir, ..content),
   )
 }

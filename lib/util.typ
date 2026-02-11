@@ -1,5 +1,7 @@
 #import "linalg.typ": *
 
+#let is-num = x => type(x) == float or type(x) == int
+
 #let apply-2d-scale-to-3d = (
   (from-3d, to-3d),
   (from, to),

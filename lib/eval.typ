@@ -263,6 +263,7 @@
     let to = ((length / 2) - offset) / 1pt
     let line-from = point-n(elem.position, min)
     let line-to = point-n(elem.position, max)
+    // TODO: separate labels and ticks
     for tick in elem.ticks {
       let loff = 1em.to-absolute().pt() * 1pt
       let label = if elem.format-ticks.label-format == none { none } else {
@@ -295,10 +296,25 @@
       // FIXME: hacky
       or not ("on-canvas", "canvas-dim", "map-point-pt").all(c => c in ctx)
   ) { none } else {
-    let from-3d = mid-vec(line-from, line-to)
-    // FIXME: depends on tick label & offset
-    let loff = 1em.to-absolute().pt() * 3.5pt
-
+    let mid-tick = if elem.eval-ticks.len() > 0 {
+      elem.eval-ticks.at(int(elem.eval-ticks.len() / 2))
+    } else { none }
+    // FIXME: do this properly
+    let (width, height) = measure(elem.label)
+    let loff = if mid-tick.label == none {
+      (
+        // FIXME: scuffed approximation
+        (elem.format-ticks.length + elem.format-ticks.offset)
+          + (width + height) / 2
+      )
+    } else {
+      let sub-lbl = measure(mid-tick.label.label)
+      (
+        // FIXME: scuffed approximation
+        (elem.format-ticks.length + elem.format-ticks.offset)
+          + (width + height + sub-lbl.width + sub-lbl.height) / 1.5
+      )
+    }
     let (label-pos, label-max) = axis-tick-pos(
       ctx,
       elem.kind,
@@ -326,13 +342,12 @@
 #let eval-axisline-points(ctx, elem) = {
   let res = ()
   let (min, max) = axis-helper-fn(ctx, elem)
-  // TODO:
   if (
-    type(min) == int
-      and type(max) == int
+    is-num(min)
+      and is-num(max)
       and type(elem.position) == array
       and elem.position.len() == 2
-      and elem.position.all(i => type(i) == int)
+      and elem.position.all(is-num)
   ) {
     let elem-eval = eval-axisline(ctx, elem)
     res = elem-eval.eval-points
@@ -354,9 +369,8 @@
 
 #let eval-axisplane-points(ctx, elem) = {
   let res = ()
-
   if (
-    axis-plane-points(ctx, elem).all(pp => pp.all(i => type(i) == int))
+    axis-plane-points(ctx, elem).all(pp => pp.all(is-num))
   ) {
     let elem-eval = eval-axisplane(ctx, elem)
     res = elem-eval.eval-points

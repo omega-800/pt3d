@@ -26,7 +26,6 @@
 #let rescale = ((xo, xscale), (yo, yscale)) => (
   (x, y),
 ) => {
-  // panic(yo,yscale,y, y * yscale + yo)
   (x * xscale + xo, y * yscale + yo)
 }
 
@@ -44,7 +43,7 @@
 
 // FIXME: wonky
 #let def-lim = (min, max, lim: (-1, 1), ..x) => {
-  let def = (i, def) => if type(i) == float or type(i) == int { i } else { def }
+  let def = (i, def) => if is-num(i) { i } else { def }
   let lim = (def(def(lim.at(0), min), 1), def(def(lim.at(1), max), -1))
   if lim.at(0) == lim.at(1) {
     lim.at(0) -= 1
@@ -99,8 +98,6 @@
     dim,
     transform-canvas,
     rotate-canvas,
-    // this is fixed (i think)?
-    // FIXME: previous solution was more correct than this one. bug happens when abs(lim-min) < abs(lim-max)
     rescale(
       overflow-correction(plot-extremes.map(((x, y)) => x)),
       overflow-correction(plot-extremes.map(((x, y)) => y)),
@@ -120,6 +117,7 @@
   let ctx = (
     canvas-dim: canvas-dim,
     on-canvas: on-canvas,
+    // FIXME: leads to bugs crawling out of the nests of this abhorrent codebase
     map-point-pt: ((x, y)) => (
       (x * canvas-dim.width) / 1pt,
       (y * canvas-dim.height) / 1pt,
@@ -218,15 +216,17 @@
   // ctx.measure-3d-pt = measure-3d-pt(ctx.on-canvas, ctx.map-point-pt)
 
   // FIXME: still bad bad code
-  let axes-eval = (xas, yas, zas).map(i => eval-axis-points(ctx, i)).join()
+  // panic(ctx.axes)
+  let axes-eval = ctx.axes.map(i => eval-axis-points(ctx, i)).join()
   let plot-extremes = (..axes-eval, ..cube-vertices(dim)).map(canvas(
     dim,
     transform-canvas,
     rotate-canvas,
     x => x.map(i => i * 100%),
   ))
+  // panic(axes-eval)
   ctx.on-canvas = canvas(
-    dim,
+    ctx.dim,
     transform-canvas,
     rotate-canvas,
     rescale(
@@ -235,6 +235,14 @@
     ),
   )
   ctx.measure-3d-pt = measure-3d-pt(ctx.on-canvas, ctx.map-point-pt)
+  ctx.pt-to-ratio = p => {
+    let (width, height) = ctx.canvas-dim
+    p
+      .map(i => i.to-absolute().pt())
+      .zip((width, height).map(i => i.to-absolute().pt()))
+      .map(((i, d)) => (i / d) * 100%)
+  }
 
-  ((xpad, xadj, ypad, yadj, offset), ctx)
+  // ((xpad, xadj, ypad, yadj, offset), ctx)
+  (offset, ctx)
 }

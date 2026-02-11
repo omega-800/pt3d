@@ -3,10 +3,9 @@
 
 #pt.diagram(
   title: [#sym.Omega],
-  stroke: blue,
   width: 9cm,
   height: 9cm,
-  legend: (position: bottom + left),
+  legend: (position: bottom, separate: true, dir: ltr),
   rotations: (
     pt.mat-rotate-x(calc.pi / 6),
     pt.mat-rotate-y(-calc.pi / 3),
@@ -81,7 +80,7 @@
   zaxis: (
     instances: (pt.axisline(position: (100, 0)), pt.axisplane()),
   ),
-  legend: (position: bottom),
+  legend: (position: bottom + left),
   pt.lineplot(
     xp,
     xp.map(x => calc.log(x) * 100),
@@ -124,118 +123,118 @@
 )
 
 
-// #let plane-steps = 20
-// #let xp = pt.linspace(1, 10)
-// #let curvy = pt.lineplot(
-//   xp.map(x => calc.ln(x) * 5 - 10),
-//   xp.map(x => calc.sin(x) * 5 - 5),
-//   xp.map(x => calc.cos(x) * 5 + 10),
-//   stroke-color-fn: (x, y, z) => pt.rgb-clamp(50, 50, z * 30) + 3pt,
-// )
-// #let planes = (
-//   pt.plane(pt.plane-normal((1, 0, 0), -10)),
-//   pt.plane(pt.plane-normal((0, 1, 0), -10)),
-//   pt.plane(pt.plane-normal((0, 0, 1), 10)),
-// )
-// #let rot = (
-//   pt.mat-rotate-x(calc.pi / 6),
-//   pt.mat-rotate-y(-calc.pi / 3),
-//   pt.mat-rotate-z(0),
-// )
-// #grid(
-//   columns: (auto, auto),
-//   pt.diagram(
-//     title: "clip",
-//     stroke: green,
-//     rotations: rot,
-//     xaxis: (lim: (-10, 10)),
-//     yaxis: (lim: (-10, 10)),
-//     zaxis: (lim: (0, 10)),
-//     curvy,
-//     ..planes,
-//   ),
-//   pt.diagram(
-//     title: "noclip",
-//     stroke: blue,
-//     rotations: rot,
-//     xaxis: (lim: (-10, 10)),
-//     yaxis: (lim: (-10, 10)),
-//     zaxis: (lim: (0, 10)),
-//     noclip: true,
-//     curvy,
-//     ..planes,
-//   ),
-// )
-// #pt.diagram(
-//   title: "test",
-//   width: 12cm,
-//   height: 12cm,
-//   xaxis: (lim: (-2, 5)),
-//   yaxis: (lim: (-5, 5)),
-//   zaxis: (lim: (-5, 5)),
-//   legend: (label: (format: (it, stroke, fill) => text(stroke: fill)[#it])),
-//   pt.planeparam(
-//     (x, y) => y * calc.sin(x) - x * calc.cos(y),
-//     stroke-color-fn: (x, y, z) => pt.rgb-clamp(0, 0, -z * 50 + 120),
-//     fill-color-fn: (x, y, z) => pt.rgb-clamp(150, 50, -z * 50 + 150),
-//     steps: plane-steps,
-//     label: "very awesome plane",
-//   ),
-// )
-//
-// #grid(
-//   columns: (auto, auto),
-//   pt.diagram(
-//     stroke: green,
-//     xaxis: (lim: (-400, 400)),
-//     yaxis: (lim: (-400, 400)),
-//     zaxis: (lim: (-400, 400)),
-//     title: "something",
-//     pt.plane(pt.plane-point-normal((4, -7, 2), (0, 1, 2))),
-//     pt.plane(pt.plane-parametric((0, 1, 2), (3, 2, 1), (-1, 0, 2))),
-//     pt.plane(pt.plane-coordinate(4, -7, 2, 3)),
-//     pt.plane(pt.plane-normal((4, -7, 2), -3)),
-//     pt.plane(pt.plane-hesse(
-//       pt.normalize-vec((4, -7, 2)),
-//       -3 / pt.length-vec((4, -7, 2)),
-//     )),
-//     pt.vec((4, -7, 2), stroke: red + 9pt),
-//   ),
-//   pt.diagram(
-//     title: "something else",
-//     stroke: blue,
-//     pt.plane(pt.plane-normal((1, 2, 4), 1), label: "a blue plane"),
-//     pt.line(pt.line-parametric((1, 2, 3), (2, 0, 1))),
-//     pt.line(pt.line-parametric((1, 2, 3), (2, 0, 0))),
-//     pt.line(pt.line-parametric((1, 2, 3), (2, 0, 2))),
-//   ),
-// )
-//
-// #pt.diagram(
-//   title: "test",
-//   width: 12cm,
-//   height: 12cm,
-//   stroke: blue,
-//   xaxis: (lim: (-2, 5)),
-//   yaxis: (lim: (-2, 5)),
-//   zaxis: (lim: (-5, 50)),
-//   pt.planeparam(
-//     (x, y) => calc.pow(x, 2) + calc.pow(y, 2),
-//     stroke: blue.transparentize(60%),
-//     fill: blue.transparentize(60%),
-//     steps: plane-steps,
-//   ),
-// )
-// #pt.diagram(
-//   title: "much round very wow",
-//   width: 30em,
-//   height: 30em,
-//   // xaxis: (lim: (-10, 10)),
-//   // yaxis: (lim: (-10, 10)),
-//   // zaxis: (lim: (-10, 10)),
-//   pt.planeplot(
-//     domain.map(((u, v)) => 6 * calc.cos(u) * calc.sin(v)),
-//     domain.map(((u, v)) => 6 * calc.sin(u) * calc.sin(v)),
-//     domain.map(((u, v)) => 6 * calc.cos(v)),
-//   ),
-// )
+#let plane-steps = 20
+#let xp = pt.linspace(1, 10)
+#let curvy = pt.lineplot(
+  xp.map(x => calc.ln(x) * 5 - 10),
+  xp.map(x => calc.sin(x) * 5 - 5),
+  xp.map(x => calc.cos(x) * 5 + 10),
+  stroke-color-fn: (x, y, z) => pt.rgb-clamp(50, 50, z * 30) + 3pt,
+)
+#let planes = (
+  pt.plane(pt.plane-normal((1, 0, 0), -10)),
+  pt.plane(pt.plane-normal((0, 1, 0), -10)),
+  pt.plane(pt.plane-normal((0, 0, 1), 10)),
+)
+#let rot = (
+  pt.mat-rotate-x(calc.pi / 6),
+  pt.mat-rotate-y(-calc.pi / 3),
+  pt.mat-rotate-z(0),
+)
+#grid(
+  columns: (auto, auto),
+  pt.diagram(
+    title: "clip",
+    stroke: green,
+    rotations: rot,
+    xaxis: (lim: (-10, 10)),
+    yaxis: (lim: (-10, 10)),
+    zaxis: (lim: (0, 10)),
+    curvy,
+    ..planes,
+  ),
+  pt.diagram(
+    title: "noclip",
+    stroke: blue,
+    rotations: rot,
+    xaxis: (lim: (-10, 10)),
+    yaxis: (lim: (-10, 10)),
+    zaxis: (lim: (0, 10)),
+    noclip: true,
+    curvy,
+    ..planes,
+  ),
+)
+#pt.diagram(
+  title: "test",
+  width: 12cm,
+  height: 12cm,
+  xaxis: (lim: (-2, 5)),
+  yaxis: (lim: (-5, 5)),
+  zaxis: (lim: (-5, 5)),
+  legend: (label: (format: (it, stroke, fill) => text(stroke: fill)[#it])),
+  pt.planeparam(
+    (x, y) => y * calc.sin(x) - x * calc.cos(y),
+    stroke-color-fn: (x, y, z) => pt.rgb-clamp(0, 0, -z * 50 + 120),
+    fill-color-fn: (x, y, z) => pt.rgb-clamp(150, 50, -z * 50 + 150),
+    steps: plane-steps,
+    label: "very awesome plane",
+  ),
+)
+
+#grid(
+  columns: (auto, auto),
+  pt.diagram(
+    stroke: green,
+    xaxis: (lim: (-400, 400)),
+    yaxis: (lim: (-400, 400)),
+    zaxis: (lim: (-400, 400)),
+    title: "something",
+    pt.plane(pt.plane-point-normal((4, -7, 2), (0, 1, 2))),
+    pt.plane(pt.plane-parametric((0, 1, 2), (3, 2, 1), (-1, 0, 2))),
+    pt.plane(pt.plane-coordinate(4, -7, 2, 3)),
+    pt.plane(pt.plane-normal((4, -7, 2), -3)),
+    pt.plane(pt.plane-hesse(
+      pt.normalize-vec((4, -7, 2)),
+      -3 / pt.length-vec((4, -7, 2)),
+    )),
+    pt.vec((4, -7, 2), stroke: red + 9pt),
+  ),
+  pt.diagram(
+    title: "something else",
+    stroke: blue,
+    pt.plane(pt.plane-normal((1, 2, 4), 1), label: "a blue plane"),
+    pt.line(pt.line-parametric((1, 2, 3), (2, 0, 1))),
+    pt.line(pt.line-parametric((1, 2, 3), (2, 0, 0))),
+    pt.line(pt.line-parametric((1, 2, 3), (2, 0, 2))),
+  ),
+)
+
+#pt.diagram(
+  title: "test",
+  width: 12cm,
+  height: 12cm,
+  stroke: blue,
+  xaxis: (lim: (-2, 5)),
+  yaxis: (lim: (-2, 5)),
+  zaxis: (lim: (-5, 50)),
+  pt.planeparam(
+    (x, y) => calc.pow(x, 2) + calc.pow(y, 2),
+    stroke: blue.transparentize(60%),
+    fill: blue.transparentize(60%),
+    steps: plane-steps,
+  ),
+)
+#pt.diagram(
+  title: "much round very wow",
+  width: 30em,
+  height: 30em,
+  // xaxis: (lim: (-10, 10)),
+  // yaxis: (lim: (-10, 10)),
+  // zaxis: (lim: (-10, 10)),
+  pt.planeplot(
+    domain.map(((u, v)) => 6 * calc.cos(u) * calc.sin(v)),
+    domain.map(((u, v)) => 6 * calc.sin(u) * calc.sin(v)),
+    domain.map(((u, v)) => 6 * calc.cos(v)),
+  ),
+)

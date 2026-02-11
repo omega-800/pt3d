@@ -283,7 +283,14 @@
     (axisline3d(kind: kind, label: label), axisplane3d(kind: kind))
   } else {
     // TODO:
-    instances.map(i => (..i, kind: kind /* hidden: hidden,  label: label, */))
+    instances.map(i => (
+      ..i,
+      kind: kind,
+      // FIXME: wonky
+      label: if i.type == "axisline" { label } else {
+        auto
+      }, /* hidden: hidden, */
+    ))
   },
   // scale: scale,
   lim: lim,
@@ -326,7 +333,7 @@
   spacing: 0.5em,
   inset: 0.25em,
   label: (:),
-  // separate: false
+  separate: false,
 ) = (
   position: position,
   label: legend-label(..label),
@@ -335,6 +342,5 @@
   dir: dir,
   spacing: spacing,
   inset: inset,
-  // separate: separate
-  separate: false,
+  separate: separate,
 )
