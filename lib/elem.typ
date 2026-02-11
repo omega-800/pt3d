@@ -187,7 +187,7 @@
 )
 
 #let tickformat = (
-  stroke: black.transparentize(40%),
+  stroke: auto,
   length: auto,
   offset: auto,
   label-format: tick => text(size: 0.75em)[#calc.round(tick, digits: 2)],
@@ -204,8 +204,8 @@
   kind: "x",
   position: auto,
   label: auto,
-  stroke: black.transparentize(40%),
-  fill: black.transparentize(95%),
+  stroke: black.transparentize(40%), // (paint: black.transparentize(40%), dash: "dotted"),
+  fill: black.transparentize(95%), // none,
   format-ticks: (label-format: none),
   // format-subticks: (:),
   // format-extra-ticks: (:),

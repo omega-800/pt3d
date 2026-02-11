@@ -126,191 +126,91 @@
   ))
 }
 
-#let render-axis(ctx, elem) = {
-  let (on-canvas, canvas-dim, dim, out-of-bounds, axes) = ctx
-  let (xas, yas, zas) = axes
-  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
-
-  let (
-    point,
-    point-p,
-    point-r,
-    point-n,
-    cur,
-    min,
-    max,
-  ) = axis-helper-fn(
-    ctx,
-    elem,
+#let render-label((on-canvas, ..x), (label, position)) = {
+  let (dx, dy) = on-canvas(position)
+  place(
+    dx: dx,
+    dy: dy,
+    label,
   )
+}
 
-  let axis-ticks = a => {
-    let axis = a
-      .instances
-      .filter(
-        i => (
-          i.format-ticks != none
-        ),
-      )
-      .at(0, default: none)
-    if axis == none or a.ticks == none { return () }
-    let (kind, ticks, nticks) = a
-    let h = axis-helper-fn(ctx, axis)
-    let tmin = h.min
-    let tmax = h.max
-    let span = tmax - tmin
-    if (
-      ticks == auto and nticks == auto
-    ) {
-      n-points-on(tmin, tmax, 10)
-    } else if ticks == auto {
-      n-points-on(tmin, tmax, nticks)
-    } else {
-      ticks
-    }
-  }
-
-  // TODO: better auto ticks
-  let xticks = axis-ticks(xas)
-  let yticks = axis-ticks(yas)
-  let zticks = axis-ticks(zas)
-
-  let pmin = point(min)
-  let pmax = point(max)
-  let place-line = (start, end, stroke: elem.stroke) => place(line(
-    stroke: stroke,
-    start: on-canvas(start),
-    end: on-canvas(end),
-  ))
-  if elem.type == "axisplane" {
-    place(polygon(
-      fill: elem.fill,
-      stroke: elem.stroke,
-      ..axis-plane-points(ctx, elem).map(on-canvas),
+#let render-ticks(ctx, ticks) = {
+  let (on-canvas, ..x) = ctx
+  for (label, tick, stroke) in ticks {
+    let (start, end) = tick
+    place(line(
+      stroke: stroke,
+      start: on-canvas(start),
+      end: on-canvas(end),
     ))
-  }
-
-  if elem.type == "axisline" {
-    let line-from = point-n(elem.position, min)
-    let line-to = point-n(elem.position, max)
-    // TODO: show label if line hidden
-    if elem.label != none {
-      let from-3d = mid-vec(line-from, line-to)
-      // FIXME: depends on tick label & offset
-      let loff = 1em.to-absolute().pt() * 3.5pt
-
-      let (label-x, label-y) = axis-tick-pos(
-        ctx,
-        elem.kind,
-        elem.position,
-        mid-vec(line-from, line-to),
-        loff,
-        elem.label,
-      )
-
-      place(
-        dx: label-x,
-        dy: label-y,
-        elem.label,
-      )
-    }
-
-    let c-l-from = on-canvas(line-from)
-    let c-l-to = on-canvas(line-to)
-    // TODO: tip, toe
-    if elem.tip != none {
-      render-tip(ctx, elem.tip, c-l-from, c-l-to, elem.stroke)
-    }
-    if elem.toe != none {
-      render-tip(ctx, elem.toe, c-l-to, c-l-from, elem.stroke)
-    }
-    place-line(line-from, line-to, stroke: elem.stroke)
-  }
-  if elem.format-ticks != none {
-    // if elem.format-subticks != none {}
-    let (length, offset) = elem.format-ticks
-    let from = ((length / 2) + offset) / 1pt
-    let to = ((length / 2) - offset) / 1pt
-    if elem.type == "axisline" {
-      let line-from = point-n(elem.position, min)
-      let line-to = point-n(elem.position, max)
-      for tick in elem.ticks {
-        let loff = 1em.to-absolute().pt() * 1pt
-        let label = (elem.format-ticks.label-format)(tick)
-        let (start, end, label-x, label-y) = axis-tick-pos(
-          ctx,
-          elem.kind,
-          elem.position,
-          point-r(line-from, tick),
-          loff,
-          label,
-          from-off: from,
-          to-off: to,
-        )
-
-        place(line(
-          stroke: elem.format-ticks.stroke,
-          start: start,
-          end: end,
-        ))
-        place(
-          dx: label-x,
-          dy: label-y,
-          label,
-        )
-      }
-    }
-    if elem.type == "axisplane" {
-      if elem.kind == "z" {
-        for tick in xticks {
-          place-line(
-            (tick, ymin, elem.position),
-            (tick, ymax, elem.position),
-          )
-        }
-        for tick in yticks {
-          place-line(
-            (xmin, tick, elem.position),
-            (xmax, tick, elem.position),
-          )
-        }
-      } else if elem.kind == "y" {
-        for tick in xticks {
-          place-line(
-            (tick, elem.position, zmin),
-            (tick, elem.position, zmax),
-          )
-        }
-        for tick in zticks {
-          place-line(
-            (xmin, elem.position, tick),
-            (xmax, elem.position, tick),
-          )
-        }
-      } else {
-        for tick in yticks {
-          place-line(
-            (elem.position, tick, zmin),
-            (elem.position, tick, zmax),
-          )
-        }
-        for tick in zticks {
-          place-line(
-            (elem.position, ymin, tick),
-            (elem.position, ymax, tick),
-          )
-        }
-      }
+    if label != none {
+      render-label(ctx, label)
     }
   }
 }
 
+#let render-axisline(ctx, elem) = {
+  let (on-canvas, ..x) = ctx
+  let (start, end) = elem.eval-points.map(on-canvas)
+  place(line(start: start, end: end, stroke: elem.stroke))
+  if elem.tip != none {
+    render-tip(ctx, elem.tip, start, end, elem.stroke)
+  }
+  if elem.toe != none {
+    render-tip(ctx, elem.toe, end, start, elem.stroke)
+  }
+  if elem.eval-label != none {
+    // TODO:
+    // render-label(ctx, elem.eval-label)
+    let (label, position) = elem.eval-label
+    let (dx, dy) = position
+    place(
+      dx: dx,
+      dy: dy,
+      label,
+    )
+  }
+  // TODO:
+  // render-ticks(ctx,elem.eval-ticks)
+  for (label, tick, stroke) in elem.eval-ticks {
+    let (start, end) = tick
+    place(line(
+      stroke: stroke,
+      start: start,
+      end: end,
+    ))
+    if label != none {
+      let (label, position) = label
+      let (dx, dy) = position
+      place(
+        dx: dx,
+        dy: dy,
+        label,
+      )
+    }
+  }
+}
+
+#let render-axisplane(ctx, elem) = {
+  let (on-canvas, ..x) = ctx
+  place(polygon(
+    fill: elem.fill,
+    stroke: elem.stroke,
+    ..elem.eval-points.map(on-canvas),
+  ))
+  if elem.eval-label != none {
+    render-label(ctx, elem.eval-label)
+  }
+  render-ticks(ctx, elem.eval-ticks)
+}
+
 #let render-axes(ctx, axis) = {
   for i in axis.instances {
-    if i.type == "lineaxis" {
-      render-lineaxis(ctx, i)
+    if i.type == "axisline" {
+      render-axisline(ctx, i)
     } else {
-      render-planeaxis(ctx, i)
+      render-axisplane(ctx, i)
     }
   }
 }
@@ -318,8 +218,8 @@
 #let render = (
   // TODO:
   "axis": render-axes,
-  "lineaxis": render-lineaxis,
-  "planeaxis": render-planeaxis,
+  "lineaxis": render-axisline,
+  "planeaxis": render-axisplane,
   // TODO:
   "plane": render-plane,
   // TODO:

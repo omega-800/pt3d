@@ -138,7 +138,7 @@
     let line-to = point-n(elem.position, max)
     elem.eval-points = (line-from, line-to)
 
-    if elem.label != none {
+    elem.eval-label = if elem.label == none { none } else {
       let from-3d = mid-vec(line-from, line-to)
       // FIXME: depends on tick label & offset
       let loff = 1em.to-absolute().pt() * 3.5pt
@@ -152,19 +152,21 @@
         elem.label,
       )
       // TODO: 3d points instead of 2d
-      elem.eval-label = (label: elem.label, position: (label-x, label-y))
+      (label: elem.label, position: (label-x, label-y))
     }
     // TODO:
+    elem.eval-ticks = ()
     if elem.format-ticks != none {
       let (length, offset) = elem.format-ticks
       let from = ((length / 2) + offset) / 1pt
       let to = ((length / 2) - offset) / 1pt
       let line-from = point-n(elem.position, min)
       let line-to = point-n(elem.position, max)
-      elem.eval-ticks = ()
       for tick in axis.ticks {
         let loff = 1em.to-absolute().pt() * 1pt
-        let label = (elem.format-ticks.label-format)(tick)
+        let label = if elem.format-ticks.label-format == none { none } else {
+          (elem.format-ticks.label-format)(tick)
+        }
         let (start, end, label-x, label-y) = axis-tick-pos(
           ctx,
           elem.kind,
@@ -177,23 +179,32 @@
         )
         // TODO: 3d points instead of 2d
         // TODO: apply format-ticks only on render
+        // TODO: label might be none
         elem.eval-ticks.push((
-          label: (label: label, position: (label-x, label-y)),
-          line: (start, end),
+          label: if label == none { none } else {
+            (label: label, position: (label-x, label-y))
+          },
+          tick: (start, end),
+          stroke: if elem.format-ticks.stroke == auto { elem.stroke } else {
+            elem.format-ticks.stroke
+          },
         ))
       }
     }
   } else {
     elem.eval-points = axis-plane-points(ctx, elem)
+    elem.eval-ticks = ()
     if elem.format-ticks != none {
-      elem.eval-ticks = ()
       let new-tick = (l, pos) => (
         label: if elem.format-ticks.label-format == none { none } else {
-          // TODO: apply format-ticks only on render
+          // TODO: apply format-ticks only on render?
           // TODO: position
           (label: (elem.format-ticks.label-format)(l), position: (0, 0, 0))
         },
-        line: pos,
+        tick: pos,
+        stroke: if elem.format-ticks.stroke == auto { elem.stroke } else {
+          elem.format-ticks.stroke
+        },
       )
 
       let axis-ticks = a => {
@@ -272,8 +283,8 @@
       }
     }
     // TODO:
-    if elem.label != none {
-      elem.eval-label = (label: elem.label, position: (0pt, 0pt))
+    elem.eval-label = if elem.label == none { none } else {
+      (label: elem.label, position: (0pt, 0pt))
     }
   }
   elem
