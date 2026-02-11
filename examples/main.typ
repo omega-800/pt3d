@@ -1,6 +1,5 @@
 #import "../lib/pt3d.typ" as pt
 
-
 #pt.diagram(
   title: [#sym.Omega],
   width: 9cm,
@@ -75,12 +74,10 @@
   title: "vecs and lines and such",
   width: 15em,
   height: 9cm,
-  xaxis: (instances: (pt.axisline(position: (200, 200)), pt.axisplane())),
-  yaxis: (instances: (pt.axisline(position: (100, 200)), pt.axisplane())),
-  zaxis: (
-    instances: (pt.axisline(position: (100, 0)), pt.axisplane()),
-  ),
-  legend: (position: bottom + left),
+  xaxis: (instances: (pt.axisplane(),)),
+  yaxis: (instances: (pt.axisplane(),)),
+  zaxis: (instances: (pt.axisplane(),)),
+  legend: (position: top, separate: true),
   pt.lineplot(
     xp,
     xp.map(x => calc.log(x) * 100),

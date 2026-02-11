@@ -216,7 +216,9 @@
   position: position,
   stroke: stroke,
   fill: fill,
-  format-ticks: tickformat(..format-ticks),
+  format-ticks: if format-ticks == none { none } else {
+    tickformat(..format-ticks)
+  },
   // format-subticks: format-subticks,
   // format-extra-ticks: format-extra-ticks,
 )
@@ -236,14 +238,14 @@
   type: "axisline",
   kind: kind,
   label: label,
-  position: if type(position) != array {
-    (auto, auto)
-  } else { position },
+  position: position,
   stroke: stroke,
   label-left: label-left,
   tip: tip,
   toe: toe,
-  format-ticks: tickformat(..format-ticks),
+  format-ticks: if format-ticks == none { none } else {
+    tickformat(..format-ticks)
+  },
   // format-subticks: format-subticks,
   // format-extra-ticks: format-extra-ticks,
 )
@@ -280,16 +282,19 @@
   kind: kind,
   type: "axis",
   instances: if instances.len() == 0 {
-    (axisline3d(kind: kind, label: label), axisplane3d(kind: kind))
+    (
+      axisline3d(kind: kind, label: label),
+      axisplane3d(kind: kind, label: label),
+    )
   } else {
     // TODO:
     instances.map(i => (
       ..i,
       kind: kind,
       // FIXME: wonky
-      label: if i.type == "axisline" { label } else {
-        auto
-      }, /* hidden: hidden, */
+      // label: if i.type == "axisline" { label } else {
+      //   auto
+      // }, /* hidden: hidden, */
     ))
   },
   // scale: scale,

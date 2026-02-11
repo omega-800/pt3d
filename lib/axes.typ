@@ -166,7 +166,7 @@
     let (width, height) = measure(label)
 
     // FIXME: do this properly
-    let to-add = (width, height).map(i => i / 0.5pt).sum()
+    let to-add = (width, height).map(i => i / 1pt).sum() + 5
 
     let (label-from, label-to) = rescale-line(
       start-pt,
@@ -253,51 +253,49 @@
 
 #let axis-ticks-default = (ctx, axis) => {
   if type(axis.ticks) == array {
-    axis.ticks.filter(t => t <= max and t >= min)
-  } else {
-    let (on-canvas, dim, map-point-pt) = ctx
-    let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
-    let (min, max, point-n) = axis-helper-fn(ctx, (
-      kind: axis.kind,
-      type: "axisline",
-    ))
-    let tick-l-ratios = axis
-      .instances
-      .filter(i => i.format-ticks.label-format != none)
-      .map(i => {
-        // TODO: calculate this properly
-        let tick-l-size = measure((i.format-ticks.label-format)(-10.2))
-
-        let (start, end) = (
-          if i.type == "axisline" {
-            (
-              point-n(i.position, min),
-              point-n(i.position, max),
-            )
-          } else {
-            // TODO: FIXME: TODO: FIXME
-            (i.position, min, min)
-            (i.position, max, max)
-          }
-        )
-          .map(
-            on-canvas,
-          )
-          .map(map-point-pt)
-        let axis-size = distance-vec(start, end)
-        int(calc.min(
-          axis-size / tick-l-size.width.pt(),
-          axis-size / tick-l-size.height.pt(),
-        ))
-      })
-    let tick-l-ratio = if tick-l-ratios.len() > 0 {
-      calc.max(..tick-l-ratios)
-    } else { none }
-    let n = if axis.nticks == auto and tick-l-ratio == none {
-      10
-    } else if axis.nticks == auto { tick-l-ratio } else { axis.nticks }
-    n-points-on(min, max, if n == 0 { 10 } else { n })
+    return axis.ticks.filter(t => t <= max and t >= min)
   }
+  let (on-canvas, dim, map-point-pt) = ctx
+  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
+  let (min, max, point-n) = axis-helper-fn(ctx, (
+    kind: axis.kind,
+    type: "axisline",
+  ))
+  let tick-l-ratios = axis
+    .instances
+    .filter(i => i.format-ticks != none and i.format-ticks.label-format != none)
+    .map(i => {
+      // TODO: calculate this properly
+      let tick-l-size = measure((i.format-ticks.label-format)(-10.2))
+
+      let (start, end) = (
+        if i.type == "axisline" {
+          (
+            point-n(i.position, min),
+            point-n(i.position, max),
+          )
+        } else {
+          // TODO: FIXME: TODO: FIXME
+          ((i.position, min, min), (i.position, max, max))
+        }
+      )
+        .map(
+          on-canvas,
+        )
+        .map(map-point-pt)
+      let axis-size = distance-vec(start, end)
+      int(calc.min(
+        axis-size / tick-l-size.width.pt(),
+        axis-size / tick-l-size.height.pt(),
+      ))
+    })
+  let tick-l-ratio = if tick-l-ratios.len() > 0 {
+    calc.max(..tick-l-ratios)
+  } else { none }
+  let n = if axis.nticks == auto and tick-l-ratio == none {
+    10
+  } else if axis.nticks == auto { tick-l-ratio } else { axis.nticks }
+  n-points-on(min, max, if n == 0 { 10 } else { n })
 }
 
 #let axes-defaults = (xaxis, yaxis, zaxis, ctx) => (
@@ -314,7 +312,9 @@
       )
       a.ticks = axis-ticks-default(ctx, a)
       // FIXME: wonky
-      a.instances = a.instances.map(i => (..i, ticks: a.ticks))
+      a.instances = a.instances.map(i => if i.format-ticks != none {
+        (..i, ticks: a.ticks)
+      } else { i })
       a
     })
 )

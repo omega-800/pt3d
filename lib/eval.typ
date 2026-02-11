@@ -228,7 +228,18 @@
   }
   // TODO:
   elem.eval-label = if elem.label == none { none } else {
-    (label: elem.label, position: (0, 0, 0), max: (0, 0, 0))
+    let line-from = point-n((min, min), elem.position)
+    let (start, end, label-pos, label-max) = axis-tick-pos(
+      ctx,
+      elem.kind,
+      (min, min),
+      line-from,
+      1pt,
+      elem.label,
+      from-off: 5,
+      to-off: 5,
+    )
+    (label: elem.label, position: label-pos, max: label-max)
   }
   elem
 }
@@ -301,18 +312,21 @@
     } else { none }
     // FIXME: do this properly
     let (width, height) = measure(elem.label)
-    let loff = if mid-tick.label == none {
+    let loff = if mid-tick == none {
+      // FIXME: scuffed approximation
+      (width + height) / 1.5
+    } else if mid-tick.label == none {
       (
         // FIXME: scuffed approximation
         (elem.format-ticks.length + elem.format-ticks.offset)
-          + (width + height) / 2
+          + (width + height) / 1.5
       )
     } else {
       let sub-lbl = measure(mid-tick.label.label)
       (
         // FIXME: scuffed approximation
         (elem.format-ticks.length + elem.format-ticks.offset)
-          + (width + height + sub-lbl.width + sub-lbl.height) / 1.5
+          + (width + height + sub-lbl.width + sub-lbl.height)
       )
     }
     let (label-pos, label-max) = axis-tick-pos(
