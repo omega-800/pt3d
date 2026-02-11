@@ -1,19 +1,37 @@
 #import "linalg.typ": *
 #import "util.typ": *
 
+#let axis-plane-points = (ctx, elem) => {
+  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = ctx.dim
+  if elem.kind == "x" {
+    (
+      (elem.position, ymin, zmin),
+      (elem.position, ymax, zmin),
+      (elem.position, ymax, zmax),
+      (elem.position, ymin, zmax),
+    )
+  } else if elem.kind == "y" {
+    (
+      (xmin, elem.position, zmin),
+      (xmax, elem.position, zmin),
+      (xmax, elem.position, zmax),
+      (xmin, elem.position, zmax),
+    )
+  } else {
+    (
+      (xmin, ymin, elem.position),
+      (xmax, ymin, elem.position),
+      (xmax, ymax, elem.position),
+      (xmin, ymax, elem.position),
+    )
+  }
+}
+
 #let axis-helper-fn = (ctx, elem) => {
   let (dim, ..x) = ctx
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
 
   if elem.kind == "x" {
-    let pp = if "plane" in elem {
-      (
-        (elem.plane.position, ymin, zmin),
-        (elem.plane.position, ymax, zmin),
-        (elem.plane.position, ymax, zmax),
-        (elem.plane.position, ymin, zmax),
-      )
-    } else { () }
     (
       point: x => (x, 0, 0),
       point-p: ((x, y, z), n) => (x, y + n, z + n),
@@ -22,17 +40,8 @@
       cur: ((x, y, z)) => x,
       min: xmin,
       max: xmax,
-      plane-points: pp,
     )
   } else if elem.kind == "y" {
-    let pp = if "plane" in elem {
-      (
-        (xmin, elem.plane.position, zmin),
-        (xmax, elem.plane.position, zmin),
-        (xmax, elem.plane.position, zmax),
-        (xmin, elem.plane.position, zmax),
-      )
-    }
     (
       point: y => (0, y, 0),
       point-p: ((x, y, z), n) => (x + n, y, z + n),
@@ -41,17 +50,8 @@
       cur: ((x, y, z)) => y,
       min: ymin,
       max: ymax,
-      plane-points: pp,
     )
   } else {
-    let pp = if "plane" in elem {
-      (
-        (xmin, ymin, elem.plane.position),
-        (xmax, ymin, elem.plane.position),
-        (xmax, ymax, elem.plane.position),
-        (xmin, ymax, elem.plane.position),
-      )
-    }
     (
       point: z => (0, 0, z),
       point-p: ((x, y, z), n) => (x + n, y + n, z),
@@ -60,7 +60,6 @@
       cur: ((x, y, z)) => z,
       min: zmin,
       max: zmax,
-      plane-points: pp,
     )
   }
 }
@@ -165,27 +164,36 @@
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
   let (min, max, point-n) = axis-helper-fn(ctx, i)
 
-  if i.plane.position == auto {
-    i.plane.position = if i.kind == "z" { min } else { max }
-  }
-  if i.line.position.any(p => p == auto) {
-    let def = (defmin, defmax) => {
-      let (min, max) = i.line.position
-      (
-        if min == auto { defmin } else { min },
-        if max == auto { defmax } else { max },
-      )
+  if i.type == "axisplane" {
+    if i.position == auto {
+      i.position = if i.kind == "z" { min } else { max }
     }
-    i.line.position = if i.kind == "x" {
-      def(ymin, zmin)
-    } else if i.kind == "y" {
-      def(xmin, zmin)
-    } else {
-      def(xmin, ymax)
+    if i.label == auto {
+      i.label = none
+    }
+  }
+  if i.type == "axisline" {
+    if i.position.any(p => p == auto) {
+      let def = (defmin, defmax) => {
+        let (min, max) = i.position
+        (
+          if min == auto { defmin } else { min },
+          if max == auto { defmax } else { max },
+        )
+      }
+      i.position = if i.kind == "x" {
+        def(ymin, zmin)
+      } else if i.kind == "y" {
+        def(xmin, zmin)
+      } else {
+        def(xmin, ymax)
+      }
+    }
+    if i.label == auto {
+      i.label = i.kind
     }
   }
 
-  let tick-l-ratio = none
   if i.format-ticks != none {
     if i.format-ticks.length == auto {
       i.format-ticks.length = 10pt
@@ -193,37 +201,62 @@
     if i.format-ticks.offset == auto {
       i.format-ticks.offset = i.format-ticks.length / 2
     }
-    if i.format-ticks.label-format != none {
-      // TODO: calculate this properly
-      let tick-l-size = measure((i.format-ticks.label-format)(-10.2))
-      let (start, end) = (
-        point-n(i.line.position, min),
-        point-n(i.line.position, max),
-      )
-        .map(
-          on-canvas,
-        )
-        .map(map-point-pt)
-      let axis-size = length-vec(direction-vec(end, start))
-      tick-l-ratio = int(calc.min(
-        axis-size / tick-l-size.width.pt(),
-        axis-size / tick-l-size.height.pt(),
-      ))
-    }
-  }
-  i.ticks = if type(i.ticks) == array {
-    i.ticks.filter(t => t <= max and t >= min)
-  } else {
-    let n = if i.nticks == auto and tick-l-ratio == none {
-      10
-    } else if i.nticks == auto { tick-l-ratio } else { i.nticks }
-    n-points-on(min, max, if n == 0 { 10 } else { n })
   }
   i
 }
 
+#let axis-ticks-default = (ctx, axis) => {
+  if type(axis.ticks) == array {
+    axis.ticks.filter(t => t <= max and t >= min)
+  } else {
+    let (on-canvas, dim, map-point-pt) = ctx
+    let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
+    let (min, max, point-n) = axis-helper-fn(ctx, (
+      kind: axis.kind,
+      type: "axisline",
+    ))
+    let tick-l-ratios = axis
+      .instances
+      .filter(i => i.format-ticks.label-format != none)
+      .map(i => {
+        // TODO: calculate this properly
+        let tick-l-size = measure((i.format-ticks.label-format)(-10.2))
+
+        let (start, end) = (
+          if i.type == "axisline" {
+            (
+              point-n(i.position, min),
+              point-n(i.position, max),
+            )
+          } else {
+            // TODO: FIXME: TODO: FIXME
+            (i.position, min, min)
+            (i.position, max, max)
+          }
+        )
+          .map(
+            on-canvas,
+          )
+          .map(map-point-pt)
+        let axis-size = length-vec(direction-vec(end, start))
+        int(calc.min(
+          axis-size / tick-l-size.width.pt(),
+          axis-size / tick-l-size.height.pt(),
+        ))
+      })
+    let tick-l-ratio = if tick-l-ratios.len() > 0 {
+      calc.max(..tick-l-ratios)
+    } else { none }
+    let n = if axis.nticks == auto and tick-l-ratio == none {
+      10
+    } else if axis.nticks == auto { tick-l-ratio } else { axis.nticks }
+    n-points-on(min, max, if n == 0 { 10 } else { n })
+  }
+}
+
 #let axes-defaults = (xaxis, yaxis, zaxis, ctx) => {
   let (xlim, ylim, zlim) = ctx.dim
+
   let xas = (
     ..xaxis,
     lim: xlim,
@@ -232,6 +265,7 @@
       ctx,
     )),
   )
+  xas.ticks = axis-ticks-default(ctx, xas)
   let yas = (
     ..yaxis,
     lim: ylim,
@@ -240,6 +274,7 @@
       ctx,
     )),
   )
+  yas.ticks = axis-ticks-default(ctx, yas)
   let zas = (
     ..zaxis,
     lim: zlim,
@@ -248,6 +283,7 @@
       ctx,
     )),
   )
+  zas.ticks = axis-ticks-default(ctx, zas)
 
   (xas, yas, zas)
 }

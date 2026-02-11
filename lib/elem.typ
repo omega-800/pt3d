@@ -186,31 +186,6 @@
   label: label,
 )
 
-#let axisplane3d = (
-  position: auto,
-  hidden: true,
-  stroke: black.transparentize(40%),
-  fill: black.transparentize(95%),
-) => (position: position, hidden: hidden, stroke: stroke, fill: fill)
-
-#let axisline3d = (
-  position: (auto, auto),
-  hidden: false,
-  stroke: black.transparentize(40%),
-  label-left: auto,
-  tip: none,
-  toe: none,
-) => (
-  position: if type(position) != array {
-    (auto, auto)
-  } else { position },
-  hidden: hidden,
-  stroke: stroke,
-  label-left: label-left,
-  tip: tip,
-  toe: toe,
-)
-
 #let tickformat = (
   stroke: black.transparentize(40%),
   length: auto,
@@ -223,85 +198,92 @@
   label-format: label-format,
 )
 
+// TODO: outsource setting default values to ~india~ axis-instance-defaults() fn
+
+#let axisplane3d = (
+  kind: "x",
+  position: auto,
+  label: auto,
+  stroke: black.transparentize(40%),
+  fill: black.transparentize(95%),
+  format-ticks: (label-format: none),
+  // format-subticks: (:),
+  // format-extra-ticks: (:),
+) => (
+  type: "axisplane",
+  kind: kind,
+  label: label,
+  position: position,
+  stroke: stroke,
+  fill: fill,
+  format-ticks: tickformat(..format-ticks),
+  // format-subticks: format-subticks,
+  // format-extra-ticks: format-extra-ticks,
+)
+
+#let axisline3d = (
+  kind: "x",
+  position: (auto, auto),
+  label: auto,
+  stroke: black.transparentize(40%),
+  label-left: auto,
+  tip: none,
+  toe: none,
+  format-ticks: (:),
+  // format-subticks: (:),
+  // format-extra-ticks: (:),
+) => (
+  type: "axisline",
+  kind: kind,
+  label: label,
+  position: if type(position) != array {
+    (auto, auto)
+  } else { position },
+  stroke: stroke,
+  label-left: label-left,
+  tip: tip,
+  toe: toe,
+  format-ticks: tickformat(..format-ticks),
+  // format-subticks: format-subticks,
+  // format-extra-ticks: format-extra-ticks,
+)
+
 // TODO: clean this up
 // FIXME: wonky
 #let axis3d = (
-  kind: "x",
-  label: auto,
-  hidden: false,
-  plane: (
-    position: auto,
-    hidden: true,
-    stroke: black.transparentize(40%),
-    fill: black.transparentize(95%),
-  ),
-  line: (
-    position: (auto, auto),
-    hidden: false,
-    stroke: black.transparentize(40%),
-    label-left: auto,
-    tip: none,
-    toe: none,
-  ),
-  ticks: auto,
-  nticks: auto,
-  subticks: auto,
-  tick-distance: auto,
-  locate-ticks: auto,
-  format-ticks: (:),
-  locate-subticks: auto,
-  format-subticks: (:),
-  extra-ticks: (),
-  format-extra-ticks: (:),
-  // tick-args: (:),
-  // subtick-args: (:),
-) => (
-  type: "axis",
-  kind: kind,
-  label: if label == auto { kind } else { label },
-  hidden: hidden,
-  plane: axisplane3d(..plane),
-  line: axisline3d(..line),
-  ticks: ticks,
-  nticks: nticks,
-  // subticks: subticks,
-  tick-distance: tick-distance,
-  // offset: offset,
-  // exponent: exponent,
-  // auto-exponent-threshold: auto-exponent-threshold,
-  // locate-ticks: locate-ticks,
-  format-ticks: tickformat(..format-ticks),
-  // locate-subticks: locate-subticks,
-  // format-subticks: format-subticks,
-  // extra-ticks: extra-ticks,
-  // format-extra-ticks: format-extra-ticks,
-  // tick-args: tick-args,
-  // subtick-args: subtick-args,
-)
-
-#let axis = (
   order: auto,
   kind: "x",
   instances: (),
-  scale: auto,
+  // scale: auto,
   lim: (auto, auto),
-  inverted: false,
-  mirror: auto,
-  offset: auto,
-  exponent: auto,
-  auto-exponent-threshold: 3,
+  // inverted: false,
+  // mirror: auto,
+  // offset: auto,
+  // exponent: auto,
+  // auto-exponent-threshold: 3,
   label: auto,
-  functions: auto,
+  // functions: auto,
   hidden: false,
-  filter: (value, distance) => true,
+  // filter: (value, distance) => true,
+  ticks: auto,
+  nticks: auto,
+  tick-distance: auto,
+  // locate-ticks: auto,
+  // subticks: auto,
+  // locate-subticks: auto,
+  // extra-ticks: (),
+  // tick-args: (:),
+  // subtick-args: (:),
   ..plots,
 ) => (
   order: order,
   kind: kind,
+  type: "axis",
   instances: if instances.len() == 0 {
-    (axis3d(kind: kind, plane: (hidden: false), label: label),)
+    (axisline3d(kind: kind, label: label), axisplane3d(kind: kind))
   } else {
-    instances.map(i => axis3d(hidden: hidden, kind: kind, label: label, ..i))
+    // TODO:
+    instances.map(i => (..i, kind: kind /* hidden: hidden,  label: label, */))
   },
   // scale: scale,
   lim: lim,
@@ -310,6 +292,18 @@
   // functions: functions,
   hidden: hidden,
   // filter: filter,
+  ticks: ticks,
+  nticks: nticks,
+  // subticks: subticks,
+  tick-distance: tick-distance,
+  // offset: offset,
+  // exponent: exponent,
+  // auto-exponent-threshold: auto-exponent-threshold,
+  // locate-ticks: locate-ticks,
+  // locate-subticks: locate-subticks,
+  // extra-ticks: extra-ticks,
+  // tick-args: tick-args,
+  // subtick-args: subtick-args,
 )
 
 #let legend-label(

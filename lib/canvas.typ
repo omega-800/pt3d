@@ -13,6 +13,12 @@
   )
 }
 
+#let _2d-to-3d = (pos, c-dim, dim) => {
+  // TODO:
+  let (x, y) = pos.map(i => i.to-absolute().pt())
+  let (width, height) = c-dim.map(i => i.to-absolute().pt())
+}
+
 #let rescale = ((xo, xscale), (yo, yscale)) => (
   (x, y),
 ) => {
@@ -54,9 +60,9 @@
   noclip,
 ) = {
   // FIXME: wonky
-  let xas = axis(kind: "x", ..xaxis)
-  let yas = axis(kind: "y", ..yaxis)
-  let zas = axis(kind: "z", ..zaxis)
+  let xas = axis3d(..xaxis, kind: "x")
+  let yas = axis3d(..yaxis, kind: "y")
+  let zas = axis3d(..zaxis, kind: "z")
 
   let ((xmin, ymin, zmin), (xmax, ymax, zmax)) = eval-min-bounds(
     (xas, yas, zas),
@@ -138,16 +144,17 @@
       let (point-n, point-r, min, max) = axis-helper-fn(ctx, axis)
       axis
         .instances
-        .filter(a => not a.line.hidden)
+        // TODO: ticks for planes
+        .filter(a => a.type == "axisline")
         .map(a => {
           let res = ()
           if a.label != none {
             res.push(axis-tick-pos(
               ctx,
               axis.kind,
-              a.line.position,
-              mid-vec(point-n(a.line.position, max), point-n(
-                a.line.position,
+              a.position,
+              mid-vec(point-n(a.position, max), point-n(
+                a.position,
                 min,
               )),
               1em.to-absolute().pt() * 3.5pt,
@@ -158,12 +165,12 @@
             let (length, offset) = a.format-ticks
             let from = ((length / 2) + offset) / 1pt
             let to = ((length / 2) - offset) / 1pt
-            for tick in (a.ticks.first(), a.ticks.last()) {
+            for tick in (axis.ticks.first(), axis.ticks.last()) {
               res.push(axis-tick-pos(
                 ctx,
                 axis.kind,
-                a.line.position,
-                point-r(point-n(a.line.position, min), tick),
+                a.position,
+                point-r(point-n(a.position, min), tick),
                 1em.to-absolute().pt() * 1pt,
                 (a.format-ticks.label-format)(tick),
                 from-off: from,

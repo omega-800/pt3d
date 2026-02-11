@@ -37,6 +37,7 @@
   let (xas, yas, zas) = ctx.axes
   let elems = children
     .pos()
+    .filter(elem => "type" in elem and elem.type in render)
     .enumerate()
     .map(((i, elem)) => {
       let color = cycle.at(calc.rem(i, cycle.len()))
@@ -59,13 +60,21 @@
 
   let render-with-ctx = elem => render.at(elem.type)(ctx, elem)
   let plot = [#for i in (
-    ..xas.instances.map(render-with-ctx),
-    ..yas.instances.map(render-with-ctx),
-    ..zas.instances.map(render-with-ctx),
+    ..(xas, yas, zas).map(elem => render-with-ctx(
+      eval-elem.at(elem.type)(ctx, elem),
+    )),
+    // render-with-ctx(xas),
+    // render-with-ctx(yas),
+    // render-with-ctx(zas),
+    // ..xas.instances.map(render-with-ctx),
+    // ..yas.instances.map(render-with-ctx),
+    // ..zas.instances.map(render-with-ctx),
     ..elems.map(render-with-ctx),
   ) { i }]
 
   let plot-elem = block(
+    // TODO: remove
+    stroke: black,
     fill: fill,
     width: ctx.canvas-dim.width,
     height: ctx.canvas-dim.height,
@@ -106,6 +115,7 @@
         block(
           width: 100%,
           height: 100% - title-offset,
+          stroke: red,
           [
             #legend-elem
             #place(
@@ -121,6 +131,8 @@
   } else {
     content.push(
       block(
+        // TODO: remove
+        stroke: red,
         width: 100%,
         height: 100% - title-offset,
         place(

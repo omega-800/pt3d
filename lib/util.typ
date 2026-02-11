@@ -1,3 +1,12 @@
+#let group-by = (a, fn) => a.fold((:), (acc, cur) => {
+  let label = fn(cur)
+  if label in acc {
+    acc.at(label).push(cur)
+  } else {
+    acc.insert(label, (cur,))
+  }
+})
+
 #let is-point-normal = p => (
   type(p) == array
     and p.len() == 2
