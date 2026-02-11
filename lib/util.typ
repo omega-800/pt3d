@@ -17,6 +17,7 @@
   rescale-line(
     from-3d,
     to-3d,
+    // FIXME: fr
     0,
     // (d-end / d-orig) * d-3d,
     from-off: (d-start / d-orig) * d-3d,

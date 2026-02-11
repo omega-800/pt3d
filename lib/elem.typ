@@ -195,6 +195,7 @@
   label: label,
 )
 
+// TODO: http://lilaq.org/docs/tutorials/ticks#custom-tick-formatting
 #let tickformat = (
   stroke: auto,
   length: auto,

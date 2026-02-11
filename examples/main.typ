@@ -85,7 +85,7 @@
       calc.log(x) * 100
     )),
     label: "cool plotted line",
-    mark: ">",
+    mark: ",",
     stroke-color-fn: (x, y, z) => pt.rgb-clamp(x * 2, y, z / 10),
   ),
   pt.vec(
