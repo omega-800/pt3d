@@ -68,7 +68,7 @@
     stroke: gradient.linear(yellow, black),
   ),
 )
-#let xp = pt.linspace(1, 100)
+#let xp = pt.linspace(1, 100, num: 20)
 #pt.diagram(
   stroke: blue,
   title: "vecs and lines and such",
@@ -85,6 +85,8 @@
       calc.log(x) * 100
     )),
     label: "cool plotted line",
+    mark: ">",
+    stroke-color-fn: (x, y, z) => pt.rgb-clamp(x * 2, y, z / 10),
   ),
   pt.vec(
     (100, 0, 0),

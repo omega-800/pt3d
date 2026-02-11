@@ -2,7 +2,6 @@
 #import "util.typ": *
 
 // TODO: vector field?
-// TODO: marks
 
 #let vertices3d = (
   stroke: auto,
@@ -24,11 +23,11 @@
 }
 
 // TODO: accept x, y, z functions
-// TODO: stroke-color-fn, fill-color-fn
 #let lineplot3d = (
   stroke: auto,
   label: none,
   stroke-color-fn: none,
+  mark: none,
   x,
   y,
   z,
@@ -39,6 +38,7 @@
   )
   (
     type: "lineplot",
+    mark: mark,
     lineplot: (x, y, z),
     stroke: stroke,
     label: label,
@@ -74,7 +74,13 @@
 }
 
 
-#let path3d = (stroke: auto, label: none, stroke-color-fn: none, ..points) => {
+#let path3d = (
+  stroke: auto,
+  label: none,
+  stroke-color-fn: none,
+  mark: none,
+  ..points,
+) => {
   assert(
     points.pos().len() > 1,
     message: "At least 2 points must be provided",
@@ -82,6 +88,7 @@
   (
     type: "path",
     path: points.pos(),
+    mark: mark,
     stroke: stroke,
     label: label,
     stroke-color-fn: stroke-color-fn,
@@ -156,6 +163,7 @@
   stroke: auto,
   steps: auto,
   stroke-color-fn: none,
+  mark: none,
   label: none,
   fn,
 ) => (
@@ -165,6 +173,7 @@
   label: label,
   steps: steps,
   stroke-color-fn: stroke-color-fn,
+  mark: mark,
 )
 
 #let planeparam3d = (

@@ -10,6 +10,48 @@
 // https://en.wikipedia.org/wiki/Graph_drawing
 // https://computergraphics.stackexchange.com/questions/1761/strategy-for-connecting-2-points-without-intersecting-previously-drawn-segments
 
+#let render-label((on-canvas, ..x), (label, position)) = {
+  let (dx, dy) = on-canvas(position)
+  let (width, height) = measure(label)
+  place(
+    dx: dx - width / 2,
+    dy: dy - height / 2,
+    label,
+  )
+}
+
+#let render-tip(ctx, tip, start, end, stroke) = {
+  let (on-canvas, map-point-pt, pt-to-ratio) = ctx
+  let c-start = on-canvas(start)
+  let c-end = on-canvas(end)
+  let ptstart = map-point-pt(c-start)
+  let ptend = map-point-pt(c-end)
+  if type(tip) == function {
+    render-label(ctx, (label: tip(stroke, end), position: end))
+  } else {
+    let (x, y) = ptend
+    let d = map-point-pt(direction-vec(c-end, c-start))
+    let theta = atan2(..d.rev())
+    let phi = calc.pi / 6
+    let (l1, l2) = (theta + phi, theta - phi).map(a => pt-to-ratio(
+      ((x + 5 * calc.sin(a)) * 1pt, (y + 5 * calc.cos(a)) * 1pt),
+    ))
+    if tip == ">" {
+      place(path-curve(stroke: stroke, l1, c-end, l2))
+    } else if tip == "|>" {
+      place(polygon(stroke: stroke, fill: stroke, l1, c-end, l2))
+    } else if tip == "|" {
+      let (f, t) = perpendicular-2d(
+        ptstart,
+        ptend,
+        ptend,
+        6,
+      ).map(v => pt-to-ratio(v.map(i => i * 1pt)))
+      place(line(stroke: stroke, start: f, end: t))
+    }
+  }
+}
+
 #let render-clipped-line(
   ctx,
   elem,
@@ -34,6 +76,23 @@
           end: (ctx.on-canvas)(sub-pts.at(1)),
         ))
       }
+    }
+    if "mark" in elem and elem.mark != none {
+      // TODO: color-fn
+      for (from, to) in points.windows(2) {
+        let stroke = if stroke-param.at(0) == none { stroke-param.at(1) } else {
+          apply-color-fn(from, ..stroke-param)
+        }
+        render-tip(ctx, elem.mark, from, to, stroke)
+      }
+      // for point in points {
+      //   let mark = if type(elem.mark) == function {
+      //     (elem.mark)(point, elem.stroke)
+      //   } else {
+      //     elem.mark
+      //   }
+      //   render-label(ctx, (label: mark, position: point))
+      // }
     }
   }
 }
@@ -74,48 +133,6 @@
     ))
   } else {
     // TODO: warn
-  }
-}
-
-#let render-label((on-canvas, ..x), (label, position)) = {
-  let (dx, dy) = on-canvas(position)
-  let (width, height) = measure(label)
-  place(
-    dx: dx - width / 2,
-    dy: dy - height / 2,
-    label,
-  )
-}
-
-#let render-tip(ctx, tip, start, end, stroke) = {
-  let (on-canvas, map-point-pt, pt-to-ratio) = ctx
-  let c-start = on-canvas(start)
-  let c-end = on-canvas(end)
-  let ptstart = map-point-pt(c-start)
-  let ptend = map-point-pt(c-end)
-  if type(tip) == function {
-    render-label(ctx, (label: tip(stroke, end), position: end))
-  } else {
-    let (x, y) = ptend
-    let d = map-point-pt(direction-vec(c-end, c-start))
-    let theta = atan2(..d.rev())
-    let phi = calc.pi / 6
-    let (l1, l2) = (theta + phi, theta - phi).map(a => pt-to-ratio(
-      ((x + 5 * calc.sin(a)) * 1pt, (y + 5 * calc.cos(a)) * 1pt),
-    ))
-    if tip == ">" {
-      place(path-curve(stroke: stroke, l1, c-end, l2))
-    } else if tip == "|>" {
-      place(polygon(stroke: stroke, fill: stroke, l1, c-end, l2))
-    } else if tip == "|" {
-      let (f, t) = perpendicular-2d(
-        ptstart,
-        ptend,
-        ptend,
-        6,
-      ).map(v => pt-to-ratio(v.map(i => i * 1pt)))
-      place(line(stroke: stroke, start: f, end: t))
-    }
   }
 }
 
