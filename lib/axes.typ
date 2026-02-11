@@ -73,7 +73,6 @@
   label,
   from-off: 0,
   to-off: 0,
-  label-left-override: auto,
 ) => {
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
   let relto = (min, max) => v => (v - min) / (max - min) * 100
@@ -132,25 +131,74 @@
       (px, py + 1, pz)
     }
   }
-  let ((fx, fy), (tx, ty)) = (from-3d, to-3d).map(on-canvas).map(map-point-pt)
-  let (nx, ny) = normalize-vec((tx - fx, ty - fy))
-  let start = (fx - from-off * nx, fy - from-off * ny).map(i => i * 1pt)
-  let end = (fx + to-off * nx, fy + to-off * ny).map(i => i * 1pt)
+  // TODO: let's stay in 3d world
+  let (from, to) = (from-3d, to-3d).map(on-canvas).map(map-point-pt)
 
-  let (sx, sy) = start
-  let (dx, dy) = (sx - nx * label-off, sy - ny * label-off)
-  let (width, height) = measure(label)
+  let (from-scaled, to-scaled) = rescale-line(
+    from,
+    to,
+    to-off,
+    from-off: from-off,
+  )
+
+  let (from-3d-scaled, to-3d-scaled) = apply-2d-scale-to-3d(
+    (from-3d, to-3d),
+    (from, to),
+    (from-scaled, to-scaled),
+  )
+  // let (from-3d-scaled, to-3d-scaled) = rescale-line(
+  //   ..rescale-line(
+  //     to-3d,
+  //     from-3d,
+  //     (d-end / d-orig) * d-3d,
+  //     from-off: -(d-start / d-orig) * d-3d,
+  //   ),
+  //   0.5,
+  //   from-off: -1,
+  // )
+
+  let (start-pt, end-pt) = (from-3d-scaled, to-3d-scaled)
+    .map(on-canvas)
+    .map(map-point-pt)
+  let (start, end) = (start-pt, end-pt).map(v => v.map(i => i * 1pt))
+
+  let (label-pos, label-max) = if label == none { (none, none) } else {
+    let (width, height) = measure(label)
+
+    // FIXME: do this properly
+    let to-add = (width, height).map(i => i / 0.5pt).sum()
+
+    let (label-from, label-to) = rescale-line(
+      start-pt,
+      to,
+      0,
+      from-off: label-off / 1pt,
+    )
+    let (dx, dy) = label-from.map(i => i * 1pt)
+    let (label-from-3d, _) = apply-2d-scale-to-3d(
+      (from-3d-scaled, to-3d),
+      (start-pt, to),
+      (label-from, label-to),
+    )
+    let (label-max-3d, _) = apply-2d-scale-to-3d(
+      (from-3d-scaled, to-3d),
+      (start-pt, to),
+      rescale-line(
+        start-pt,
+        to,
+        0,
+        from-off: label-off / 1pt + to-add,
+      ),
+    )
+
+    let (dx, dy) = map-point-pt(on-canvas(label-from-3d)).map(i => i * 1pt)
+    (label-from-3d, label-max-3d)
+  }
   (
-    start: start,
-    end: end,
-    label-x: dx - width / 2,
-    label-y: dy - height / 2,
-    label-max: (
-      dx - width,
-      dx + width,
-      dy - height,
-      dy + height,
-    ),
+    start: from-3d-scaled,
+    end: to-3d-scaled,
+    label-pos: label-pos,
+    label-max: label-max,
   )
 }
 
@@ -159,9 +207,7 @@
   i,
   ctx,
 ) => {
-  let (dim, canvas-dim, on-canvas, map-point-pt) = ctx
-  let (width, height) = canvas-dim
-  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
+  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = ctx.dim
   let (min, max, point-n) = axis-helper-fn(ctx, i)
 
   if i.type == "axisplane" {
@@ -238,7 +284,7 @@
             on-canvas,
           )
           .map(map-point-pt)
-        let axis-size = length-vec(direction-vec(end, start))
+        let axis-size = distance-vec(start, end)
         int(calc.min(
           axis-size / tick-l-size.width.pt(),
           axis-size / tick-l-size.height.pt(),
@@ -254,36 +300,21 @@
   }
 }
 
-#let axes-defaults = (xaxis, yaxis, zaxis, ctx) => {
-  let (xlim, ylim, zlim) = ctx.dim
-
-  let xas = (
-    ..xaxis,
-    lim: xlim,
-    instances: xaxis.instances.map(i => axis-instance-defaults(
-      i,
-      ctx,
-    )),
-  )
-  xas.ticks = axis-ticks-default(ctx, xas)
-  let yas = (
-    ..yaxis,
-    lim: ylim,
-    instances: yaxis.instances.map(i => axis-instance-defaults(
-      i,
-      ctx,
-    )),
-  )
-  yas.ticks = axis-ticks-default(ctx, yas)
-  let zas = (
-    ..zaxis,
-    lim: zlim,
-    instances: zaxis.instances.map(i => axis-instance-defaults(
-      i,
-      ctx,
-    )),
-  )
-  zas.ticks = axis-ticks-default(ctx, zas)
-
-  (xas, yas, zas)
-}
+#let axes-defaults = (xaxis, yaxis, zaxis, ctx) => (
+  (xaxis, yaxis, zaxis)
+    .zip(ctx.dim)
+    .map(((axis, lim)) => {
+      let a = (
+        ..axis,
+        lim: lim,
+        instances: axis.instances.map(i => axis-instance-defaults(
+          i,
+          ctx,
+        )),
+      )
+      a.ticks = axis-ticks-default(ctx, a)
+      // FIXME: wonky
+      a.instances = a.instances.map(i => (..i, ticks: a.ticks))
+      a
+    })
+)

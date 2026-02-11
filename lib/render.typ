@@ -128,9 +128,10 @@
 
 #let render-label((on-canvas, ..x), (label, position)) = {
   let (dx, dy) = on-canvas(position)
+  let (width, height) = measure(label)
   place(
-    dx: dx,
-    dy: dy,
+    dx: dx - width / 2,
+    dy: dy - height / 2,
     label,
   )
 }
@@ -153,6 +154,7 @@
 #let render-axisline(ctx, elem) = {
   let (on-canvas, ..x) = ctx
   let (start, end) = elem.eval-points.map(on-canvas)
+
   place(line(start: start, end: end, stroke: elem.stroke))
   if elem.tip != none {
     render-tip(ctx, elem.tip, start, end, elem.stroke)
@@ -160,36 +162,11 @@
   if elem.toe != none {
     render-tip(ctx, elem.toe, end, start, elem.stroke)
   }
+
   if elem.eval-label != none {
-    // TODO:
-    // render-label(ctx, elem.eval-label)
-    let (label, position) = elem.eval-label
-    let (dx, dy) = position
-    place(
-      dx: dx,
-      dy: dy,
-      label,
-    )
+    render-label(ctx, elem.eval-label)
   }
-  // TODO:
-  // render-ticks(ctx,elem.eval-ticks)
-  for (label, tick, stroke) in elem.eval-ticks {
-    let (start, end) = tick
-    place(line(
-      stroke: stroke,
-      start: start,
-      end: end,
-    ))
-    if label != none {
-      let (label, position) = label
-      let (dx, dy) = position
-      place(
-        dx: dx,
-        dy: dy,
-        label,
-      )
-    }
-  }
+  render-ticks(ctx, elem.eval-ticks)
 }
 
 #let render-axisplane(ctx, elem) = {

@@ -13,11 +13,15 @@
   )
 }
 
-#let _2d-to-3d = (pos, c-dim, dim) => {
-  // TODO:
-  let (x, y) = pos.map(i => i.to-absolute().pt())
-  let (width, height) = c-dim.map(i => i.to-absolute().pt())
-}
+// #let _2d-to-3d = (pos, c-dim, dim) => {
+//   // TODO:
+//   let (x, y) = pos.map(i => i.to-absolute().pt())
+//   let (width, height) = c-dim.map(i => i.to-absolute().pt())
+// }
+// TODO: put helper functions that belong in ctx actually into ctx dict
+#let measure-3d-pt = (on-canvas, map-point-pt) => (from, to) => distance-vec(
+  ..(from, to).map(on-canvas).map(map-point-pt),
+)
 
 #let rescale = ((xo, xscale), (yo, yscale)) => (
   (x, y),
@@ -91,19 +95,11 @@
     rotate-canvas,
     x => x.map(i => i * 100%),
   ))
-  // panic(
-  //   plot-extremes.map(((x, y)) => x).filter(out-of-bounds-2d).sorted().first(),
-  //   plot-extremes.map(((x, y)) => x).filter(out-of-bounds-2d).sorted().last(),
-  //   overflow-correction(plot-extremes.map(((x, y)) => x)),
-  //   plot-extremes.map(((x, y)) => y).filter(out-of-bounds-2d).sorted().first(),
-  //   plot-extremes.map(((x, y)) => y).filter(out-of-bounds-2d).sorted().last(),
-  //   overflow-correction(plot-extremes.map(((x, y)) => y)),
-  // )
-  // panic(plot-extremes)
   let on-canvas = canvas(
     dim,
     transform-canvas,
     rotate-canvas,
+    // this is fixed (i think)?
     // FIXME: previous solution was more correct than this one. bug happens when abs(lim-min) < abs(lim-max)
     rescale(
       overflow-correction(plot-extremes.map(((x, y)) => x)),
@@ -135,84 +131,110 @@
     rotate-canvas: rotate-canvas,
     noclip: noclip,
   )
+  ctx.measure-3d-pt = measure-3d-pt(ctx.on-canvas, ctx.map-point-pt)
   let (xas, yas, zas) = axes-defaults(xas, yas, zas, ctx)
   ctx.axes = (xas, yas, zas)
 
   // FIXME: bad bad code
-  let ((xoff-min, xoff-max), (yoff-min, yoff-max)) = (xas, yas, zas)
-    .map(axis => {
-      let (point-n, point-r, min, max) = axis-helper-fn(ctx, axis)
-      axis
-        .instances
-        // TODO: ticks for planes
-        .filter(a => a.type == "axisline")
-        .map(a => {
-          let res = ()
-          if a.label != none {
-            res.push(axis-tick-pos(
-              ctx,
-              axis.kind,
-              a.position,
-              mid-vec(point-n(a.position, max), point-n(
-                a.position,
-                min,
-              )),
-              1em.to-absolute().pt() * 3.5pt,
-              a.label,
-            ))
-          }
-          if a.format-ticks != none {
-            let (length, offset) = a.format-ticks
-            let from = ((length / 2) + offset) / 1pt
-            let to = ((length / 2) - offset) / 1pt
-            for tick in (axis.ticks.first(), axis.ticks.last()) {
-              res.push(axis-tick-pos(
-                ctx,
-                axis.kind,
-                a.position,
-                point-r(point-n(a.position, min), tick),
-                1em.to-absolute().pt() * 1pt,
-                (a.format-ticks.label-format)(tick),
-                from-off: from,
-                to-off: to,
-              ))
-            }
-          }
-          res
-        })
-    })
-    .flatten()
-    .fold(((0pt, canvas-dim.width), (0pt, canvas-dim.height)), (
-      ((xmin, xmax), (ymin, ymax)),
-      (start, end, label-max),
-    ) => {
-      let (sx, sy) = start
-      let (ex, ey) = end
-      let (lx-min, lx-max, ly-min, ly-max) = label-max
-      (
-        (
-          calc.min(xmin, sx, ex, lx-min, lx-max),
-          calc.max(xmax, sx, ex, lx-min, lx-max),
-        ),
-        (
-          calc.min(ymin, sy, ey, ly-min, ly-max),
-          calc.max(ymax, sy, ey, ly-min, ly-max),
-        ),
-      )
-    })
-  let xpad = 0pt - xoff-min
-  let xadj = xoff-max - xoff-min - canvas-dim.width
-  let ypad = 0pt - yoff-min
-  let yadj = yoff-max - yoff-min - canvas-dim.height
+  // let ((xoff-min, xoff-max), (yoff-min, yoff-max)) = (xas, yas, zas)
+  //   .map(axis => {
+  //     let (point-n, point-r, min, max) = axis-helper-fn(ctx, axis)
+  //     axis
+  //       .instances
+  //       // TODO: ticks for planes
+  //       .filter(a => a.type == "axisline")
+  //       .map(a => {
+  //         let res = ()
+  //         if a.label != none {
+  //           res.push(axis-tick-pos(
+  //             ctx,
+  //             axis.kind,
+  //             a.position,
+  //             mid-vec(point-n(a.position, max), point-n(
+  //               a.position,
+  //               min,
+  //             )),
+  //             1em.to-absolute().pt() * 3.5pt,
+  //             a.label,
+  //           ))
+  //         }
+  //         if a.format-ticks != none {
+  //           let (length, offset) = a.format-ticks
+  //           let from = ((length / 2) + offset) / 1pt
+  //           let to = ((length / 2) - offset) / 1pt
+  //           for tick in (axis.ticks.first(), axis.ticks.last()) {
+  //             res.push(axis-tick-pos(
+  //               ctx,
+  //               axis.kind,
+  //               a.position,
+  //               point-r(point-n(a.position, min), tick),
+  //               1em.to-absolute().pt() * 1pt,
+  //               (a.format-ticks.label-format)(tick),
+  //               from-off: from,
+  //               to-off: to,
+  //             ))
+  //           }
+  //         }
+  //         res
+  //       })
+  //   })
+  //   .flatten()
+  //   .fold(((0pt, canvas-dim.width), (0pt, canvas-dim.height)), (
+  //     ((xmin, xmax), (ymin, ymax)),
+  //     (start, end, label-max),
+  //   ) => {
+  //     let (sx, sy) = start
+  //     let (ex, ey) = end
+  //     let (lx-min, lx-max, ly-min, ly-max) = label-max
+  //     (
+  //       (
+  //         calc.min(xmin, sx, ex, lx-min, lx-max),
+  //         calc.max(xmax, sx, ex, lx-min, lx-max),
+  //       ),
+  //       (
+  //         calc.min(ymin, sy, ey, ly-min, ly-max),
+  //         calc.max(ymax, sy, ey, ly-min, ly-max),
+  //       ),
+  //     )
+  //   })
+  // let xpad = 0pt - xoff-min
+  // let xadj = xoff-max - xoff-min - canvas-dim.width
+  // let ypad = 0pt - yoff-min
+  // let yadj = yoff-max - yoff-min - canvas-dim.height
+  let xpad = 0pt
+  let xadj = 0pt
+  let ypad = 0pt
+  let yadj = 0pt
 
-  let canvas-dim = (
-    width: canvas-dim.width - xadj,
-    height: canvas-dim.height - yadj,
+  // let canvas-dim = (
+  //   width: canvas-dim.width - xadj,
+  //   height: canvas-dim.height - yadj,
+  // )
+  // ctx.canvas-dim = canvas-dim
+  // ctx.map-point-pt = ((x, y)) => (
+  //   (x * canvas-dim.width) / 1pt,
+  //   (y * canvas-dim.height) / 1pt,
+  // )
+  // ctx.measure-3d-pt = measure-3d-pt(ctx.on-canvas, ctx.map-point-pt)
+
+  // FIXME: still bad bad code
+  let axes-eval = (xas, yas, zas).map(i => eval-axis-points(ctx, i)).join()
+  let plot-extremes = (..axes-eval, ..cube-vertices(dim)).map(canvas(
+    dim,
+    transform-canvas,
+    rotate-canvas,
+    x => x.map(i => i * 100%),
+  ))
+  ctx.on-canvas = canvas(
+    dim,
+    transform-canvas,
+    rotate-canvas,
+    rescale(
+      overflow-correction(plot-extremes.map(((x, y)) => x)),
+      overflow-correction(plot-extremes.map(((x, y)) => y)),
+    ),
   )
-  ctx.canvas-dim = canvas-dim
-  ctx.map-point-pt = ((x, y)) => (
-    (x * canvas-dim.width) / 1pt,
-    (y * canvas-dim.height) / 1pt,
-  )
+  ctx.measure-3d-pt = measure-3d-pt(ctx.on-canvas, ctx.map-point-pt)
+
   ((xpad, xadj, ypad, yadj, offset), ctx)
 }

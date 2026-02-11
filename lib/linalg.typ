@@ -329,3 +329,11 @@
   }
   cross-product(v, u)
 }
+
+#let rescale-line = (from, to, to-off, from-off: 0) => {
+  let n = normalize-vec(direction-vec(from, to))
+  (
+    sum-vec(from, n.map(i => -i * from-off)),
+    sum-vec(from, n.map(i => i * to-off)),
+  )
+}

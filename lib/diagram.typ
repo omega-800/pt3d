@@ -63,12 +63,6 @@
     ..(xas, yas, zas).map(elem => render-with-ctx(
       eval-elem.at(elem.type)(ctx, elem),
     )),
-    // render-with-ctx(xas),
-    // render-with-ctx(yas),
-    // render-with-ctx(zas),
-    // ..xas.instances.map(render-with-ctx),
-    // ..yas.instances.map(render-with-ctx),
-    // ..zas.instances.map(render-with-ctx),
     ..elems.map(render-with-ctx),
   ) { i }]
 

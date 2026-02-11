@@ -1,3 +1,26 @@
+#import "linalg.typ": *
+
+#let apply-2d-scale-to-3d = (
+  (from-3d, to-3d),
+  (from, to),
+  (from-scaled, to-scaled),
+) => {
+  let d-orig = distance-vec(from, to)
+  let d-start = distance-vec(from, from-scaled)
+  let d-end = distance-vec(to, to-scaled)
+  let d-3d = distance-vec(from-3d, to-3d)
+
+  // FIXME: this was done by guessing
+  // TODO: do this properly
+  rescale-line(
+    from-3d,
+    to-3d,
+    0,
+    // (d-end / d-orig) * d-3d,
+    from-off: (d-start / d-orig) * d-3d,
+  )
+}
+
 #let group-by = (a, fn) => a.fold((:), (acc, cur) => {
   let label = fn(cur)
   if label in acc {
@@ -16,6 +39,7 @@
 
 #let mid-vec = (v, w) => v.enumerate().map(((i, n)) => (w.at(i) + n) / 2)
 
+// TODO: generalize
 #let minmax-vec = (((xmin, ymin, zmin), (xmax, ymax, zmax)), (x, y, z)) => (
   (calc.min(xmin, x), calc.min(ymin, y), calc.min(zmin, z)),
   (calc.max(xmax, x), calc.max(ymax, y), calc.max(zmax, z)),
@@ -81,6 +105,7 @@
   )
 }
 
+// TODO: remove what isn't used anymore
 #let z-intersection = (z, (x1, y1, z1), (x2, y2, z2)) => {
   let t = (z - z1) / (z2 - z1)
   (x1 + t * (x2 - x1), y1 + t * (y2 - y1), z1 + t * (z2 - z1))

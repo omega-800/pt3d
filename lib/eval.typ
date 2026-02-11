@@ -119,8 +119,7 @@
   elem
 }
 
-// TODO: axis only needed for ticks, remove eventually
-#let eval-axis(ctx, axis, elem) = {
+#let eval-axisplane(ctx, elem) = {
   let (
     point,
     point-p,
@@ -133,212 +132,262 @@
     ctx,
     elem,
   )
-  if elem.type == "axisline" {
+
+  elem.eval-points = axis-plane-points(ctx, elem)
+  elem.eval-ticks = ()
+  if elem.format-ticks != none {
+    let new-tick = (l, pos) => (
+      label: if elem.format-ticks.label-format == none { none } else {
+        // TODO: position
+        (
+          label: (elem.format-ticks.label-format)(l),
+          position: (0, 0, 0),
+          max: (0, 0, 0),
+        )
+      },
+      tick: pos,
+      stroke: if elem.format-ticks.stroke == auto { elem.stroke } else {
+        elem.format-ticks.stroke
+      },
+    )
+
+    let axis-ticks = a => {
+      let axis = a
+        .instances
+        .filter(
+          i => (
+            i.format-ticks != none
+          ),
+        )
+        .at(0, default: none)
+      if axis == none or a.ticks == none { return () }
+      let (kind, ticks, nticks) = a
+      let h = axis-helper-fn(ctx, axis)
+      let tmin = h.min
+      let tmax = h.max
+      let span = tmax - tmin
+      if (
+        ticks == auto and nticks == auto
+      ) {
+        n-points-on(tmin, tmax, 10)
+      } else if ticks == auto {
+        n-points-on(tmin, tmax, nticks)
+      } else {
+        ticks
+      }
+    }
+    let (xas, yas, zas) = ctx.axes
+    let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = ctx.dim
+
+    // TODO: better auto ticks
+    let xticks = axis-ticks(xas)
+    let yticks = axis-ticks(yas)
+    let zticks = axis-ticks(zas)
+
+    // TODO: length, offset
+    if elem.kind == "z" {
+      for tick in xticks {
+        elem.eval-ticks.push(new-tick(tick, (
+          (tick, ymin, elem.position),
+          (tick, ymax, elem.position),
+        )))
+      }
+      for tick in yticks {
+        elem.eval-ticks.push(new-tick(tick, (
+          (xmin, tick, elem.position),
+          (xmax, tick, elem.position),
+        )))
+      }
+    } else if elem.kind == "y" {
+      for tick in xticks {
+        elem.eval-ticks.push(new-tick(tick, (
+          (tick, elem.position, zmin),
+          (tick, elem.position, zmax),
+        )))
+      }
+      for tick in zticks {
+        elem.eval-ticks.push(new-tick(tick, (
+          (xmin, elem.position, tick),
+          (xmax, elem.position, tick),
+        )))
+      }
+    } else {
+      for tick in yticks {
+        elem.eval-ticks.push(new-tick(tick, (
+          (elem.position, tick, zmin),
+          (elem.position, tick, zmax),
+        )))
+      }
+      for tick in zticks {
+        elem.eval-ticks.push(new-tick(tick, (
+          (elem.position, ymin, tick),
+          (elem.position, ymax, tick),
+        )))
+      }
+    }
+  }
+  // TODO:
+  elem.eval-label = if elem.label == none { none } else {
+    (label: elem.label, position: (0, 0, 0), max: (0, 0, 0))
+  }
+  elem
+}
+
+#let eval-axisline(ctx, elem) = {
+  let (
+    point,
+    point-p,
+    point-r,
+    point-n,
+    cur,
+    min,
+    max,
+  ) = axis-helper-fn(
+    ctx,
+    elem,
+  )
+  let line-from = point-n(elem.position, min)
+  let line-to = point-n(elem.position, max)
+  elem.eval-points = (line-from, line-to)
+  // TODO:
+  elem.eval-ticks = ()
+  if (
+    elem.format-ticks != none
+      // FIXME: hacky
+      and elem.format-ticks.length != auto
+      and elem.format-ticks.offset != auto
+      and ("on-canvas", "canvas-dim", "map-point-pt").all(c => c in ctx)
+  ) {
+    let (length, offset) = elem.format-ticks
+    let from = ((length / 2) + offset) / 1pt
+    let to = ((length / 2) - offset) / 1pt
     let line-from = point-n(elem.position, min)
     let line-to = point-n(elem.position, max)
-    elem.eval-points = (line-from, line-to)
-
-    elem.eval-label = if elem.label == none { none } else {
-      let from-3d = mid-vec(line-from, line-to)
-      // FIXME: depends on tick label & offset
-      let loff = 1em.to-absolute().pt() * 3.5pt
-
-      let (label-x, label-y) = axis-tick-pos(
+    for tick in elem.ticks {
+      let loff = 1em.to-absolute().pt() * 1pt
+      let label = if elem.format-ticks.label-format == none { none } else {
+        (elem.format-ticks.label-format)(tick)
+      }
+      let (start, end, label-pos, label-max) = axis-tick-pos(
         ctx,
         elem.kind,
         elem.position,
-        mid-vec(line-from, line-to),
+        point-r(line-from, tick),
         loff,
-        elem.label,
+        label,
+        from-off: from,
+        to-off: to,
       )
-      // TODO: 3d points instead of 2d
-      (label: elem.label, position: (label-x, label-y))
-    }
-    // TODO:
-    elem.eval-ticks = ()
-    if elem.format-ticks != none {
-      let (length, offset) = elem.format-ticks
-      let from = ((length / 2) + offset) / 1pt
-      let to = ((length / 2) - offset) / 1pt
-      let line-from = point-n(elem.position, min)
-      let line-to = point-n(elem.position, max)
-      for tick in axis.ticks {
-        let loff = 1em.to-absolute().pt() * 1pt
-        let label = if elem.format-ticks.label-format == none { none } else {
-          (elem.format-ticks.label-format)(tick)
-        }
-        let (start, end, label-x, label-y) = axis-tick-pos(
-          ctx,
-          elem.kind,
-          elem.position,
-          point-r(line-from, tick),
-          loff,
-          label,
-          from-off: from,
-          to-off: to,
-        )
-        // TODO: 3d points instead of 2d
-        // TODO: apply format-ticks only on render
-        // TODO: label might be none
-        elem.eval-ticks.push((
-          label: if label == none { none } else {
-            (label: label, position: (label-x, label-y))
-          },
-          tick: (start, end),
-          stroke: if elem.format-ticks.stroke == auto { elem.stroke } else {
-            elem.format-ticks.stroke
-          },
-        ))
-      }
-    }
-  } else {
-    elem.eval-points = axis-plane-points(ctx, elem)
-    elem.eval-ticks = ()
-    if elem.format-ticks != none {
-      let new-tick = (l, pos) => (
-        label: if elem.format-ticks.label-format == none { none } else {
-          // TODO: apply format-ticks only on render?
-          // TODO: position
-          (label: (elem.format-ticks.label-format)(l), position: (0, 0, 0))
+      // TODO: label might be none
+      elem.eval-ticks.push((
+        label: if label == none { none } else {
+          (label: label, position: label-pos, max: label-max)
         },
-        tick: pos,
+        tick: (start, end),
         stroke: if elem.format-ticks.stroke == auto { elem.stroke } else {
           elem.format-ticks.stroke
         },
-      )
-
-      let axis-ticks = a => {
-        let axis = a
-          .instances
-          .filter(
-            i => (
-              i.format-ticks != none
-            ),
-          )
-          .at(0, default: none)
-        if axis == none or a.ticks == none { return () }
-        let (kind, ticks, nticks) = a
-        let h = axis-helper-fn(ctx, axis)
-        let tmin = h.min
-        let tmax = h.max
-        let span = tmax - tmin
-        if (
-          ticks == auto and nticks == auto
-        ) {
-          n-points-on(tmin, tmax, 10)
-        } else if ticks == auto {
-          n-points-on(tmin, tmax, nticks)
-        } else {
-          ticks
-        }
-      }
-      let (xas, yas, zas) = ctx.axes
-      let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = ctx.dim
-
-      // TODO: better auto ticks
-      let xticks = axis-ticks(xas)
-      let yticks = axis-ticks(yas)
-      let zticks = axis-ticks(zas)
-
-      // TODO: length, offset
-      if elem.kind == "z" {
-        for tick in xticks {
-          elem.eval-ticks.push(new-tick(tick, (
-            (tick, ymin, elem.position),
-            (tick, ymax, elem.position),
-          )))
-        }
-        for tick in yticks {
-          elem.eval-ticks.push(new-tick(tick, (
-            (xmin, tick, elem.position),
-            (xmax, tick, elem.position),
-          )))
-        }
-      } else if elem.kind == "y" {
-        for tick in xticks {
-          elem.eval-ticks.push(new-tick(tick, (
-            (tick, elem.position, zmin),
-            (tick, elem.position, zmax),
-          )))
-        }
-        for tick in zticks {
-          elem.eval-ticks.push(new-tick(tick, (
-            (xmin, elem.position, tick),
-            (xmax, elem.position, tick),
-          )))
-        }
-      } else {
-        for tick in yticks {
-          elem.eval-ticks.push(new-tick(tick, (
-            (elem.position, tick, zmin),
-            (elem.position, tick, zmax),
-          )))
-        }
-        for tick in zticks {
-          elem.eval-ticks.push(new-tick(tick, (
-            (elem.position, ymin, tick),
-            (elem.position, ymax, tick),
-          )))
-        }
-      }
+      ))
     }
-    // TODO:
-    elem.eval-label = if elem.label == none { none } else {
-      (label: elem.label, position: (0pt, 0pt))
-    }
+  }
+  elem.eval-label = if (
+    elem.label == none
+      // FIXME: hacky
+      or not ("on-canvas", "canvas-dim", "map-point-pt").all(c => c in ctx)
+  ) { none } else {
+    let from-3d = mid-vec(line-from, line-to)
+    // FIXME: depends on tick label & offset
+    let loff = 1em.to-absolute().pt() * 3.5pt
+
+    let (label-pos, label-max) = axis-tick-pos(
+      ctx,
+      elem.kind,
+      elem.position,
+      mid-vec(line-from, line-to),
+      loff,
+      elem.label,
+    )
+    (label: elem.label, position: label-pos, max: label-max)
   }
   elem
 }
 
 #let eval-axes(ctx, elem) = {
-  elem.instances = elem.instances.map(i => eval-axis(ctx, elem, i))
+  elem.instances = elem.instances.map(i => {
+    if i.type == "axisline" {
+      eval-axisline(ctx, i)
+    } else {
+      eval-axisplane(ctx, i)
+    }
+  })
   elem
 }
 
-#let eval-axis-points(ctx, elem) = {
-  let (dim, ..x) = ctx
-  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
-
-  let (
-    point,
-    point-p,
-    point-r,
-    point-n,
-    cur,
-    min,
-    max,
-    plane-points,
-  ) = axis-helper-fn(
-    ctx,
-    elem,
-  )
-
+#let eval-axisline-points(ctx, elem) = {
   let res = ()
-
+  let (min, max) = axis-helper-fn(ctx, elem)
+  // TODO:
   if (
-    not elem.line.hidden
-      and type(min) == int
+    type(min) == int
       and type(max) == int
-      and type(elem.line.position) == array
-      and elem.line.position.len() == 2
-      and elem.line.position.all(i => type(i) == int)
+      and type(elem.position) == array
+      and elem.position.len() == 2
+      and elem.position.all(i => type(i) == int)
   ) {
-    res.push(point-n(elem.line.position, min))
-    res.push(point-n(elem.line.position, max))
-  }
-  if (
-    not elem.plane.hidden
-      and plane-points.all(pp => pp.all(i => type(i) == int))
-  ) {
-    for p in plane-points {
-      res.push(p)
+    let elem-eval = eval-axisline(ctx, elem)
+    res = elem-eval.eval-points
+    for (label, tick) in elem-eval.eval-ticks {
+      let (start, end) = tick
+      res.push(start)
+      res.push(end)
+      if label != none {
+        res.push(label.max)
+      }
+    }
+    if elem-eval.eval-label != none {
+      res.push(elem-eval.eval-label.max)
     }
   }
 
   res
 }
 
-// FIXME: this made compiling *VERY* slow for some reason?
+#let eval-axisplane-points(ctx, elem) = {
+  let res = ()
+
+  if (
+    axis-plane-points(ctx, elem).all(pp => pp.all(i => type(i) == int))
+  ) {
+    let elem-eval = eval-axisplane(ctx, elem)
+    res = elem-eval.eval-points
+    for (label, tick) in elem-eval.eval-ticks {
+      let (start, end) = tick
+      res.push(start)
+      res.push(end)
+      if label != none {
+        res.push(label.max)
+      }
+    }
+    if elem-eval.eval-label != none {
+      res.push(elem-eval.eval-label.max)
+    }
+  }
+  res
+}
+
+#let eval-axis-points(ctx, elem) = {
+  elem
+    .instances
+    .map(i => {
+      if i.type == "axisline" {
+        eval-axisline-points(ctx, i)
+      } else {
+        eval-axisplane-points(ctx, i)
+      }
+    })
+    .join()
+}
+
 #let eval-elem = (
   // TODO: eval-axis
   "axis": eval-axes,
@@ -360,6 +409,10 @@
 ) => {
   if elem.type == "axis" {
     eval-axis-points(ctx, elem)
+  } else if elem.type == "axisplane" {
+    eval-axisline-points(ctx, elem)
+  } else if elem.type == "axisline" {
+    eval-axisplane-points(ctx, elem)
   } else if elem.type == "path" {
     elem.path
   } else if elem.type == "polygon" {
@@ -395,9 +448,9 @@
 
   let ctx = (dim: dim, axes: axes)
   let points = (
-    ..xaxis.instances,
-    ..yaxis.instances,
-    ..zaxis.instances,
+    xaxis,
+    yaxis,
+    zaxis,
     ..children.pos(),
   )
     .map(elem => eval-points(ctx, elem))
