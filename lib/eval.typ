@@ -34,10 +34,20 @@
   (mark: res, from: from, to: to)
 }
 
+#let get-0th-pt = (from, to) => {
+  // TODO: probably correct? i don't have the time to check
+  rescale-line(
+    from,
+    to,
+    distance-vec(from, to),
+    from-off: distance-vec(from, to),
+  )
+}
+
 #let eval-marks(elem, mark, points) = {
-  // TODO: first point
   points
-    .map(pts => pts
+    .filter(pts => pts.len() > 1)
+    .map(pts => (get-0th-pt(pts.at(0), pts.at(1)).at(0), ..pts)
       .windows(2)
       .map(((from, to)) => eval-mark(elem, mark, from, to)))
     .join()
@@ -164,6 +174,53 @@
   elem
 }
 
+#let eval-ticks(
+  ctx,
+  ticks,
+  format-ticks,
+  line-from,
+  line-to,
+  kind,
+  elem-stroke,
+  label-left,
+) = {
+  let (point-r,) = axis-helper-fn(
+    ctx,
+    (kind: kind),
+  )
+  let res = ()
+  let (length, offset) = format-ticks
+  let from = ((length / 2) + offset) / 1pt
+  let to = ((length / 2) - offset) / 1pt
+  // TODO: separate labels and ticks
+  for tick in ticks {
+    let loff = 1em.to-absolute().pt() * 1pt
+    let label = if format-ticks.label-format == none { none } else {
+      (format-ticks.label-format)(tick)
+    }
+    let (start, end, label-pos, label-max) = axis-tick-pos(
+      ctx,
+      kind,
+      point-r(line-from, tick),
+      label-left,
+      loff,
+      label,
+      from-off: from,
+      to-off: to,
+    )
+    res.push((
+      label: if label == none { none } else {
+        (label: label, position: label-pos, max: label-max)
+      },
+      tick: (start, end),
+      stroke: if format-ticks.stroke == auto { elem-stroke } else {
+        format-ticks.stroke
+      },
+    ))
+  }
+  res
+}
+
 #let eval-axisplane(ctx, elem) = {
   let (
     point,
@@ -171,6 +228,7 @@
     point-r,
     point-n,
     cur,
+    other,
     min,
     max,
   ) = axis-helper-fn(
@@ -182,18 +240,20 @@
   elem.eval-ticks = ()
   if elem.format-ticks != none {
     let new-tick = (l, pos) => (
-      label: if elem.format-ticks.label-format == none { none } else {
-        // TODO: position
-        (
-          label: (elem.format-ticks.label-format)(l),
-          position: (0, 0, 0),
-          max: (0, 0, 0),
-        )
-      },
+      label: none,
+      // label: if elem.format-ticks.label-format == none { none } else {
+      //   // TODO: position
+      //   (
+      //     label: (elem.format-ticks.label-format)(l),
+      //     position: (0, 0, 0),
+      //     max: (0, 0, 0),
+      //   )
+      // },
       tick: pos,
-      stroke: if elem.format-ticks.stroke == auto { elem.stroke } else {
-        elem.format-ticks.stroke
-      },
+      stroke: black,
+      // stroke: if elem.format-ticks.stroke == auto { elem.stroke } else {
+      //   elem.format-ticks.stroke
+      // },
     )
 
     let axis-ticks = a => {
@@ -228,63 +288,78 @@
     let xticks = axis-ticks(xas)
     let yticks = axis-ticks(yas)
     let zticks = axis-ticks(zas)
+    let all-ticks = (
+      "x": xticks,
+      "y": yticks,
+      "z": zticks,
+    )
 
+    let line-from = point-r((xmin, ymin, zmin), elem.position)
+    let line-to = point-r((xmax, ymax, zmax), elem.position)
+    let kinds = axis-kind-case(elem.kind, (
+      ("y", "z"),
+      ("x", "z"),
+      ("x", "y"),
+    ))
     // TODO: length, offset
-    if elem.kind == "z" {
-      for tick in xticks {
-        elem.eval-ticks.push(new-tick(tick, (
-          (tick, ymin, elem.position),
-          (tick, ymax, elem.position),
-        )))
-      }
-      for tick in yticks {
-        elem.eval-ticks.push(new-tick(tick, (
-          (xmin, tick, elem.position),
-          (xmax, tick, elem.position),
-        )))
-      }
-    } else if elem.kind == "y" {
-      for tick in xticks {
-        elem.eval-ticks.push(new-tick(tick, (
-          (tick, elem.position, zmin),
-          (tick, elem.position, zmax),
-        )))
-      }
-      for tick in zticks {
-        elem.eval-ticks.push(new-tick(tick, (
-          (xmin, elem.position, tick),
-          (xmax, elem.position, tick),
-        )))
-      }
-    } else {
-      for tick in yticks {
-        elem.eval-ticks.push(new-tick(tick, (
-          (elem.position, tick, zmin),
-          (elem.position, tick, zmax),
-        )))
-      }
-      for tick in zticks {
-        elem.eval-ticks.push(new-tick(tick, (
-          (elem.position, ymin, tick),
-          (elem.position, ymax, tick),
-        )))
-      }
-    }
-  }
-  // TODO:
-  elem.eval-label = if elem.label == none { none } else {
-    // let line-from = point-n((min, min), elem.position)
-    // let (start, end, label-pos, label-max) = axis-tick-pos(
-    //   ctx,
-    //   elem.kind,
-    //   (min, min),
-    //   line-from,
-    //   1pt,
-    //   elem.label,
-    //   from-off: 5,
-    //   to-off: 5,
-    // )
-    (label: elem.label, position: (0, 0, 0), max: (0, 0, 0))
+    // for (i, kind) in kinds.enumerate() {
+    //   for tick in eval-ticks(
+    //     ctx,
+    //     all-ticks.at(kind),
+    //     elem.format-ticks.at(i),
+    //     line-from,
+    //     line-to,
+    //     kind,
+    //     elem.stroke,
+    //     // TODO:
+    //     label-left(ctx, kind, other(line-from)),
+    //   ) {
+    //     elem.eval-ticks.push(tick)
+    //   }
+    // }
+
+    // if elem.kind == "z" {
+    //   for (i, kind) in ("x", "y").enumerate() {
+    //     for tick in eval-ticks(
+    //       ctx,
+    //       all-ticks.at(kind),
+    //       elem.format-ticks.at(i),
+    //       line-from,
+    //       line-to,
+    //       kind,
+    //       elem.stroke,
+    //       true,
+    //     ) {
+    //       elem.eval-ticks.push(tick)
+    //     }
+    //   }
+    // } else if elem.kind == "y" {
+    //   for tick in xticks {
+    //     elem.eval-ticks.push(new-tick(tick, (
+    //       (tick, elem.position, zmin),
+    //       (tick, elem.position, zmax),
+    //     )))
+    //   }
+    //   for tick in zticks {
+    //     elem.eval-ticks.push(new-tick(tick, (
+    //       (xmin, elem.position, tick),
+    //       (xmax, elem.position, tick),
+    //     )))
+    //   }
+    // } else {
+    //   for tick in yticks {
+    //     elem.eval-ticks.push(new-tick(tick, (
+    //       (elem.position, tick, zmin),
+    //       (elem.position, tick, zmax),
+    //     )))
+    //   }
+    //   for tick in zticks {
+    //     elem.eval-ticks.push(new-tick(tick, (
+    //       (elem.position, ymin, tick),
+    //       (elem.position, ymax, tick),
+    //     )))
+    //   }
+    // }
   }
   elem
 }
@@ -302,6 +377,7 @@
     ctx,
     elem,
   )
+  let l-left = label-left(ctx, elem.kind, elem.position)
   let line-from = point-n(elem.position, min)
   let line-to = point-n(elem.position, max)
   elem.eval-points = (line-from, line-to)
@@ -314,37 +390,16 @@
       and elem.format-ticks.offset != auto
       and ("on-canvas", "canvas-dim", "map-point-pt").all(c => c in ctx)
   ) {
-    let (length, offset) = elem.format-ticks
-    let from = ((length / 2) + offset) / 1pt
-    let to = ((length / 2) - offset) / 1pt
-    let line-from = point-n(elem.position, min)
-    let line-to = point-n(elem.position, max)
-    // TODO: separate labels and ticks
-    for tick in elem.ticks {
-      let loff = 1em.to-absolute().pt() * 1pt
-      let label = if elem.format-ticks.label-format == none { none } else {
-        (elem.format-ticks.label-format)(tick)
-      }
-      let (start, end, label-pos, label-max) = axis-tick-pos(
-        ctx,
-        elem.kind,
-        elem.position,
-        point-r(line-from, tick),
-        loff,
-        label,
-        from-off: from,
-        to-off: to,
-      )
-      elem.eval-ticks.push((
-        label: if label == none { none } else {
-          (label: label, position: label-pos, max: label-max)
-        },
-        tick: (start, end),
-        stroke: if elem.format-ticks.stroke == auto { elem.stroke } else {
-          elem.format-ticks.stroke
-        },
-      ))
-    }
+    elem.eval-ticks = eval-ticks(
+      ctx,
+      elem.ticks,
+      elem.format-ticks,
+      line-from,
+      line-to,
+      elem.kind,
+      elem.stroke,
+      l-left,
+    )
   }
   elem.eval-label = if (
     elem.label == none
@@ -376,8 +431,8 @@
     let (label-pos, label-max) = axis-tick-pos(
       ctx,
       elem.kind,
-      elem.position,
       mid-vec(line-from, line-to),
+      l-left,
       loff,
       elem.label,
     )
@@ -441,9 +496,6 @@
       if label != none {
         res.push(label.max)
       }
-    }
-    if elem-eval.eval-label != none {
-      res.push(elem-eval.eval-label.max)
     }
   }
   res

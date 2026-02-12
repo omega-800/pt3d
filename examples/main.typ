@@ -165,7 +165,7 @@
   stroke: blue,
   // xaxis: (lim: (-10, 10)),
   // yaxis: (lim: (-10, 10)),
-  zaxis: (lim: (1, 3)),
+  zaxis: (lim: (1, 3), nticks: 5),
   rotations: (pt.mat-rotate-iso, pt.mat-rotate-x(-calc.pi / 12)),
   pt.planeplot(
     domain.map(((u, v)) => u * calc.sin(v)),

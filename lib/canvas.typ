@@ -117,7 +117,6 @@
   let ctx = (
     canvas-dim: canvas-dim,
     on-canvas: on-canvas,
-    // FIXME: leads to bugs crawling out of the nests of this abhorrent codebase
     map-point-pt: ((x, y)) => (
       (x * canvas-dim.width) / 1pt,
       (y * canvas-dim.height) / 1pt,

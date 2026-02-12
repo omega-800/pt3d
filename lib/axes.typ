@@ -1,135 +1,132 @@
 #import "linalg.typ": *
 #import "util.typ": *
 
+#let axis-kind-case = (kind, (x, y, z)) => if kind == "x" { x } else if (
+  kind == "y"
+) { y } else { z }
+
 #let axis-plane-points = (ctx, elem) => {
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = ctx.dim
-  if elem.kind == "x" {
+  axis-kind-case(elem.kind, (
     (
       (elem.position, ymin, zmin),
       (elem.position, ymax, zmin),
       (elem.position, ymax, zmax),
       (elem.position, ymin, zmax),
-    )
-  } else if elem.kind == "y" {
+    ),
     (
       (xmin, elem.position, zmin),
       (xmax, elem.position, zmin),
       (xmax, elem.position, zmax),
       (xmin, elem.position, zmax),
-    )
-  } else {
+    ),
     (
       (xmin, ymin, elem.position),
       (xmax, ymin, elem.position),
       (xmax, ymax, elem.position),
       (xmin, ymax, elem.position),
-    )
-  }
+    ),
+  ))
 }
 
 #let axis-helper-fn = (ctx, elem) => {
   let (dim, ..x) = ctx
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
-
-  if elem.kind == "x" {
+  axis-kind-case(elem.kind, (
     (
       point: x => (x, 0, 0),
       point-p: ((x, y, z), n) => (x, y + n, z + n),
       point-r: ((x, y, z), n) => (n, y, z),
       point-n: ((y, z), n) => (n, y, z),
       cur: ((x, y, z)) => x,
+      other: ((x, y, z)) => (y, z),
       min: xmin,
       max: xmax,
-    )
-  } else if elem.kind == "y" {
+    ),
     (
       point: y => (0, y, 0),
       point-p: ((x, y, z), n) => (x + n, y, z + n),
       point-r: ((x, y, z), n) => (x, n, z),
       point-n: ((x, z), n) => (x, n, z),
       cur: ((x, y, z)) => y,
+      other: ((x, y, z)) => (x, z),
       min: ymin,
       max: ymax,
-    )
-  } else {
+    ),
     (
       point: z => (0, 0, z),
       point-p: ((x, y, z), n) => (x + n, y + n, z),
       point-r: ((x, y, z), n) => (x, y, n),
       point-n: ((x, y), n) => (x, y, n),
       cur: ((x, y, z)) => z,
+      other: ((x, y, z)) => (x, y),
       min: zmin,
       max: zmax,
-    )
-  }
+    ),
+  ))
+}
+
+#let label-left = (ctx, kind, position) => {
+  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = ctx.dim
+  let relto = (min, max) => v => (v - min) / (max - min) * 100
+  let reltox = relto(xmin, xmax)
+  let reltoy = relto(ymin, ymax)
+  let reltoz = relto(zmin, zmax)
+  let (pos1, pos2) = position
+  axis-kind-case(kind, (
+    (
+      (
+        reltoy(pos1) > 50 and reltoy(pos1) >= 100 - reltoz(pos2)
+      )
+        or (
+          reltoz(pos2) > 50 and 100 - reltoy(pos1) <= reltoz(pos2)
+        )
+    ),
+    (
+      (
+        reltox(pos1) < 50 and reltox(pos1) <= 100 - reltoz(pos2)
+      )
+        or (
+          reltoz(pos2) < 50 and reltox(pos1) <= 100 - reltoz(pos2)
+        )
+    ),
+    (
+      (
+        reltox(pos1) < 50 and reltox(pos1) <= reltoy(pos2)
+      )
+        or (
+          reltoy(pos2) > 50 and reltox(pos1) <= reltoy(pos2)
+        )
+    ),
+  ))
 }
 
 #let axis-tick-pos = (
   (dim, on-canvas, canvas-dim, map-point-pt),
   kind,
-  position,
   from-3d,
+  // TODO: parametarizeable positions other than "left/right"
+  label-left,
   label-off,
   label,
   from-off: 0,
   to-off: 0,
 ) => {
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
-  let relto = (min, max) => v => (v - min) / (max - min) * 100
-  let reltox = relto(xmin, xmax)
-  let reltoy = relto(ymin, ymax)
-  let reltoz = relto(zmin, zmax)
-
-  // TODO: parametarizeable positions other than "left/right"
-  let label-left = {
-    let (pos1, pos2) = position
-    if kind == "z" {
-      (
-        (
-          reltox(pos1) < 50 and reltox(pos1) <= reltoy(pos2)
-        )
-          or (
-            reltoy(pos2) > 50 and reltox(pos1) <= reltoy(pos2)
-          )
-      )
-    } else if kind == "x" {
-      (
-        (
-          reltoy(pos1) > 50 and reltoy(pos1) >= 100 - reltoz(pos2)
-        )
-          or (
-            reltoz(pos2) > 50 and 100 - reltoy(pos1) <= reltoz(pos2)
-          )
-      )
-    } else {
-      (
-        (
-          reltox(pos1) < 50 and reltox(pos1) <= 100 - reltoz(pos2)
-        )
-          or (
-            reltoz(pos2) < 50 and reltox(pos1) <= 100 - reltoz(pos2)
-          )
-      )
-    }
-  }
 
   let (px, py, pz) = from-3d
   let to-3d = if label-left {
-    if kind == "x" {
-      (px, py - 1, pz)
-    } else if kind == "y" {
-      (px + 1, py, pz)
-    } else {
-      (px, py - 1, pz)
-    }
+    axis-kind-case(kind, (
+      (px, py - 1, pz),
+      (px + 1, py, pz),
+      (px, py - 1, pz),
+    ))
   } else {
-    if kind == "x" {
-      (px, py + 1, pz)
-    } else if kind == "y" {
-      (px, py, pz - 1)
-    } else {
-      (px, py + 1, pz)
-    }
+    axis-kind-case(kind, (
+      (px, py + 1, pz),
+      (px, py, pz - 1),
+      (px, py + 1, pz),
+    ))
   }
   let (from, to) = (from-3d, to-3d).map(on-canvas).map(map-point-pt)
 
@@ -212,8 +209,18 @@
     if i.position == auto {
       i.position = if i.kind == "z" { min } else { max }
     }
-    if i.label == auto {
-      i.label = none
+    if i.format-ticks != none {
+      i.format-ticks = i.format-ticks.map(f => {
+        // TODO: len
+        // TODO: dir (label-left)
+        let l = if f.length == auto { 20pt } else { f.length }
+        (
+          ..f,
+          length: l,
+          offset: if f.offset == auto { l / 2 } else { f.offset },
+          dir: if f.dir == auto { "x" } else { f.dir },
+        )
+      })
     }
   }
   if i.type == "axisline" {
@@ -225,27 +232,29 @@
           if max == auto { defmax } else { max },
         )
       }
-      i.position = if i.kind == "x" {
-        def(ymin, zmin)
-      } else if i.kind == "y" {
-        def(xmin, zmin)
-      } else {
-        def(xmin, ymax)
-      }
+      i.position = axis-kind-case(i.kind, (
+        def(ymin, zmin),
+        def(xmin, zmin),
+        def(xmin, ymax),
+      ))
     }
     if i.label == auto {
       i.label = i.kind
     }
+    if i.format-ticks != none {
+      if i.format-ticks.length == auto {
+        i.format-ticks.length = 10pt
+      }
+      if i.format-ticks.offset == auto {
+        i.format-ticks.offset = i.format-ticks.length / 2
+      }
+      // TODO: dir (label-left)
+      if i.format-ticks.dir == auto {
+        i.format-ticks.dir = axis-kind-case(i.kind, ("y", "x", "y"))
+      }
+    }
   }
 
-  if i.format-ticks != none {
-    if i.format-ticks.length == auto {
-      i.format-ticks.length = 10pt
-    }
-    if i.format-ticks.offset == auto {
-      i.format-ticks.offset = i.format-ticks.length / 2
-    }
-  }
   i
 }
 
@@ -262,10 +271,31 @@
   }
   let tick-l-ratios = axis
     .instances
-    .filter(i => i.format-ticks != none and i.format-ticks.label-format != none)
+    .filter(i => (
+      i.format-ticks != none
+        and (
+          (
+            type(i.format-ticks) == dictionary
+              and i.format-ticks.label-format != none
+          )
+            or (
+              type(i.format-ticks) == list
+                and i.format-ticks.any(f => f.label-format != none)
+            )
+        )
+    ))
     .map(i => {
+      let fmt = if type(i.format-ticks) == list { i.format-ticks } else {
+        (i.format-ticks,)
+      }
       // TODO: calculate this properly
-      let tick-l-size = measure((i.format-ticks.label-format)(-10.2))
+      let tick-l-size = calc.max(
+        ..fmt
+          .filter(f => f.label-format != none)
+          .map(f => measure((f.label-format)(
+            -10.2,
+          ))),
+      )
 
       let (start, end) = (
         if i.type == "axisline" {
@@ -294,7 +324,7 @@
   let n = if axis.nticks == auto and tick-l-ratio == none {
     10
   } else if axis.nticks == auto { tick-l-ratio } else { axis.nticks }
-  n-points-on(min, max, if n == 0 { 10 } else { n })
+  (..n-points-on(min, max, if n == 0 { 9 } else { n - 1 }), max)
 }
 
 #let axes-defaults = (xaxis, yaxis, zaxis, ctx) => (

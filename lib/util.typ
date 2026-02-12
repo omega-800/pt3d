@@ -71,11 +71,10 @@
   (calc.max(xmax, x), calc.max(ymax, y), calc.max(zmax, z)),
 )
 
-#let n-points-on = (min, max, n) => range(0, n + 1).map(i => (
+#let n-points-on = (min, max, n) => range(0, n).map(i => (
   min + i * ((max - min) / n)
 ))
 
-// FIXME: num + 1
 #let linspace = (from, to, num: auto, step: auto, include-end: true) => {
   assert(num == auto or step == auto, message: "'num' and 'auto' are exclusive")
   let n = if num == auto and step == auto {
@@ -83,9 +82,9 @@
   } else if num == auto {
     (to - from) / step
   } else {
-    num - 1
+    num
   }
-  let t = if include-end { to } else { to - 1 }
+  let t = if include-end { to + 1 } else { to }
   n-points-on(from, t, n)
 }
 
