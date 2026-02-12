@@ -105,96 +105,97 @@
   (dim, on-canvas, canvas-dim, map-point-pt),
   kind,
   from-3d,
-  // TODO: parametarizeable positions other than "left/right"
-  label-left,
-  label-off,
-  label,
-  from-off: 0,
-  to-off: 0,
+  format-ticks,
+  tick,
+  // label-left,
+  // label-off,
+  // label,
+  // from-off: 0,
+  // to-off: 0,
 ) => {
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
 
-  let (px, py, pz) = from-3d
-  let to-3d = if label-left {
-    axis-kind-case(kind, (
-      (px, py - 1, pz),
-      (px + 1, py, pz),
-      (px, py - 1, pz),
-    ))
-  } else {
-    axis-kind-case(kind, (
-      (px, py + 1, pz),
-      (px, py, pz - 1),
-      (px, py + 1, pz),
-    ))
-  }
-  let (from, to) = (from-3d, to-3d).map(on-canvas).map(map-point-pt)
+  let (length, offset) = format-ticks
+  // TODO: invert
+  let from-off = ((length / 2) - offset) / 1pt
+  let to-off = ((length / 2) + offset) / 1pt
 
-  let (from-scaled, to-scaled) = rescale-line(
-    from,
-    to,
+  let label-off = 1em.to-absolute().pt() * 1pt
+  let label = if format-ticks.label-format == none { none } else {
+    (format-ticks.label-format)(tick)
+  }
+
+  let label-left = false
+
+  let (px, py, pz) = from-3d
+  let to-3d = sum-vec(from-3d, axis-kind-case(format-ticks.dir, (
+    (-1, 0, 0),
+    (0, -1, 0),
+    (0, 0, 1),
+  )))
+
+  let (from-2d, to-2d) = (from-3d, to-3d).map(on-canvas).map(map-point-pt)
+
+  let (from-2d-scaled, to-2d-scaled) = rescale-line(
+    from-2d,
+    to-2d,
     to-off,
     from-off: from-off,
   )
 
   let (from-3d-scaled, to-3d-scaled) = apply-2d-scale-to-3d(
     (from-3d, to-3d),
-    (from, to),
-    (from-scaled, to-scaled),
+    (from-2d, to-2d),
+    (from-2d-scaled, to-2d-scaled),
   )
-  // let (from-3d-scaled, to-3d-scaled) = rescale-line(
-  //   ..rescale-line(
-  //     to-3d,
-  //     from-3d,
-  //     (d-end / d-orig) * d-3d,
-  //     from-off: -(d-start / d-orig) * d-3d,
-  //   ),
-  //   0.5,
-  //   from-off: -1,
-  // )
 
   let (start-pt, end-pt) = (from-3d-scaled, to-3d-scaled)
     .map(on-canvas)
     .map(map-point-pt)
+
+  // panic(
+  //   (from-2d-scaled, to-2d-scaled),
+  //   (start-pt, end-pt),
+  // )
+
   let (start, end) = (start-pt, end-pt).map(v => v.map(i => i * 1pt))
 
   let (label-pos, label-max) = if label == none { (none, none) } else {
     let (width, height) = measure(label)
 
     // FIXME: do this properly
-    let to-add = (width, height).map(i => i / 1pt).sum() + 5
+    let to-add = (width + height) / 2pt
 
     let (label-from, label-to) = rescale-line(
-      start-pt,
-      to,
-      0,
-      from-off: label-off / 1pt,
+      from-2d-scaled,
+      to-2d-scaled,
+      // TODO:
+      // FIXME: do this properly
+      10 + to-off + label-off / 1pt,
     )
-    let (dx, dy) = label-from.map(i => i * 1pt)
-    let (label-from-3d, _) = apply-2d-scale-to-3d(
-      (from-3d-scaled, to-3d),
-      (start-pt, to),
+    let (label-from-3d, label-to-3d) = apply-2d-scale-to-3d(
+      (from-3d-scaled, to-3d-scaled),
+      (from-2d-scaled, to-2d-scaled),
       (label-from, label-to),
     )
-    let (label-max-3d, _) = apply-2d-scale-to-3d(
-      (from-3d-scaled, to-3d),
-      (start-pt, to),
+    let (label-from-max-3d, label-to-max-3d) = apply-2d-scale-to-3d(
+      (from-3d-scaled, to-3d-scaled),
+      (from-2d-scaled, to-2d-scaled),
+      // TODO:
       rescale-line(
-        start-pt,
-        to,
-        0,
-        from-off: label-off / 1pt + to-add,
+        from-2d-scaled,
+        to-2d-scaled,
+        10 + to-off + label-off / 1pt + to-add,
       ),
     )
-
-    let (dx, dy) = map-point-pt(on-canvas(label-from-3d)).map(i => i * 1pt)
-    (label-from-3d, label-max-3d)
+    (label-to-3d, label-to-max-3d)
   }
   (
     start: from-3d-scaled,
     end: to-3d-scaled,
     label-pos: label-pos,
     label-max: label-max,
+    label: label,
   )
 }
 
@@ -246,7 +247,8 @@
         i.format-ticks.length = 10pt
       }
       if i.format-ticks.offset == auto {
-        i.format-ticks.offset = i.format-ticks.length / 2
+        // TODO:
+        i.format-ticks.offset = (i.format-ticks.length / 2)
       }
       // TODO: dir (label-left)
       if i.format-ticks.dir == auto {

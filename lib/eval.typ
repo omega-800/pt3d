@@ -36,6 +36,7 @@
 
 #let get-0th-pt = (from, to) => {
   // TODO: probably correct? i don't have the time to check
+  // FIXME: check if this still works
   rescale-line(
     from,
     to,
@@ -189,24 +190,20 @@
     (kind: kind),
   )
   let res = ()
-  let (length, offset) = format-ticks
-  let from = ((length / 2) + offset) / 1pt
-  let to = ((length / 2) - offset) / 1pt
   // TODO: separate labels and ticks
   for tick in ticks {
-    let loff = 1em.to-absolute().pt() * 1pt
-    let label = if format-ticks.label-format == none { none } else {
-      (format-ticks.label-format)(tick)
-    }
-    let (start, end, label-pos, label-max) = axis-tick-pos(
+    // TODO:
+    let (start, end, label, label-pos, label-max) = axis-tick-pos(
       ctx,
       kind,
       point-r(line-from, tick),
-      label-left,
-      loff,
-      label,
-      from-off: from,
-      to-off: to,
+      format-ticks,
+      tick,
+      // label-left,
+      // loff,
+      // label,
+      // from-off: from,
+      // to-off: to,
     )
     res.push((
       label: if label == none { none } else {
@@ -428,13 +425,17 @@
           + (width + height + sub-lbl.width + sub-lbl.height)
       )
     }
+    // TODO: loff
+    // TODO:
     let (label-pos, label-max) = axis-tick-pos(
       ctx,
       elem.kind,
       mid-vec(line-from, line-to),
-      l-left,
-      loff,
+      (..elem.format-ticks, label-format: tick => tick),
       elem.label,
+      // l-left,
+      // loff,
+      // elem.label,
     )
     (label: elem.label, position: label-pos, max: label-max)
   }
