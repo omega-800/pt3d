@@ -15,22 +15,22 @@
     text-mark.with(body: mark)
   }
 
-  let stroke = if (
+  let mstroke = if (
     "stroke-color-fn" in elem and type(elem.stroke-color-fn) == function
   ) {
     (elem.stroke-color-fn)(..to)
   } else { elem.stroke }
-  let fill = if (
+  let mfill = if (
     "fill-color-fn" in elem and type(elem.fill-color-fn) == function
   ) {
     (elem.fill-color-fn)(..to)
   } else if "fill" in elem {
     elem.fill
   } else {
-    stroke
+    if type(mstroke) == stroke { mstroke.paint } else { mstroke }
   }
 
-  let res = markfn((fill: fill, stroke: stroke, from: from, to: to))
+  let res = markfn((fill: mfill, stroke: mstroke, from: from, to: to))
   (mark: res, from: from, to: to)
 }
 
