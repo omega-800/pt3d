@@ -199,17 +199,18 @@
   length: auto,
   offset: auto,
   label-format: tick => text(size: 0.75em)[#calc.round(tick, digits: 2)],
+  dir: auto,
 ) => (
   stroke: stroke,
   length: length,
   offset: offset,
   label-format: label-format,
+  dir: dir,
 )
 
 #let axisplane3d = (
   kind: "x",
   position: auto,
-  label: auto,
   stroke: black.transparentize(40%), // (paint: black.transparentize(40%), dash: "dotted"),
   fill: black.transparentize(95%), // none,
   format-ticks: (label-format: none),
@@ -218,12 +219,15 @@
 ) => (
   type: "axisplane",
   kind: kind,
-  label: label,
   position: position,
   stroke: stroke,
   fill: fill,
-  format-ticks: if format-ticks == none { none } else {
-    tickformat(..format-ticks)
+  format-ticks: if format-ticks == none {
+    none
+  } else if type(format-ticks) == array {
+    format-ticks.map(f => tickformat(..f))
+  } else {
+    (tickformat(..format-ticks), tickformat(..format-ticks))
   },
   // format-subticks: format-subticks,
   // format-extra-ticks: format-extra-ticks,
@@ -290,17 +294,12 @@
   instances: if instances.len() == 0 {
     (
       axisline3d(kind: kind, label: label),
-      axisplane3d(kind: kind, label: label),
+      axisplane3d(kind: kind),
     )
   } else {
-    // TODO:
     instances.map(i => (
       ..i,
       kind: kind,
-      // FIXME: wonky
-      // label: if i.type == "axisline" { label } else {
-      //   auto
-      // }, /* hidden: hidden, */
     ))
   },
   // scale: scale,

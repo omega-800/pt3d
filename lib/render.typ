@@ -134,9 +134,6 @@
     stroke: elem.stroke,
     ..elem.eval-points.map(on-canvas),
   ))
-  if elem.eval-label != none {
-    render-label(ctx, elem.eval-label)
-  }
   render-ticks(ctx, elem.eval-ticks)
 }
 
@@ -152,8 +149,8 @@
 
 #let render = (
   "axis": render-axes,
-  "lineaxis": render-axisline,
-  "planeaxis": render-axisplane,
+  "axisline": render-axisline,
+  "axisplane": render-axisplane,
   "plane": render-plane,
   "vec": render-vec,
   "vertices": render-clipped-plane,
