@@ -87,6 +87,7 @@
         let m = mid-vec(f, t)
         (
           f,
+          // FIXME: check if this still works
           rescale-line(
             m,
             pt-to,

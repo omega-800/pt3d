@@ -165,16 +165,14 @@
 /// ```
 ///
 /// -> vector
-#let dot-product = (
-  /// w
-  /// -> vector
-  (x1, y1, z1),
+#let dot-product(
   /// v
   /// -> vector
-  (x2, y2, z2),
-) => (
-  x1 * x2 + y1 * y2 + z1 * z2
-)
+  v, 
+  /// w
+  /// -> vector
+  w
+) = v.zip(w).map(((a, b)) => a * b).sum()
 
 #let cube-planes = (((xmin, xmax), (ymin, ymax), (zmin, zmax))) => (
   ((1, 0, 0), xmin),
@@ -520,6 +518,11 @@
   s-c <= 1 and s-c >= -1 and 0 <= dot-f-p and dot-f-p <= dot-f-f
 }
 
+// TODO:
+#let is-point-on-line-2d((from, to), p) = {
+  false
+}
+
 #let intersection-3d-cube(
   (from, to),
   dim,
@@ -570,7 +573,7 @@
 #let rescale-line = (from, to, to-off, from-off: 0) => {
   let n = normalize-vec(direction-vec(from, to))
   (
-    sum-vec(from, n.map(i => -i * from-off)),
+    sum-vec(from, n.map(i => i * from-off)),
     sum-vec(from, n.map(i => i * to-off)),
   )
 }

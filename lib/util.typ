@@ -30,21 +30,30 @@
   (from, to),
   (from-scaled, to-scaled),
 ) => {
+  // TODO:
   let d-orig = distance-vec(from, to)
   let d-start = distance-vec(from, from-scaled)
   let d-end = distance-vec(to, to-scaled)
   let d-3d = distance-vec(from-3d, to-3d)
+  let inv-f = if is-point-on-line-2d((from, to), from-scaled) { 1 } else { -1 }
+  let inv-t = if is-point-on-line-2d((from, to), to-scaled) { 1 } else { -1 }
 
-  // FIXME: this was done by guessing
-  // TODO: do this properly
   rescale-line(
     from-3d,
     to-3d,
-    // FIXME: fr
-    0,
-    // (d-end / d-orig) * d-3d,
-    from-off: (d-start / d-orig) * d-3d,
+    (d-end / d-orig) * d-3d * inv-t,
+    from-off: (d-start / d-orig) * d-3d * inv-t,
   )
+  // let l = distance-vec(from,to)
+  // let scale = distance-vec(from-scaled, to-scaled) / l
+  // let d = direction-vec(from, to)
+  // let (dx, dy) = d
+  // let (sx, sy) = d.map(i => i * scale)
+  // let (mfx, mfy) = direction-vec(from, from-scaled)
+  // let (mtx, mty) = direction-vec(to, to-scaled)
+  // let (xf, yf, zf) = from-3d
+  // let (xt, yt, zt) = to-3d
+  // ((xf + mfx, yf + mfy, zf), (xt + dx * scale / l + mtx, yt + dy * scale / l + mty, zt))
 }
 
 #let group-by = (a, fn) => a.fold((:), (acc, cur) => {
