@@ -1,6 +1,47 @@
 #import "linalg.typ": *
 #import "axes.typ": *
 #import "clip.typ": *
+#import "mark.typ": *
+
+#let eval-mark(elem, mark, from, to) = {
+  if mark == none or (type(mark) != str and type(mark) != function) {
+    return mark
+  }
+  let markfn = if type(mark) != str {
+    mark
+  } else if mark in marks {
+    marks.at(mark)
+  } else {
+    text-mark.with(body: mark)
+  }
+
+  let stroke = if (
+    "stroke-color-fn" in elem and type(elem.stroke-color-fn) == function
+  ) {
+    (elem.stroke-color-fn)(..to)
+  } else { elem.stroke }
+  let fill = if (
+    "fill-color-fn" in elem and type(elem.fill-color-fn) == function
+  ) {
+    (elem.fill-color-fn)(..to)
+  } else if "fill" in elem {
+    elem.fill
+  } else {
+    stroke
+  }
+
+  let res = markfn((fill: fill, stroke: stroke, from: from, to: to))
+  (mark: res, from: from, to: to)
+}
+
+#let eval-marks(elem, mark, points) = {
+  // TODO: first point
+  points
+    .map(pts => pts
+      .windows(2)
+      .map(((from, to)) => eval-mark(elem, mark, from, to)))
+    .join()
+}
 
 #let plane-points-to-vertices(ctx, points) = {
   let vertices = ()
@@ -49,6 +90,7 @@
       ..p,
     )),
   )
+  elem.eval-marks = eval-marks(elem, elem.mark, elem.eval-points)
   elem
 }
 
@@ -76,11 +118,13 @@
 #let eval-lineplot(ctx, elem) = {
   let (x, y, z) = elem.lineplot
   elem.eval-points = clip-line(ctx, x.zip(y, z))
+  elem.eval-marks = eval-marks(elem, elem.mark, elem.eval-points)
   elem
 }
 
 #let eval-path(ctx, elem) = {
   elem.eval-points = clip-line(ctx, elem.path)
+  elem.eval-marks = eval-marks(elem, elem.mark, elem.eval-points)
   elem
 }
 
@@ -116,6 +160,8 @@
 
 #let eval-vec(ctx, elem) = {
   elem.eval-points = clip-line(ctx, elem.vec)
+  elem.eval-tip = eval-mark(elem, elem.tip, ..elem.eval-points.at(0))
+  elem.eval-toe = eval-mark(elem, elem.toe, ..elem.eval-points.at(0).rev())
   elem
 }
 
@@ -339,6 +385,8 @@
     )
     (label: elem.label, position: label-pos, max: label-max)
   }
+  elem.eval-tip = eval-mark(elem, elem.tip, ..elem.eval-points)
+  elem.eval-toe = eval-mark(elem, elem.toe, ..elem.eval-points.rev())
   elem
 }
 

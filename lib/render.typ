@@ -36,21 +36,20 @@
         ))
       }
     }
-    if "mark" in elem and elem.mark != none {
-      // TODO: color-fn
-      for (from, to) in points.windows(2) {
-        let stroke = if stroke-param.at(0) == none { stroke-param.at(1) } else {
-          apply-color-fn(from, ..stroke-param)
-        }
-        render-tip(ctx, elem.mark, from, to, stroke)
+    if "eval-marks" in elem and elem.eval-marks != none {
+      for mark in elem.eval-marks {
+        render-mark(ctx, mark)
       }
-      // for point in points {
-      //   let mark = if type(elem.mark) == function {
-      //     (elem.mark)(point, elem.stroke)
-      //   } else {
-      //     elem.mark
-      //   }
-      //   render-label(ctx, (label: mark, position: point))
+      // // TODO: color-fn
+      // // TODO: fill
+      // for (from, to) in points.windows(2) {
+      //   let stroke = if type(elem.eval-mark.stroke) == function {
+      //     (elem.eval-mark.stroke)(..from)
+      //   } else { elem.eval-mark.stroke }
+      //   let fill = if type(elem.eval-mark.fill) == function {
+      //     (elem.eval-mark.fill)(..from)
+      //   } else { elem.eval-mark.fill }
+      //   render-tip(ctx, elem.eval-mark, from, to, stroke)
       // }
     }
   }
@@ -98,11 +97,11 @@
 #let render-vec(ctx, elem) = {
   let (on-canvas, ..x) = ctx
   let (start, end) = elem.eval-points.at(0)
-  if elem.toe != none {
-    render-tip(ctx, elem.toe, end, start, elem.stroke)
+  if elem.eval-toe != none {
+    render-mark(ctx, elem.eval-toe)
   }
-  if elem.tip != none {
-    render-tip(ctx, elem.tip, start, end, elem.stroke)
+  if elem.eval-tip != none {
+    render-mark(ctx, elem.eval-tip)
   }
   place(line(
     stroke: elem.stroke,
@@ -132,11 +131,11 @@
 
   place(line(start: on-canvas(start), end: on-canvas(end), stroke: elem.stroke))
 
-  if elem.tip != none {
-    render-tip(ctx, elem.tip, start, end, elem.stroke)
+  if elem.eval-tip != none {
+    render-mark(ctx, elem.eval-tip)
   }
-  if elem.toe != none {
-    render-tip(ctx, elem.toe, end, start, elem.stroke)
+  if elem.eval-toe != none {
+    render-mark(ctx, elem.eval-toe)
   }
 
   if elem.eval-label != none {
