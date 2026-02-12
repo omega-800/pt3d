@@ -131,7 +131,6 @@
       (px, py + 1, pz)
     }
   }
-  // TODO: let's stay in 3d world
   let (from, to) = (from-3d, to-3d).map(on-canvas).map(map-point-pt)
 
   let (from-scaled, to-scaled) = rescale-line(
@@ -202,7 +201,6 @@
   )
 }
 
-// TODO:
 #let axis-instance-defaults = (
   i,
   ctx,

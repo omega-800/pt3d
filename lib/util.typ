@@ -109,11 +109,6 @@
 }
 
 // TODO: remove what isn't used anymore
-#let z-intersection = (z, (x1, y1, z1), (x2, y2, z2)) => {
-  let t = (z - z1) / (z2 - z1)
-  (x1 + t * (x2 - x1), y1 + t * (y2 - y1), z1 + t * (z2 - z1))
-}
-// why did i do this exactly?
 #let n-points-on-cube = (
   ((xmin, xmax), (ymin, ymax), (zmin, zmax)),
   n,

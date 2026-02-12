@@ -7,10 +7,6 @@
 #import "clip.typ": *
 #import "mark.typ": *
 
-// FIXME:
-// https://en.wikipedia.org/wiki/Graph_drawing
-// https://computergraphics.stackexchange.com/questions/1761/strategy-for-connecting-2-points-without-intersecting-previously-drawn-segments
-
 #let render-clipped-line(
   ctx,
   elem,
@@ -40,17 +36,6 @@
       for mark in elem.eval-marks {
         render-mark(ctx, mark)
       }
-      // // TODO: color-fn
-      // // TODO: fill
-      // for (from, to) in points.windows(2) {
-      //   let stroke = if type(elem.eval-mark.stroke) == function {
-      //     (elem.eval-mark.stroke)(..from)
-      //   } else { elem.eval-mark.stroke }
-      //   let fill = if type(elem.eval-mark.fill) == function {
-      //     (elem.eval-mark.fill)(..from)
-      //   } else { elem.eval-mark.fill }
-      //   render-tip(ctx, elem.eval-mark, from, to, stroke)
-      // }
     }
   }
 }
@@ -89,8 +74,6 @@
       stroke: elem.stroke,
       ..connect-circle-2d(..pts.map(ctx.on-canvas)),
     ))
-  } else {
-    // TODO: warn
   }
 }
 
@@ -168,13 +151,10 @@
 }
 
 #let render = (
-  // TODO:
   "axis": render-axes,
   "lineaxis": render-axisline,
   "planeaxis": render-axisplane,
-  // TODO:
   "plane": render-plane,
-  // TODO:
   "vec": render-vec,
   "vertices": render-clipped-plane,
   "polygon": render-clipped-plane,

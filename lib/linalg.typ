@@ -247,8 +247,6 @@
   // s-c == 0 and 0 <= dot-f-p and dot-f-p <= dot-f-f
   s-c <= 1 and s-c >= -1 and 0 <= dot-f-p and dot-f-p <= dot-f-f
 }
-// FIXME: wtf typst, i thought you were like rust
-// TODO: add return statements where values have to be returned
 
 #let intersection-3d-cube(
   (from, to),
@@ -273,39 +271,6 @@
   } else if to-out {
     (from, intersections.find(p => p != from))
   }
-}
-
-// FIXME: wrong
-#let intersection-3d-cube-prime = (
-  (inside, outside),
-  dim,
-) => {
-  let dir = direction-vec(inside, outside)
-  let ts = ()
-  for (i, d) in dim.enumerate() {
-    if dir.at(i) == 0 {
-      continue
-    }
-    for m in d {
-      let t = (m - inside.at(i)) / dir.at(i)
-      if t < 0 or t > 1 {
-        continue
-      }
-      let i2 = calc.rem(i + 1, 3)
-      let i3 = calc.rem(i + 2, 3)
-      let inter1 = inside.at(i2) + t * dir.at(i2)
-      let inter2 = inside.at(i3) + t * dir.at(i3)
-      let (min1, max1) = dim.at(i2)
-      let (min2, max2) = dim.at(i3)
-      if (
-        min1 <= inter1 and inter1 <= max1 and min2 <= inter2 and inter2 <= max2
-      ) {
-        ts.push(t)
-      }
-    }
-  }
-  let intert = calc.min(..ts)
-  (0, 1, 2).map(i => inside.at(i) + intert * dir.at(i))
 }
 
 #let intersection-3d-lines = (

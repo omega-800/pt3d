@@ -77,7 +77,6 @@
     y,
     (elem.planeparam)(x, y),
   )))
-  // FIXME:
   elem.eval-points = plane-points-to-vertices(ctx, p-x-y-z)
   elem
 }
@@ -274,18 +273,18 @@
   }
   // TODO:
   elem.eval-label = if elem.label == none { none } else {
-    let line-from = point-n((min, min), elem.position)
-    let (start, end, label-pos, label-max) = axis-tick-pos(
-      ctx,
-      elem.kind,
-      (min, min),
-      line-from,
-      1pt,
-      elem.label,
-      from-off: 5,
-      to-off: 5,
-    )
-    (label: elem.label, position: label-pos, max: label-max)
+    // let line-from = point-n((min, min), elem.position)
+    // let (start, end, label-pos, label-max) = axis-tick-pos(
+    //   ctx,
+    //   elem.kind,
+    //   (min, min),
+    //   line-from,
+    //   1pt,
+    //   elem.label,
+    //   from-off: 5,
+    //   to-off: 5,
+    // )
+    (label: elem.label, position: (0, 0, 0), max: (0, 0, 0))
   }
   elem
 }
@@ -336,7 +335,6 @@
         from-off: from,
         to-off: to,
       )
-      // TODO: label might be none
       elem.eval-ticks.push((
         label: if label == none { none } else {
           (label: label, position: label-pos, max: label-max)
@@ -464,8 +462,8 @@
     .join()
 }
 
+// TODO: eval marks
 #let eval-elem = (
-  // TODO: eval-axis
   "axis": eval-axes,
   "path": eval-path,
   "polygon": eval-polygon,

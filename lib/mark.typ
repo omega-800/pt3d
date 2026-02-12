@@ -202,7 +202,6 @@
   to: to,
 )
 
-// TODO: hmm how can i remove this duplicate code in typst
 #let arrow-mark = (
   mark,
   flat: false,

@@ -22,7 +22,6 @@
   )
 }
 
-// TODO: accept x, y, z functions
 #let lineplot3d = (
   stroke: auto,
   label: none,
@@ -45,8 +44,7 @@
     stroke-color-fn: stroke-color-fn,
   )
 }
-// TODO: accept x, y, z functions
-// TODO: stroke-color-fn, fill-color-fn
+
 #let planeplot3d = (
   stroke: auto,
   fill: auto,
@@ -207,8 +205,6 @@
   offset: offset,
   label-format: label-format,
 )
-
-// TODO: outsource setting default values to ~india~ axis-instance-defaults() fn
 
 #let axisplane3d = (
   kind: "x",
