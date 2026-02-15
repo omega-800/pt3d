@@ -8,7 +8,6 @@
   rotations: (
     pt.mat-rotate-x(calc.pi / 6),
     pt.mat-rotate-y(-calc.pi / 3),
-    pt.mat-rotate-z(0),
   ),
 
   pt.polygon(

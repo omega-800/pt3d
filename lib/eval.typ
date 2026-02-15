@@ -183,7 +183,6 @@
   line-to,
   kind,
   elem-stroke,
-  label-left,
 ) = {
   let (point-r,) = axis-helper-fn(
     ctx,
@@ -199,11 +198,6 @@
       point-r(line-from, tick),
       format-ticks,
       tick,
-      // label-left,
-      // loff,
-      // label,
-      // from-off: from,
-      // to-off: to,
     )
     res.push((
       label: if label == none { none } else {
@@ -253,38 +247,12 @@
       // },
     )
 
-    let axis-ticks = a => {
-      let axis = a
-        .instances
-        .filter(
-          i => (
-            i.format-ticks != none
-          ),
-        )
-        .at(0, default: none)
-      if axis == none or a.ticks == none { return () }
-      let (kind, ticks, nticks) = a
-      let h = axis-helper-fn(ctx, axis)
-      let tmin = h.min
-      let tmax = h.max
-      let span = tmax - tmin
-      if (
-        ticks == auto and nticks == auto
-      ) {
-        n-points-on(tmin, tmax, 10)
-      } else if ticks == auto {
-        n-points-on(tmin, tmax, nticks)
-      } else {
-        ticks
-      }
-    }
     let (xas, yas, zas) = ctx.axes
     let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = ctx.dim
 
-    // TODO: better auto ticks
-    let xticks = axis-ticks(xas)
-    let yticks = axis-ticks(yas)
-    let zticks = axis-ticks(zas)
+    let xticks = xas.ticks
+    let yticks = yas.ticks
+    let zticks = zas.ticks
     let all-ticks = (
       "x": xticks,
       "y": yticks,
@@ -308,55 +276,52 @@
     //     line-to,
     //     kind,
     //     elem.stroke,
-    //     // TODO:
-    //     label-left(ctx, kind, other(line-from)),
     //   ) {
     //     elem.eval-ticks.push(tick)
     //   }
     // }
 
-    // if elem.kind == "z" {
-    //   for (i, kind) in ("x", "y").enumerate() {
-    //     for tick in eval-ticks(
-    //       ctx,
-    //       all-ticks.at(kind),
-    //       elem.format-ticks.at(i),
-    //       line-from,
-    //       line-to,
-    //       kind,
-    //       elem.stroke,
-    //       true,
-    //     ) {
-    //       elem.eval-ticks.push(tick)
-    //     }
-    //   }
-    // } else if elem.kind == "y" {
-    //   for tick in xticks {
-    //     elem.eval-ticks.push(new-tick(tick, (
-    //       (tick, elem.position, zmin),
-    //       (tick, elem.position, zmax),
-    //     )))
-    //   }
-    //   for tick in zticks {
-    //     elem.eval-ticks.push(new-tick(tick, (
-    //       (xmin, elem.position, tick),
-    //       (xmax, elem.position, tick),
-    //     )))
-    //   }
-    // } else {
-    //   for tick in yticks {
-    //     elem.eval-ticks.push(new-tick(tick, (
-    //       (elem.position, tick, zmin),
-    //       (elem.position, tick, zmax),
-    //     )))
-    //   }
-    //   for tick in zticks {
-    //     elem.eval-ticks.push(new-tick(tick, (
-    //       (elem.position, ymin, tick),
-    //       (elem.position, ymax, tick),
-    //     )))
-    //   }
-    // }
+    // FIXME:
+    if elem.kind == "z" {
+      for tick in xticks {
+        elem.eval-ticks.push(new-tick(tick, (
+          (tick, ymin, elem.position),
+          (tick, ymax, elem.position),
+        )))
+      }
+      for tick in yticks {
+        elem.eval-ticks.push(new-tick(tick, (
+          (xmin, tick, elem.position),
+          (xmax, tick, elem.position),
+        )))
+      }
+    } else if elem.kind == "y" {
+      for tick in xticks {
+        elem.eval-ticks.push(new-tick(tick, (
+          (tick, elem.position, zmin),
+          (tick, elem.position, zmax),
+        )))
+      }
+      for tick in zticks {
+        elem.eval-ticks.push(new-tick(tick, (
+          (xmin, elem.position, tick),
+          (xmax, elem.position, tick),
+        )))
+      }
+    } else {
+      for tick in yticks {
+        elem.eval-ticks.push(new-tick(tick, (
+          (elem.position, tick, zmin),
+          (elem.position, tick, zmax),
+        )))
+      }
+      for tick in zticks {
+        elem.eval-ticks.push(new-tick(tick, (
+          (elem.position, ymin, tick),
+          (elem.position, ymax, tick),
+        )))
+      }
+    }
   }
   elem
 }
@@ -374,7 +339,6 @@
     ctx,
     elem,
   )
-  let l-left = label-left(ctx, elem.kind, elem.position)
   let line-from = point-n(elem.position, min)
   let line-to = point-n(elem.position, max)
   elem.eval-points = (line-from, line-to)
@@ -395,7 +359,6 @@
       line-to,
       elem.kind,
       elem.stroke,
-      l-left,
     )
   }
   elem.eval-label = if (
@@ -406,26 +369,6 @@
     let mid-tick = if elem.eval-ticks.len() > 0 {
       elem.eval-ticks.at(int(elem.eval-ticks.len() / 2))
     } else { none }
-    // FIXME: do this properly
-    let (width, height) = measure(elem.label)
-    let loff = if mid-tick == none {
-      // FIXME: scuffed approximation
-      (width + height) / 1.5
-    } else if mid-tick.label == none {
-      (
-        // FIXME: scuffed approximation
-        (elem.format-ticks.length + elem.format-ticks.offset)
-          + (width + height) / 1.5
-      )
-    } else {
-      let sub-lbl = measure(mid-tick.label.label)
-      (
-        // FIXME: scuffed approximation
-        (elem.format-ticks.length + elem.format-ticks.offset)
-          + (width + height + sub-lbl.width + sub-lbl.height)
-      )
-    }
-    // TODO: loff
     // TODO:
     let (label-pos, label-max) = axis-tick-pos(
       ctx,
@@ -433,9 +376,7 @@
       mid-vec(line-from, line-to),
       (..elem.format-ticks, label-format: tick => tick),
       elem.label,
-      // l-left,
-      // loff,
-      // elem.label,
+      label-off: 2em,
     )
     (label: elem.label, position: label-pos, max: label-max)
   }
