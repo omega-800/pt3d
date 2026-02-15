@@ -26,24 +26,38 @@
 #let is-num = x => type(x) == float or type(x) == int
 
 #let apply-2d-scale-to-3d = (
+  (on-canvas, map-point-pt),
   (from-3d, to-3d),
   (from, to),
   (from-scaled, to-scaled),
 ) => {
-  // TODO:
   let d-orig = distance-vec(from, to)
   let d-start = distance-vec(from, from-scaled)
   let d-end = distance-vec(to, to-scaled)
   let d-3d = distance-vec(from-3d, to-3d)
+  // TODO:
   let inv-f = if is-point-on-line-2d((from, to), from-scaled) { 1 } else { -1 }
   let inv-t = if is-point-on-line-2d((from, to), to-scaled) { 1 } else { -1 }
+
+  let (from-3d-scaled, to-3d-scaled) = rescale-line(
+    from-3d,
+    to-3d,
+    (d-end / d-orig) * d-3d, /* * inv-t*/
+    from-off: (d-start / d-orig) * d-3d, /* * inv-t*/
+  )
+  // FIXME: hacky and wrong
+  let d-3d-scaled = distance-vec(
+    ..(from-3d-scaled, to-3d-scaled).map(on-canvas).map(map-point-pt),
+  )
+  let d-scaled = distance-vec(from-scaled, to-scaled)
 
   rescale-line(
     from-3d,
     to-3d,
-    (d-end / d-orig) * d-3d * inv-t,
-    from-off: (d-start / d-orig) * d-3d * inv-t,
+    (d-end / d-orig) * (d-scaled / d-3d-scaled), /* * inv-t*/
+    from-off: (d-start / d-orig) * (d-scaled / d-3d-scaled), /* * inv-t*/
   )
+
   // let l = distance-vec(from,to)
   // let scale = distance-vec(from-scaled, to-scaled) / l
   // let d = direction-vec(from, to)

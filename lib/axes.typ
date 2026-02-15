@@ -101,8 +101,9 @@
   ))
 }
 
+// FIXME: buggy (rotations)
 #let axis-tick-pos = (
-  (dim, on-canvas, canvas-dim, map-point-pt),
+  ctx,
   kind,
   from-3d,
   format-ticks,
@@ -112,7 +113,9 @@
   // label,
   // from-off: 0,
   // to-off: 0,
+  label-off: 1em,
 ) => {
+  let (dim, on-canvas, canvas-dim, map-point-pt) = ctx
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
 
   let (length, offset) = format-ticks
@@ -120,19 +123,31 @@
   let from-off = ((length / 2) - offset) / 1pt
   let to-off = ((length / 2) + offset) / 1pt
 
-  let label-off = 1em.to-absolute().pt() * 1pt
   let label = if format-ticks.label-format == none { none } else {
     (format-ticks.label-format)(tick)
   }
+  let label-off = label-off.to-absolute().pt() * 1pt
 
-  let label-left = false
+  let label-left = kind == "z"
 
   let (px, py, pz) = from-3d
-  let to-3d = sum-vec(from-3d, axis-kind-case(format-ticks.dir, (
-    (-1, 0, 0),
-    (0, -1, 0),
-    (0, 0, 1),
-  )))
+  let to-3d = sum-vec(from-3d, axis-kind-case(
+    format-ticks.dir,
+    (
+      (1, 0, 0),
+      (0, 1, 0),
+      (0, 0, -1),
+    ).map(p => p.map(i => (
+      i
+        * (
+          if label-left {
+            1
+          } else {
+            -1
+          }
+        )
+    ))),
+  ))
 
   let (from-2d, to-2d) = (from-3d, to-3d).map(on-canvas).map(map-point-pt)
 
@@ -144,6 +159,7 @@
   )
 
   let (from-3d-scaled, to-3d-scaled) = apply-2d-scale-to-3d(
+    ctx,
     (from-3d, to-3d),
     (from-2d, to-2d),
     (from-2d-scaled, to-2d-scaled),
@@ -154,8 +170,9 @@
     .map(map-point-pt)
 
   // panic(
-  //   (from-2d-scaled, to-2d-scaled),
-  //   (start-pt, end-pt),
+  //   from-off, to-off,
+  //   (from-2d-scaled, to-2d-scaled, distance-vec(from-2d-scaled, to-2d-scaled)),
+  //   (start-pt, end-pt,distance-vec(start-pt, end-pt)),
   // )
 
   let (start, end) = (start-pt, end-pt).map(v => v.map(i => i * 1pt))
@@ -164,28 +181,30 @@
     let (width, height) = measure(label)
 
     // FIXME: do this properly
-    let to-add = (width + height) / 2pt
+    let to-add = (width + height) / 1pt
 
     let (label-from, label-to) = rescale-line(
       from-2d-scaled,
       to-2d-scaled,
       // TODO:
       // FIXME: do this properly
-      10 + to-off + label-off / 1pt,
+      to-off + label-off / 1pt,
     )
     let (label-from-3d, label-to-3d) = apply-2d-scale-to-3d(
+      ctx,
       (from-3d-scaled, to-3d-scaled),
       (from-2d-scaled, to-2d-scaled),
       (label-from, label-to),
     )
     let (label-from-max-3d, label-to-max-3d) = apply-2d-scale-to-3d(
+      ctx,
       (from-3d-scaled, to-3d-scaled),
       (from-2d-scaled, to-2d-scaled),
       // TODO:
       rescale-line(
         from-2d-scaled,
         to-2d-scaled,
-        10 + to-off + label-off / 1pt + to-add,
+        to-off + label-off / 1pt + to-add,
       ),
     )
     (label-to-3d, label-to-max-3d)
@@ -260,6 +279,7 @@
   i
 }
 
+// TODO: better auto ticks
 #let axis-ticks-default = (ctx, axis) => {
   let (on-canvas, dim, map-point-pt) = ctx
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
