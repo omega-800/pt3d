@@ -13,11 +13,20 @@
   )
 }
 
-#let measure-3d-pt = (on-canvas, map-point-pt) => (from, to) => distance-vec(
+#let measure-3d-pt = (
+  on-canvas,
+  map-point-pt,
+) => (
+  from,
+  to,
+) => distance-vec(
   ..(from, to).map(on-canvas).map(map-point-pt),
 )
 
-#let rescale = ((xo, xscale), (yo, yscale)) => (
+#let rescale = (
+  (xo, xscale),
+  (yo, yscale),
+) => (
   (x, y),
 ) => {
   (x * xscale + xo, y * yscale + yo)

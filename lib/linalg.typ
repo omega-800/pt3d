@@ -20,35 +20,156 @@
   (x, y, z),
 ) => x < xmin or x > xmax or y < ymin or y > ymax or z < zmin or z > zmax
 
-#let sum-vec = (..v) => (
+/// Adds an arbitrary amount of vectors
+///
+/// ```example
+/// #sum-vec((0,1,2), (2,0,1), (-1, 0, 1))
+/// ```
+///
+/// -> vector
+#let sum-vec(
+  /// The vectors to sum up
+  /// -> vectors
+  ..v,
+) = (
   v.pos().reduce((acc, cur) => acc.enumerate().map(((i, n)) => (n + cur.at(i))))
 )
 
-#let direction-vec = (from, to) => sum-vec(to, from.map(i => -i))
+/// Calculates the direction vector of two vectors
+///
+/// ```example
+/// #direction-vec((0,1,2), (2,0,1))
+/// ```
+///
+/// -> vector
+#let direction-vec(
+  /// Start vector
+  /// -> vector
+  from,
+  /// End vector
+  /// -> vector
+  to,
+) = sum-vec(to, from.map(i => -i))
 
-#let length-vec = v => calc.sqrt(v.map(i => i * i).sum())
+/// Calculates the length of a vector
+///
+/// ```example
+/// #length-vec((0,3,4))
+/// ```
+///
+/// -> vector
+#let length-vec(
+  /// Vector
+  /// -> vector
+  v,
+) = calc.sqrt(v.map(i => i * i).sum())
 
-#let normalize-vec = v => v.map(i => i / length-vec(v))
+/// Normalizes a vector
+///
+/// ```example
+/// #normalize-vec((0,3,4))
+/// ```
+///
+/// -> vector
+#let normalize-vec(
+  /// Vector
+  /// -> vector
+  v,
+) = v.map(i => i / length-vec(v))
 
-#let distance-vec = (from, to) => length-vec(direction-vec(to, from))
+/// Calculates the distance between two vectors
+///
+/// ```example
+/// #distance-vec((0,1,2), (2,0,1))
+/// ```
+///
+/// -> vector
+#let distance-vec(
+  /// Start vector
+  /// -> vector
+  from,
+  /// End vector
+  /// -> vector
+  to,
+) = length-vec(direction-vec(to, from))
 
-#let distance-vec-squared = (from, to) => (
+/// Calculates the squared distance between two vectors
+///
+/// ```example
+/// #distance-vec-squared((0,1,2), (2,0,1))
+/// ```
+///
+/// -> vector
+#let distance-vec-squared(
+  /// Start vector
+  /// -> vector
+  from,
+  /// End vector
+  /// -> vector
+  to,
+) = (
   direction-vec(to, from).map(i => i * i).sum()
 )
 
-#let mat-mult-vec = (((a, b, c), (d, e, f), (g, h, i)), (x, y, z)) => (
+/// Multiplies a $RR^(3 times 3)$ matrix with a $RR^3$ vector
+///
+/// ```example
+/// #mat-mult-vec((
+///     (1,0,0),
+///     (0,1,0),
+///     (0,0,1)
+///   ), (2,0,1))
+/// ```
+///
+/// -> vector
+#let mat-mult-vec(
+  /// Matrix
+  /// -> matrix
+  ((a, b, c), (d, e, f), (g, h, i)),
+  /// Vector
+  /// -> vector
+  (x, y, z),
+) = (
   a * x + b * y + c * z,
   d * x + e * y + f * z,
   g * x + h * y + i * z,
 )
 
-#let cross-product = ((x1, y1, z1), (x2, y2, z2)) => (
+/// Calculates the cross product of two vectors
+///
+/// ```example
+/// #cross-product((1,3,2), (2,0,1))
+/// ```
+///
+/// -> vector
+#let cross-product(
+  /// w
+  /// -> vector
+  (x1, y1, z1),
+  /// v
+  /// -> vector
+  (x2, y2, z2),
+) = (
   y1 * z2 - z1 * y2,
   z1 * x2 - x1 * z2,
   x1 * y2 - y1 * x2,
 )
 
-#let dot-product = ((x1, y1, z1), (x2, y2, z2)) => (
+/// Calculates the dot product of two vectors
+///
+/// ```example
+/// #dot-product((1,3,2), (2,0,1))
+/// ```
+///
+/// -> vector
+#let dot-product = (
+  /// w
+  /// -> vector
+  (x1, y1, z1),
+  /// v
+  /// -> vector
+  (x2, y2, z2),
+) => (
   x1 * x2 + y1 * y2 + z1 * z2
 )
 
@@ -94,21 +215,74 @@
   n.any(i => i != 0),
   message: "Normal vector cannot be zero vector",
 )
-#let plane-point-normal = (n, p) => {
+
+/// Constructs plane from point normal form
+///
+/// -> plane
+#let plane-point-normal(
+  /// Normal vector
+  /// -> vector
+  n,
+  /// Point on plane
+  /// -> vector
+  p,
+) = {
   assert-n-vec(n)
   (n, p)
 }
-#let plane-parametric = (p, v, w) => {
+/// Constructs plane from parametric form
+///
+/// -> plane
+#let plane-parametric(
+  /// Point on plane
+  /// -> vector
+  p,
+  /// Non-colinear vector 1
+  /// -> vector
+  v,
+  /// Non-colinear vector 2
+  /// -> vector
+  w,
+) = {
   let n = cross-product(v, w)
   assert-n-vec(n)
   (n, p)
 }
-#let plane-points = (a, b, c) => {
+/// Constructs plane from given points
+///
+/// -> plane
+#let plane-points(
+  /// Point 1
+  /// -> vector
+  a,
+  /// Point 2
+  /// -> vector
+  b,
+  /// Point 3
+  /// -> vector
+  c,
+) = {
   let n = cross-product(direction-vec(a, b), sum-vec(a, c))
   assert-n-vec(n)
   (n, a)
 }
-#let plane-coordinate = (x, y, z, d) => {
+/// Constructs plane from coordinate form
+///
+/// -> plane
+#let plane-coordinate(
+  /// x
+  /// -> int | float
+  x,
+  /// y
+  /// -> int | float
+  y,
+  /// z
+  /// -> int | float
+  z,
+  /// Distance
+  /// -> int | float
+  d,
+) = {
   assert-n-vec((x, y, z))
   (
     (x, y, z),
@@ -121,7 +295,21 @@
     },
   )
 }
-#let plane-hesse = ((x, y, z), d) => plane-coordinate(x, y, z, -d)
+/// Constructs plane from hesse form
+///
+/// -> plane
+#let plane-hesse(
+  /// Normal vector
+  /// -> vector
+  (x, y, z),
+  /// Distance
+  /// -> int | float
+  d,
+) = plane-coordinate(x, y, z, -d)
+
+/// Constructs plane from normal form (alias for `plane-hesse`)
+///
+/// -> plane
 #let plane-normal = plane-hesse
 
 #let points-on-plane = (n, p) => {
@@ -132,36 +320,117 @@
   (p, p2, p3)
 }
 
-#let line-parametric = (p, d) => (p, d)
-#let line-point-normal = line-parametric
-#let line-symmetric = (x, dx, y, dy, z, dz) => ((x, y, z), (dx, dy, dz))
-#let line-points = (a, b) => (a, direction-vec(a, b))
+/// Constructs line from parametric form
+///
+/// -> line
+#let line-parametric(
+  /// Point on line
+  /// -> vector
+  p,
+  /// Direction vector
+  /// -> vector
+  d,
+) = (p, d)
 
+/// Constructs line from point-normal form (alias for `line-parametric`)
+///
+/// -> line
+#let line-point-normal = line-parametric
+
+/// Constructs line from symmetric form
+///
+/// -> line
+#let line-symmetric(
+  /// x
+  /// -> int | float
+  x,
+  /// x-intercept
+  /// -> int | float
+  dx,
+  /// y
+  /// -> int | float
+  y,
+  /// y-intercept
+  /// -> int | float
+  dy,
+  /// z
+  /// -> int | float
+  z,
+  /// z-intercept
+  /// -> int | float
+  dz,
+) = ((x, y, z), (dx, dy, dz))
+/// Constructs line from given points
+///
+/// -> line
+#let line-points(
+  /// Point 1
+  /// -> vector
+  a,
+  /// Point 2
+  /// -> vector
+  b,
+) = (a, direction-vec(a, b))
+
+/// Isometric rotation matrix
+///
+/// -> matrix
 #let mat-rotate-iso = (
   (calc.sqrt(3), 0, -calc.sqrt(3)),
   (-1, 2, -1),
   (calc.sqrt(2), calc.sqrt(2), calc.sqrt(2)),
 ).map(r => r.map(i => i / calc.sqrt(6)))
 
-#let mat-rotate-x = x => (
+/// Constructs a rotation matrix in the x direction
+///
+/// -> matrix
+#let mat-rotate-x(
+  /// Amount to rotate by
+  /// -> int | float
+  x,
+) = (
   (1, 0, 0),
   (0, calc.cos(x), -calc.sin(x)),
   (0, calc.sin(x), calc.cos(x)),
 )
 
-#let mat-rotate-y = y => (
+/// Constructs a rotation matrix in the y direction
+///
+/// -> matrix
+#let mat-rotate-y(
+  /// Amount to rotate by
+  /// -> int | float
+  y,
+) = (
   (calc.cos(y), 0, calc.sin(y)),
   (0, 1, 0),
   (-calc.sin(y), 0, calc.cos(y)),
 )
 
-#let mat-rotate-z = z => (
+/// Constructs a rotation matrix in the y direction
+///
+/// -> matrix
+#let mat-rotate-z(
+  /// Amount to rotate by
+  /// -> int | float
+  z,
+) = (
   (calc.cos(z), -calc.sin(z), 0),
   (calc.sin(z), calc.cos(z), 0),
   (0, 0, 1),
 )
 
-#let apply-matrices = (v, ..m) => {
+/// Multiplies a $RR^3$ vector with $RR^(3 times 3)$ matrices
+///
+/// -> matrix
+#let apply-matrices(
+  /// Vector
+  /// -> vector
+  v,
+  /// Matrices
+  /// -> matrices
+  ..m,
+) = {
   let res = v
   for mat in m.pos() {
     res = mat-mult-vec(mat, res)
