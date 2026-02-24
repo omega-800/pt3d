@@ -1,5 +1,57 @@
 #import "../lib/pt3d.typ" as pt
 
+
+#pt.diagram(
+  width: 10cm,
+  height: 6cm,
+  xaxis: (lim: (-1, 1)),
+  yaxis: (lim: (-1, 1)),
+  zaxis: (lim: (0, 1)),
+  title: $g((x,y)) = (x,y,sqrt(1 - x^2 - y^2))$,
+  // rotations: (
+  // pt.mat-rotate-z(.2),
+  // pt.mat-rotate-y(-1),
+  // pt.mat-rotate-x(.5),
+  // ),
+  pt.planeparam(
+    (x, y) => {
+      let z = 1 - x * x - y * y
+      if z < 0 {
+        z
+      } else {
+        calc.sqrt(z)
+      }
+    },
+    steps: 50,
+  ),
+)
+
+#pt.diagram(
+  width: 8cm,
+  height: 6cm,
+  xaxis: (ticks: (6, 4, 2, 0)),
+  yaxis: (nticks: 4),
+  zaxis: (nticks: 4),
+  rotations: (
+    pt.mat-rotate-z(.2),
+    pt.mat-rotate-y(-1),
+    pt.mat-rotate-x(.5),
+  ),
+  // TODO:
+  pt.plane(
+    pt.plane-normal((1, 0, 0), calc.pi / 3),
+    stroke: black,
+    fill: black.transparentize(80%),
+  ),
+  pt.path(
+    stroke-color-fn: (x, y, z) => if x < calc.pi / 3 { red } else {
+      blue
+    },
+    ..pt.linspace(0, calc.pi * 2).map(x => (x, calc.cos(x), calc.sin(x))),
+  ),
+)
+
+
 #pt.diagram(
   title: [#sym.Omega],
   width: 9cm,

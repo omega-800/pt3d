@@ -1,3 +1,4 @@
+
 #let ortho-proj = (((xmin, xmax), (ymin, ymax), _), (x, y, z)) => (
   // FIXME: huh.
   x,
@@ -18,7 +19,9 @@
 
 #let out-of-bounds-3d = ((xmin, xmax), (ymin, ymax), (zmin, zmax)) => (
   (x, y, z),
-) => x < xmin or x > xmax or y < ymin or y > ymax or z < zmin or z > zmax
+) => {
+  x < xmin or x > xmax or y < ymin or y > ymax or z < zmin or z > zmax
+}
 
 /// Adds an arbitrary amount of vectors
 ///

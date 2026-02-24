@@ -250,15 +250,16 @@
 }
 
 #let axis-ticks-default = (ctx, axis) => {
-  if type(axis.ticks) == array {
-    return axis.ticks.filter(t => t <= max and t >= min)
-  }
   let (on-canvas, dim, map-point-pt) = ctx
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
   let (min, max, point-n) = axis-helper-fn(ctx, (
     kind: axis.kind,
     type: "axisline",
   ))
+
+  if type(axis.ticks) == array {
+    return axis.ticks.filter(t => t <= max and t >= min)
+  }
   let tick-l-ratios = axis
     .instances
     .filter(i => i.format-ticks != none and i.format-ticks.label-format != none)
