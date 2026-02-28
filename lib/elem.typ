@@ -195,8 +195,7 @@
 
 // TODO: http://lilaq.org/docs/tutorials/ticks#custom-tick-formatting
 #let tickformat = (
-  stroke: gradient.linear(black, red),
-  // stroke: auto,
+  stroke: auto,
   length: auto,
   offset: auto,
   label-format: tick => text(size: 0.75em)[#calc.round(tick, digits: 2)],

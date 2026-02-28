@@ -4,9 +4,9 @@
 #pt.diagram(
   width: 10cm,
   height: 6cm,
-  xaxis: (lim: (-1, 1)),
-  yaxis: (lim: (-1, 1)),
-  zaxis: (lim: (0, 1)),
+  xaxis: (lim: (-1.5, 1.5), nticks: 7),
+  yaxis: (lim: (-1.5, 1.5), nticks: 7),
+  zaxis: (lim: (0, 1), nticks: 3),
   title: $g((x,y)) = (x,y,sqrt(1 - x^2 - y^2))$,
   // rotations: (
   // pt.mat-rotate-z(.2),
@@ -30,8 +30,8 @@
   width: 8cm,
   height: 6cm,
   xaxis: (ticks: (6, 4, 2, 0)),
-  yaxis: (nticks: 4),
-  zaxis: (nticks: 4),
+  yaxis: (nticks: 3),
+  zaxis: (nticks: 3),
   rotations: (
     pt.mat-rotate-z(.2),
     pt.mat-rotate-y(-1),
