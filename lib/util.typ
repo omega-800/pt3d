@@ -1,5 +1,28 @@
 #import "linalg.typ": *
 
+// TODO:
+#let dist3d = (xp, yp, xn: 10, yn: 10) => {
+  let (xmin, xmax) = (calc.min(..xp), calc.max(..xp))
+  let (ymin, ymax) = (calc.min(..yp), calc.max(..yp))
+  let xstep = (xmax - xmin) / xn
+  let ystep = (ymax - ymin) / yn
+  let xsteps = range(0, xn).map(x => xmin + xstep * x)
+  let ysteps = range(0, yn).map(y => ymin + ystep * y)
+  let xres = xsteps.map(x => ysteps.map(_ => x)).join()
+  let yres = xsteps.map(_ => ysteps).join()
+  let xy = xp.zip(yp)
+  // FIXME: performance or sth
+  let zres = xsteps
+    .map(xm => ysteps.map(ym => xy
+      .filter(((x, y)) => (
+        x >= xm and x < xm + xstep and y >= ym and y < ym + ystep
+      ))
+      .len()))
+    .join()
+
+  (xres.rev(), yres.rev(), zres)
+}
+
 #let is-num = x => type(x) == float or type(x) == int
 
 #let apply-2d-scale-to-3d = (
