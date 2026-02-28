@@ -1,17 +1,28 @@
 #import "linalg.typ": *
 
-// TODO:
-#let dist3d = (xp, yp, xn: 10, yn: 10) => {
+#let dist3d = (xp, yp, xn: 10, yn: 10, xlim: auto, ylim: auto) => {
+  // TODO: fold init
   let (xmin, xmax) = (calc.min(..xp), calc.max(..xp))
   let (ymin, ymax) = (calc.min(..yp), calc.max(..yp))
-  let xstep = (xmax - xmin) / xn
-  let ystep = (ymax - ymin) / yn
+
+  if xlim != auto {
+    xmin = calc.min(xmin, xlim.at(0))
+    xmax = calc.max(xmax, xlim.at(1))
+  }
+  if ylim != auto {
+    ymin = calc.min(ymin, ylim.at(0))
+    ymax = calc.max(ymax, ylim.at(1))
+  }
+
+  let xstep = (xmax - xmin) / (xn - 1)
+  let ystep = (ymax - ymin) / (yn - 1)
   let xsteps = range(0, xn).map(x => xmin + xstep * x)
   let ysteps = range(0, yn).map(y => ymin + ystep * y)
   let xres = xsteps.map(x => ysteps.map(_ => x)).join()
   let yres = xsteps.map(_ => ysteps).join()
+
   let xy = xp.zip(yp)
-  // FIXME: performance or sth
+  // TODO: performance or sth
   let zres = xsteps
     .map(xm => ysteps.map(ym => xy
       .filter(((x, y)) => (
@@ -20,7 +31,11 @@
       .len()))
     .join()
 
-  (xres.rev(), yres.rev(), zres)
+  let plane = (xres, yres, zres).map(n => n.rev())
+  (
+    plane,
+    plane.at(0).zip(plane.at(1), plane.at(2)).filter(((x, y, z)) => z == 1),
+  )
 }
 
 #let is-num = x => type(x) == float or type(x) == int

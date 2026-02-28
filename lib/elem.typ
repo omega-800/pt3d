@@ -2,6 +2,39 @@
 #import "util.typ": *
 
 // TODO: vector field?
+// TODO: rename ~3d~ without name clashes
+// TODO: (cubic etc) 3d interpolation on all elems
+
+#let distribution3d = (
+  stroke: auto,
+  fill: auto,
+  label: none,
+  stroke-color-fn: none,
+  fill-color-fn: none,
+  mark: ".",
+  xn: 10,
+  yn: 10,
+  interpolate: none,
+  // xlim: auto,
+  // ylim: auto,
+  xs,
+  ys,
+) => {
+  (
+    type: "distribution",
+    xs: xs,
+    ys: ys,
+    xn: xn,
+    yn: yn,
+    mark: mark,
+    label: label,
+    stroke: stroke,
+    fill: fill,
+    stroke-color-fn: stroke-color-fn,
+    fill-color-fn: fill-color-fn,
+    interpolate: interpolate,
+  )
+}
 
 #let vertices3d = (
   stroke: auto,
@@ -70,7 +103,6 @@
     fill-color-fn: fill-color-fn,
   )
 }
-
 
 #let path3d = (
   stroke: auto,
@@ -157,22 +189,22 @@
   )
 }
 
-#let lineparam3d = (
-  stroke: auto,
-  steps: auto,
-  stroke-color-fn: none,
-  mark: none,
-  label: none,
-  fn,
-) => (
-  type: "lineparam",
-  lineparam: fn,
-  stroke: stroke,
-  label: label,
-  steps: steps,
-  stroke-color-fn: stroke-color-fn,
-  mark: mark,
-)
+// #let lineparam3d = (
+//   stroke: auto,
+//   steps: auto,
+//   stroke-color-fn: none,
+//   mark: none,
+//   label: none,
+//   fn,
+// ) => (
+//   type: "lineparam",
+//   lineparam: fn,
+//   stroke: stroke,
+//   label: label,
+//   steps: steps,
+//   stroke-color-fn: stroke-color-fn,
+//   mark: mark,
+// )
 
 #let planeparam3d = (
   stroke: auto,
@@ -211,8 +243,8 @@
 #let axisplane3d = (
   kind: "x",
   position: auto,
-  stroke: black.transparentize(40%), // (paint: black.transparentize(40%), dash: "dotted"),
-  fill: black.transparentize(95%), // none,
+  stroke: (paint: black.transparentize(40%), dash: "dotted"),
+  fill: none,
   format-ticks: (label-format: none),
   // format-subticks: (:),
   // format-extra-ticks: (:),

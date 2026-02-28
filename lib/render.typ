@@ -32,6 +32,8 @@
         ))
       }
     }
+    // huh, wait, what is this doing here
+    // TODO: shouldn't this be in the outer scope
     if "eval-marks" in elem and elem.eval-marks != none {
       for mark in elem.eval-marks {
         render-mark(ctx, mark)
@@ -62,6 +64,12 @@
         fill: apply-color-fn(p1, ..fill-param),
         ..points.map(ctx.on-canvas),
       ))
+    }
+  }
+  if "eval-marks" in elem and elem.eval-marks != none {
+    for mark in elem.eval-marks {
+      // FIXME: render marks that are in front of the plane
+      render-mark(ctx, mark)
     }
   }
 }
@@ -157,8 +165,9 @@
   "polygon": render-clipped-plane,
   "planeplot": render-clipped-plane,
   "planeparam": render-clipped-plane,
+  "distribution": render-clipped-plane,
   "lineplot": render-clipped-line,
-  "lineparam": render-clipped-line,
+  // "lineparam": render-clipped-line,
   "line": render-clipped-line,
   "path": render-clipped-line,
 )
@@ -168,7 +177,15 @@
   let fill = none
   let height = measure(format(elem.label, black, black)).height
   let image = if (
-    elem.type in ("polygon", "plane", "planeplot", "vertices", "planeparam")
+    elem.type
+      in (
+        "polygon",
+        "plane",
+        "planeplot",
+        "vertices",
+        "planeparam",
+        "distribution",
+      )
   ) {
     fill = elem.fill
     if (
@@ -197,7 +214,7 @@
         "path",
         "vec",
         "line",
-        "lineparam",
+        // "lineparam",
         "lineplot",
       )
   ) {

@@ -1,3 +1,20 @@
+// TODO:
+#let cubic-interpolate(
+  p0,
+  p1,
+  p2,
+  p3,
+  t,
+) = {
+  let interp = ((n0, n1, n2, n3)) => (
+    n0
+      + (n1 - n0) * t
+      + (n2 - 2 * n1 + n0) / 2 * calc.pow(t, 2)
+      + (n3 - 3 * n2 + 3 * n1 - n0) / 6 * calc.pow(t, 3)
+  )
+  p0.zip(p1, p2, p3).map(interp)
+}
+
 
 #let ortho-proj = (((xmin, xmax), (ymin, ymax), _), (x, y, z)) => (
   // FIXME: huh.
@@ -168,10 +185,10 @@
 #let dot-product(
   /// v
   /// -> vector
-  v, 
+  v,
   /// w
   /// -> vector
-  w
+  w,
 ) = v.zip(w).map(((a, b)) => a * b).sum()
 
 #let cube-planes = (((xmin, xmax), (ymin, ymax), (zmin, zmax))) => (

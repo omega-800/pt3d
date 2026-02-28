@@ -225,9 +225,9 @@
   width: 12cm,
   height: 12cm,
   xaxis: (lim: (-2, 5)),
-  yaxis: (lim: (-5, 5)),
+  yaxis: (lim: (-5, 5), nticks: 11),
   zaxis: (lim: (-5, 5)),
-  legend: (label: (format: (it, stroke, fill) => text(stroke: fill)[#it])),
+  legend: (label: (format: (it, stroke, fill) => text(fill: fill)[#it])),
   pt.planeparam(
     (x, y) => y * calc.sin(x) - x * calc.cos(y),
     stroke-color-fn: (x, y, z) => pt.rgb-clamp(0, 0, -z * 50 + 120),

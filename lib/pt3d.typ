@@ -5,10 +5,10 @@
 #import "diagram.typ": diagram
 #import "elem.typ": (
   axis3d as axis, axisline3d as axisline, axisplane3d as axisplane,
-  line3d as line, lineparam3d as lineparam, lineplot3d as lineplot,
+  line3d as line, /*lineparam3d as lineparam,*/ lineplot3d as lineplot,
   path3d as path, plane3d as plane, planeparam3d as planeparam,
   planeplot3d as planeplot, polygon3d as polygon, vec3d as vec,
-  vertices3d as vertices,
+  vertices3d as vertices, distribution3d as distribution,
 )
 #import "linalg.typ": *
 #import "style.typ": *

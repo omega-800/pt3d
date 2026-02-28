@@ -55,8 +55,9 @@
 }
 
 #let plane-points-to-vertices(ctx, points) = {
+  // something smells very fishy in here
+  // TODO: revisit clipping
   let vertices = ()
-  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = ctx.dim
   for (i, f) in points.slice(0, points.len() - 1).enumerate() {
     for (ii, ff) in f.slice(0, f.len() - 1).enumerate() {
       let p11 = ff
@@ -79,7 +80,6 @@
 }
 
 #let eval-planeparam(ctx, elem) = {
-  let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = ctx.dim
   let steps = if elem.steps == auto { 5 } else { elem.steps }
   let p-x-y-z = x-y-points(ctx.dim, steps).map(ps => ps.map((
     (x, y),
@@ -92,17 +92,17 @@
   elem
 }
 
-#let eval-lineparam(ctx, elem) = {
-  let steps = if elem.steps == auto { 5 } else { elem.steps }
-  elem.eval-points = clip-line(
-    ctx,
-    n-points-on-cube(ctx.dim, steps).map(p => (elem.lineparam)(
-      ..p,
-    )),
-  )
-  elem.eval-marks = eval-marks(elem, elem.mark, elem.eval-points)
-  elem
-}
+// #let eval-lineparam(ctx, elem) = {
+//   let steps = if elem.steps == auto { 5 } else { elem.steps }
+//   elem.eval-points = clip-line(
+//     ctx,
+//     n-points-on-cube(ctx.dim, steps).map(p => (elem.lineparam)(
+//       ..p,
+//     )),
+//   )
+//   elem.eval-marks = eval-marks(elem, elem.mark, elem.eval-points)
+//   elem
+// }
 
 #let eval-line(ctx, elem) = {
   elem.eval-points = (intersections-line-dim(elem.line, ctx.dim),)
@@ -175,6 +175,31 @@
   elem
 }
 
+#let eval-distribution(ctx, elem) = {
+  // TODO: xlim, ylim proper
+  let (xlim, ylim, (zmin, _)) = ctx.dim
+  let ((x, y, z), p) = dist3d(
+    elem.xs,
+    elem.ys,
+    xn: elem.xn,
+    yn: elem.yn,
+    xlim: xlim,
+    ylim: ylim,
+  )
+
+  let pts = x.zip(y, z)
+  elem.eval-points = plane-points-to-vertices(
+    ctx,
+    // TODO: take yn from dist
+    pts.chunks(elem.yn),
+  )
+
+  elem.eval-marks = eval-marks(elem, elem.mark, (
+    p.map(((x, y, z)) => (x, y, zmin)).filter(p => not (ctx.out-of-bounds)(p)),
+  ))
+  elem
+}
+
 #let eval-ticks(
   ctx,
   ticks,
@@ -241,7 +266,7 @@
       //   )
       // },
       tick: pos,
-      stroke: black,
+      stroke: elem.stroke,
       // stroke: if elem.format-ticks.stroke == auto { elem.stroke } else {
       //   elem.format-ticks.stroke
       // },
@@ -468,7 +493,8 @@
   "plane": eval-plane,
   "planeparam": eval-planeparam,
   "line": eval-line,
-  "lineparam": eval-lineparam,
+  "distribution": eval-distribution,
+  // "lineparam": eval-lineparam,
 )
 
 #let eval-points = (
@@ -495,6 +521,12 @@
   } else if elem.type == "planeplot" {
     let (x, y, z, _) = elem.planeplot
     x.zip(y, z)
+  } else if elem.type == "distribution" {
+    // TODO: distribution
+    // let elem = eval-distribution(ctx, elem)
+    // TODO: marks
+    // elem.eval-points.join()
+    ()
   } else {
     ()
   }
