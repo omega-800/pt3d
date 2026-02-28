@@ -117,9 +117,11 @@
 ) => {
   let (dim, on-canvas, canvas-dim, map-point-pt) = ctx
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
+  let length = if "length" in format-ticks { format-ticks.length } else { 0pt }
+  let offset = if "offset" in format-ticks { format-ticks.offset } else {
+    length / 2
+  }
 
-  let (length, offset) = format-ticks
-  // TODO: invert
   let from-off = ((length / 2) - offset) / 1pt
   let to-off = ((length / 2) + offset) / 1pt
 
@@ -128,11 +130,15 @@
   }
   let label-off = label-off.to-absolute().pt() * 1pt
 
+  // TODO:
   let label-left = kind == "z"
 
   let (px, py, pz) = from-3d
   let to-3d = sum-vec(from-3d, axis-kind-case(
-    format-ticks.dir,
+    if "dir" in format-ticks { format-ticks.dir } else {
+      // FIXME:
+      axis-kind-case(kind, ("y", "x", "y"))
+    },
     (
       (1, 0, 0),
       (0, 1, 0),
@@ -151,31 +157,23 @@
 
   let (from-2d, to-2d) = (from-3d, to-3d).map(on-canvas).map(map-point-pt)
 
-  let (from-2d-scaled, to-2d-scaled) = rescale-line(
-    from-2d,
-    to-2d,
-    to-off,
-    from-off: from-off,
+  let scale-to-2d-len = to-add => {
+    apply-2d-scale-to-3d(
+      ctx,
+      (from-3d, to-3d),
+      (from-2d, to-2d),
+      rescale-line(
+        from-2d,
+        to-2d,
+        to-off + to-add,
+        from-off: from-off,
+      ),
+    )
+  }
+
+  let (from-3d-scaled, to-3d-scaled) = scale-to-2d-len(
+    0,
   )
-
-  let (from-3d-scaled, to-3d-scaled) = apply-2d-scale-to-3d(
-    ctx,
-    (from-3d, to-3d),
-    (from-2d, to-2d),
-    (from-2d-scaled, to-2d-scaled),
-  )
-
-  let (start-pt, end-pt) = (from-3d-scaled, to-3d-scaled)
-    .map(on-canvas)
-    .map(map-point-pt)
-
-  // panic(
-  //   from-off, to-off,
-  //   (from-2d-scaled, to-2d-scaled, distance-vec(from-2d-scaled, to-2d-scaled)),
-  //   (start-pt, end-pt,distance-vec(start-pt, end-pt)),
-  // )
-
-  let (start, end) = (start-pt, end-pt).map(v => v.map(i => i * 1pt))
 
   let (label-pos, label-max) = if label == none { (none, none) } else {
     let (width, height) = measure(label)
@@ -183,30 +181,16 @@
     // FIXME: do this properly
     let to-add = (width + height) / 1pt
 
-    let (label-from, label-to) = rescale-line(
-      from-2d-scaled,
-      to-2d-scaled,
-      // TODO:
-      // FIXME: do this properly
-      to-off + label-off / 1pt,
+    // TODO:
+    // FIXME: do this properly
+    let (label-from-3d, label-to-3d) = scale-to-2d-len(
+      label-off / 1pt,
     )
-    let (label-from-3d, label-to-3d) = apply-2d-scale-to-3d(
-      ctx,
-      (from-3d-scaled, to-3d-scaled),
-      (from-2d-scaled, to-2d-scaled),
-      (label-from, label-to),
+    let (label-from-max-3d, label-to-max-3d) = scale-to-2d-len(
+      // FIXME:
+      (label-off / 1pt + 2 * to-add),
     )
-    let (label-from-max-3d, label-to-max-3d) = apply-2d-scale-to-3d(
-      ctx,
-      (from-3d-scaled, to-3d-scaled),
-      (from-2d-scaled, to-2d-scaled),
-      // TODO:
-      rescale-line(
-        from-2d-scaled,
-        to-2d-scaled,
-        to-off + label-off / 1pt + to-add,
-      ),
-    )
+
     (label-to-3d, label-to-max-3d)
   }
   (
