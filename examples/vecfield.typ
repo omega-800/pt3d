@@ -26,9 +26,9 @@
   height: 15cm,
   rotations: (
     pt.mat-rotate-iso,
-    pt.mat-rotate-y(.3),
-    pt.mat-rotate-z(.3),
-    pt.mat-rotate-x(.3),
+    pt.mat-rotate-y(.1),
+    pt.mat-rotate-z(.2),
+    pt.mat-rotate-x(.1),
   ),
   pt.planeplot(
     num: n,
@@ -45,7 +45,7 @@
       let l = pt.length-vec(v)
       if l > 1 {
         pt.scalar-mult-vec(
-          1 / calc.pow(l, 3),
+          -1 / calc.pow(l, 3),
           v,
         )
       } else { v }
@@ -54,6 +54,7 @@
       let c = 250 * (x, y, z).map(calc.abs).sum() / 3
       pt.rgb-clamp(c, c, c)
     },
+    scale: .3,
   ),
 )
 #let n = 7
@@ -82,7 +83,7 @@
 #pt.diagram(
   width: 15cm,
   height: 15cm,
-  title: $f : cases(RR^3 &-> RR^3, (x,y,z) &|-> (y/z,-x/z,0))$,
+  title: $ f : cases(RR^3 &-> RR^3, vec(x, y, z) &|-> vec(y/z, -x/z, 0)) $,
   rotations: (
     pt.mat-rotate-iso,
     pt.mat-rotate-y(.1),
