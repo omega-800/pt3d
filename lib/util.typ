@@ -109,7 +109,8 @@
   (calc.max(xmax, x), calc.max(ymax, y), calc.max(zmax, z)),
 )
 
-#let n-points-on = (min, max, n) => range(0, n).map(i => (
+// FIXME: float n
+#let n-points-on = (min, max, n) => range(0, int(n)).map(i => (
   min + i * ((max - min) / n)
 ))
 
@@ -125,6 +126,8 @@
   let t = if include-end { to + 1 } else { to }
   n-points-on(from, t, n)
 }
+
+#let meshgrid = (ls1, ls2) => ls1.map(u => ls2.map(v => (u, v))).join()
 
 #let domain = (
   (u-from, u-to),

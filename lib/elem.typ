@@ -5,6 +5,37 @@
 // TODO: rename ~3d~ without name clashes
 // TODO: (cubic etc) 3d interpolation on all elems
 
+#let quiver3d = (
+  stroke: auto,
+  fill: auto,
+  label: none,
+  stroke-color-fn: none,
+  fill-color-fn: none,
+  tip: ">",
+  toe: none,
+  scale: 1,
+  xs,
+  ys,
+  zs,
+  dir,
+) => {
+  (
+    type: "quiver",
+    stroke: stroke,
+    fill: fill,
+    label: label,
+    stroke-color-fn: stroke-color-fn,
+    fill-color-fn: fill-color-fn,
+    tip: tip,
+    toe: toe,
+    scale: scale,
+    xs: xs,
+    ys: ys,
+    zs: zs,
+    dir: dir,
+  )
+}
+
 #let distribution3d = (
   stroke: auto,
   fill: auto,
@@ -60,6 +91,7 @@
   label: none,
   stroke-color-fn: none,
   mark: none,
+  // TODO: naming
   x,
   y,
   z,
@@ -71,6 +103,7 @@
   (
     type: "lineplot",
     mark: mark,
+    // TODO: unfold
     lineplot: (x, y, z),
     stroke: stroke,
     label: label,
@@ -85,6 +118,7 @@
   num: none,
   stroke-color-fn: none,
   fill-color-fn: none,
+  // TODO: naming
   x,
   y,
   z,
@@ -95,6 +129,7 @@
   )
   (
     type: "planeplot",
+    // TODO: unfold
     planeplot: (x, y, z, num),
     stroke: stroke,
     label: label,

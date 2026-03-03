@@ -25,8 +25,15 @@
       )))
     } else {
       for sub-pts in points.windows(2) {
+        // TODO: gradient everywhere stroke-color-fn is in use
+        let s = if "stroke-color-fn" in elem {
+          gradient.linear((elem.stroke-color-fn)(..sub-pts.at(0)), (
+            elem.stroke-color-fn
+          )(..sub-pts.at(1)))
+        } else { elem.stroke }
         place(line(
-          stroke: apply-color-fn(sub-pts.at(0), ..stroke-param),
+          // stroke: apply-color-fn(sub-pts.at(0), ..stroke-param),
+          stroke: s,
           start: (ctx.on-canvas)(sub-pts.at(0)),
           end: (ctx.on-canvas)(sub-pts.at(1)),
         ))
@@ -122,6 +129,7 @@
 
   place(line(start: on-canvas(start), end: on-canvas(end), stroke: elem.stroke))
 
+  // TODO: switch to eval-marks
   if elem.eval-tip != none {
     render-mark(ctx, elem.eval-tip)
   }
@@ -166,6 +174,7 @@
   "planeplot": render-clipped-plane,
   "planeparam": render-clipped-plane,
   "distribution": render-clipped-plane,
+  "quiver": render-clipped-line,
   "lineplot": render-clipped-line,
   // "lineparam": render-clipped-line,
   "line": render-clipped-line,
@@ -216,6 +225,7 @@
         "line",
         // "lineparam",
         "lineplot",
+        "quiver",
       )
   ) {
     let stroke = elem.stroke

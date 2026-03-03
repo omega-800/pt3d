@@ -59,6 +59,7 @@
   // TODO: revisit clipping
   let vertices = ()
   for (i, f) in points.slice(0, points.len() - 1).enumerate() {
+    // x-axis plane
     for (ii, ff) in f.slice(0, f.len() - 1).enumerate() {
       let p11 = ff
       let p12 = f.at(ii + 1)
@@ -161,7 +162,7 @@
       dot-product(n.map(i => -i), direction-vec(p, a)) / denom
     )
     if t >= 0 and t <= 1 {
-      points.push(sum-vec(a, a-b.map(i => i * t)))
+      points.push(sum-vec(a, scalar-mult-vec(t, a-b)))
     }
   }
   elem.eval-points = (points,)
@@ -190,13 +191,42 @@
   let pts = x.zip(y, z)
   elem.eval-points = plane-points-to-vertices(
     ctx,
-    // TODO: take yn from dist
-    pts.chunks(elem.yn),
+    pts.chunks(if elem.yn == auto { 10 } else { elem.yn }),
   )
 
   elem.eval-marks = eval-marks(elem, elem.mark, (
     p.map(((x, y, z)) => (x, y, zmin)).filter(p => not (ctx.out-of-bounds)(p)),
   ))
+  elem
+}
+
+#let eval-quiver(ctx, elem) = {
+  // TODO:
+  elem.eval-points = elem
+    .xs
+    .zip(elem.ys, elem.zs)
+    .map(v => {
+      let nv = (elem.dir)(..v)
+      let d = distance-vec(v, nv)
+      clip-line(ctx, (
+        if d > 0 {
+          rescale-line(v, nv, elem.scale * d)
+          // (v,nv)
+        } else {
+          (v, nv)
+        }
+      )).at(0)
+    })
+    .filter(v => (
+      v != none
+        and not v.any(vv => vv == none)
+        and distance-vec(v.at(0), v.at(1)) > 0
+    ))
+  // TODO: only eval if mark != none
+  elem.eval-marks = (
+    ..eval-marks(elem, elem.tip, elem.eval-points),
+    ..eval-marks(elem, elem.toe, elem.eval-points.map(l => l.rev())),
+  )
   elem
 }
 
@@ -494,6 +524,7 @@
   "planeparam": eval-planeparam,
   "line": eval-line,
   "distribution": eval-distribution,
+  "quiver": eval-quiver,
   // "lineparam": eval-lineparam,
 )
 
@@ -521,6 +552,9 @@
   } else if elem.type == "planeplot" {
     let (x, y, z, _) = elem.planeplot
     x.zip(y, z)
+  } else if elem.type == "quiver" {
+    // TODO: distance
+    elem.xs.zip(elem.ys, elem.zs)
   } else if elem.type == "distribution" {
     // TODO: distribution
     // let elem = eval-distribution(ctx, elem)

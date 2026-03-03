@@ -23,8 +23,13 @@
           lines.last().push(t)
         }
       } else if t-out {
-        lines.last().push(f)
-        lines.last().push(intersection-canvas(f, t).at(1))
+        let inter = intersection-canvas(f, t)
+        if inter != none {
+          lines.last().push(f)
+          // FIXME: intersection-canvas is none
+          // TODO: fix this everywhere where intersection-canvas is used
+          lines.last().push(inter.at(1))
+        }
       } else {
         lines.last().push(f)
         if j == pts.len() - 1 {

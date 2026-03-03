@@ -8,7 +8,7 @@
   line3d as line, /*lineparam3d as lineparam,*/ lineplot3d as lineplot,
   path3d as path, plane3d as plane, planeparam3d as planeparam,
   planeplot3d as planeplot, polygon3d as polygon, vec3d as vec,
-  vertices3d as vertices, distribution3d as distribution,
+  vertices3d as vertices, distribution3d as distribution, quiver3d as quiver,
 )
 #import "linalg.typ": *
 #import "style.typ": *

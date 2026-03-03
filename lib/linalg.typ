@@ -1,5 +1,5 @@
 // TODO:
-#let cubic-interpolate(
+#let interpolate-cubic(
   p0,
   p1,
   p2,
@@ -95,6 +95,7 @@
   /// Vector
   /// -> vector
   v,
+  // FIXME: division by 0
 ) = v.map(i => i / length-vec(v))
 
 /// Calculates the distance between two vectors
@@ -130,6 +131,23 @@
 ) = (
   direction-vec(to, from).map(i => i * i).sum()
 )
+
+/// Multiplies a vector with a scalar
+///
+/// ```example
+/// #scalar-mult-vec(2, (1,3,0))
+/// ```
+///
+/// -> vector
+
+#let scalar-mult-vec(
+  /// Scalar
+  /// -> int | float
+  s,
+  /// Vector
+  /// -> vector
+  v,
+) = v.map(i => i * s)
 
 /// Multiplies a $RR^(3 times 3)$ matrix with a $RR^3$ vector
 ///
@@ -507,7 +525,7 @@
     if d.at(dir) == 0 { continue }
     for m in (0, 1) {
       let t = (ddim.at(m) - p.at(dir)) / d.at(dir)
-      let v = sum-vec(p, d.map(i => i * t))
+      let v = sum-vec(p, scalar-mult-vec(t, d))
       if not out-of-bounds(v) {
         points.push(v)
       }
@@ -574,7 +592,7 @@
   let d1 = distance-vec(from1, to1)
   let d2 = distance-vec(from2, to2)
   let t = cross-product(d1, d2)
-  sum-vec(from1, d1.map(i => i * t))
+  sum-vec(from1, scalar-mult-vec(t, d1))
 }
 
 #let perpendicular-3d = v => {
@@ -590,7 +608,7 @@
 #let rescale-line = (from, to, to-off, from-off: 0) => {
   let n = normalize-vec(direction-vec(from, to))
   (
-    sum-vec(from, n.map(i => i * -from-off)),
-    sum-vec(from, n.map(i => i * to-off)),
+    sum-vec(from, scalar-mult-vec(-from-off, n)),
+    sum-vec(from, scalar-mult-vec(to-off, n)),
   )
 }
