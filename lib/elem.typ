@@ -14,6 +14,7 @@
   tip: ">",
   toe: none,
   scale: 1,
+  norm: false,
   xs,
   ys,
   zs,
@@ -33,6 +34,7 @@
     ys: ys,
     zs: zs,
     dir: dir,
+    norm: norm,
   )
 }
 

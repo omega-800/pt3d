@@ -14,7 +14,7 @@
 #import "style.typ": *
 #import "fs.typ": *
 #import "util.typ": (
-  domain, linspace, mid-vec, minmax-vec, n-points-on, n-points-on-cube,
+  domain, linspace, mid-vec, minmax-vec, n-points-on, n-points-on-cube, meshgrid,
   path-curve, x-y-points,
 )
 #import "mark.typ": marks

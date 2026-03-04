@@ -6,20 +6,23 @@
   let (ymin, ymax) = (calc.min(..yp), calc.max(..yp))
 
   if xlim != auto {
-    xmin = calc.min(xmin, xlim.at(0))
-    xmax = calc.max(xmax, xlim.at(1))
+    (xmin, xmax) = xlim
+    // xmin = calc.min(xmin, xlim.at(0))
+    // xmax = calc.max(xmax, xlim.at(1))
   }
   if ylim != auto {
-    ymin = calc.min(ymin, ylim.at(0))
-    ymax = calc.max(ymax, ylim.at(1))
+    (ymin, ymax) = ylim
+    // ymin = calc.min(ymin, ylim.at(0))
+    // ymax = calc.max(ymax, ylim.at(1))
   }
 
-  let xstep = (xmax - xmin) / (xn - 1)
-  let ystep = (ymax - ymin) / (yn - 1)
+  let xstep = (xmax - xmin) / (xn)
+  let ystep = (ymax - ymin) / (yn)
   let xsteps = range(0, xn).map(x => xmin + xstep * x)
   let ysteps = range(0, yn).map(y => ymin + ystep * y)
-  let xres = xsteps.map(x => ysteps.map(_ => x)).join()
-  let yres = xsteps.map(_ => ysteps).join()
+  // FIXME: plane pts outer center x,y
+  let xres = xsteps.map(x => ysteps.map(_ => x + xstep / 2)).join()
+  let yres = xsteps.map(_ => ysteps.map(y => y + ystep / 2)).join()
 
   let xy = xp.zip(yp)
   // TODO: performance or sth
@@ -31,12 +34,21 @@
       .len()))
     .join()
 
+  // FIXME: rev
   let plane = (xres, yres, zres).map(n => n.rev())
   (
-    plane,
-    plane.at(0).zip(plane.at(1), plane.at(2)).filter(((x, y, z)) => z == 1),
+    plane: plane,
+    points: plane
+      .at(0)
+      .zip(plane.at(1), plane.at(2))
+      .filter(((x, y, z)) => z == 1),
+    xsteps: xsteps,
+    ysteps: ysteps,
+    xstep: xstep,
+    ystep: ystep,
   )
 }
+
 
 #let is-num = x => type(x) == float or type(x) == int
 
@@ -127,7 +139,20 @@
   n-points-on(from, t, n)
 }
 
-#let meshgrid = (ls1, ls2) => ls1.map(u => ls2.map(v => (u, v))).join()
+#let _meshgrid(acc, rest) = {
+  if rest.len() == 0 { acc } else {
+    _meshgrid(acc.map(i => rest.at(0).map(j => (..i, j))).join(), rest.slice(1))
+  }
+}
+
+#let meshgrid = (..ls) => {
+  assert(ls.pos().len() > 1, message: "Must provide at least two dimensions")
+  assert(
+    ls.pos().map(i => i.len()).dedup().len() == 1,
+    message: "All dimensions must have same amount of elements",
+  )
+  _meshgrid(ls.pos().at(0).map(i => (i,)), ls.pos().slice(1))
+}
 
 #let domain = (
   (u-from, u-to),

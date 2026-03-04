@@ -179,7 +179,7 @@
 #let eval-distribution(ctx, elem) = {
   // TODO: xlim, ylim proper
   let (xlim, ylim, (zmin, _)) = ctx.dim
-  let ((x, y, z), p) = dist3d(
+  let (plane, points, ysteps) = dist3d(
     elem.xs,
     elem.ys,
     xn: elem.xn,
@@ -187,15 +187,18 @@
     xlim: xlim,
     ylim: ylim,
   )
+  let (x, y, z) = plane
 
   let pts = x.zip(y, z)
   elem.eval-points = plane-points-to-vertices(
     ctx,
-    pts.chunks(if elem.yn == auto { 10 } else { elem.yn }),
+    pts.chunks(ysteps.len()),
   )
 
   elem.eval-marks = eval-marks(elem, elem.mark, (
-    p.map(((x, y, z)) => (x, y, zmin)).filter(p => not (ctx.out-of-bounds)(p)),
+    points
+      .map(((x, y, z)) => (x, y, zmin))
+      .filter(p => not (ctx.out-of-bounds)(p)),
   ))
   elem
 }
@@ -206,11 +209,12 @@
     .xs
     .zip(elem.ys, elem.zs)
     .map(v => {
-      let nv = (elem.dir)(..v)
+      let nv = sum-vec(v, (elem.dir)(..v))
       let d = distance-vec(v, nv)
       clip-line(ctx, (
         if d > 0 {
-          rescale-line(v, nv, elem.scale * d)
+          // TODO: norm
+          rescale-line(v, nv, elem.scale * if elem.norm { 1 } else { d })
           // (v,nv)
         } else {
           (v, nv)

@@ -3,6 +3,7 @@
 #let n = 6
 #let m = 1
 #let r = range(m, n).map(i => (i - n / 2) / 2)
+
 #let xs = (
   r.map(x => r.map(y => r.map(z => x)).join()).join()
 )
@@ -21,6 +22,16 @@
   u-num: n,
   v-num: n,
 )
+
+
+
+// # with the help of polar coordinates (r, phi, theta)
+// (r, phi, theta) = meshgrid(linspace(1, 2, 5),
+//                            linspace(0, 2 * pi, 10),
+//                            linspace(0, pi, 5))
+// (x, y, z) = r * (sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta))
+
+
 #pt.diagram(
   width: 15cm,
   height: 15cm,
@@ -37,6 +48,8 @@
     domain.map(((u, v)) => .5 * calc.cos(v)),
   ),
   pt.quiver(
+    // TODO: polar coordinates
+    // TODO: add option to normalize vector
     xs,
     ys,
     zs,
@@ -51,54 +64,54 @@
       } else { v }
     },
     stroke-color-fn: (x, y, z) => {
-      let c = 250 * (x, y, z).map(calc.abs).sum() / 3
+      let c = 250 * (x, y, z).map(calc.abs).sum() / 5
       pt.rgb-clamp(c, c, c)
     },
     scale: .3,
   ),
 )
-#let n = 7
-#let m = 1
-#let r = range(m, n).map(i => (i - n / 2) / 2)
-#let xs = (
-  r.map(x => r.map(y => r.map(z => x)).join()).join()
-)
-#let ys = (
-  r.map(x => r.map(y => r.map(z => y)).join()).join()
-)
-#let zs = (
-  r.map(x => r.map(y => r.map(z => z)).join()).join()
-)
+// #let n = 7
+// #let m = 1
+// #let r = range(m, n).map(i => (i - n / 2) / 2)
+// #let xs = (
+//   r.map(x => r.map(y => r.map(z => x)).join()).join()
+// )
+// #let ys = (
+//   r.map(x => r.map(y => r.map(z => y)).join()).join()
+// )
+// #let zs = (
+//   r.map(x => r.map(y => r.map(z => z)).join()).join()
+// )
 // #let fn = (x, y, z) => (
 //   calc.sin(z) * x,
 //   calc.sqrt(y * y * x * x),
 //   calc.ln(y * y + 1),
 // )
-#let fn = (x, y, z) => (
-  y / z,
-  -x / z,
-  0,
-)
-
-#pt.diagram(
-  width: 15cm,
-  height: 15cm,
-  title: $ f : cases(RR^3 &-> RR^3, vec(x, y, z) &|-> vec(y/z, -x/z, 0)) $,
-  rotations: (
-    pt.mat-rotate-iso,
-    pt.mat-rotate-y(.1),
-    pt.mat-rotate-z(.1),
-    pt.mat-rotate-x(.4),
-  ),
-  pt.quiver(
-    xs,
-    ys,
-    zs,
-    fn,
-    stroke-color-fn: (x, y, z) => {
-      let c = (pt.distance-vec((x, y, z), fn(x, y, z)) + 2) * 30
-      pt.rgb-clamp(c, 0, 0)
-    },
-    scale: .1,
-  ),
-)
+// #let fn = (x, y, z) => (
+//   y / z,
+//   -x / z,
+//   0,
+// )
+//
+// #pt.diagram(
+//   width: 15cm,
+//   height: 15cm,
+//   title: $ f : cases(RR^3 &-> RR^3, vec(x, y, z) &|-> vec(y/z, -x/z, 0)) $,
+//   rotations: (
+//     pt.mat-rotate-iso,
+//     pt.mat-rotate-y(.1),
+//     pt.mat-rotate-z(.1),
+//     pt.mat-rotate-x(.4),
+//   ),
+//   pt.quiver(
+//     xs,
+//     ys,
+//     zs,
+//     fn,
+//     stroke-color-fn: (x, y, z) => {
+//       let c = (pt.distance-vec((x, y, z), fn(x, y, z)) + 2) * 30
+//       pt.rgb-clamp(c, 0, 0)
+//     },
+//     scale: .1,
+//   ),
+// )
