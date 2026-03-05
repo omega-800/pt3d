@@ -1,6 +1,5 @@
 #import "../lib/pt3d.typ" as pt
 
-
 #pt.diagram(
   width: 10cm,
   height: 6cm,

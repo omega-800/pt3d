@@ -10,6 +10,11 @@
 #let xlim = (0, 50)
 #let ylim = (-10, 10)
 
+// TODO: exponential smoothing
+// linear regression splines
+// spline interpolation
+// scaling / weight
+
 #let dist-dg = pt.diagram.with(
   xaxis: (lim: xlim, nticks: 6),
   yaxis: (lim: ylim, nticks: 5),
@@ -42,16 +47,16 @@
     title: "no interpolation",
     dist(),
   ),
-  dist-dg(
-    title: "linear interpolation",
-    dist(),
-  ),
-  dist-dg(
-    title: "quadratic interpolation",
-    dist(),
-  ),
-  dist-dg(
-    title: "cubic interpolation",
-    dist(),
-  ),
+  // dist-dg(
+  //   title: "linear interpolation",
+  //   dist(),
+  // ),
+  // dist-dg(
+  //   title: "quadratic interpolation",
+  //   dist(),
+  // ),
+  // dist-dg(
+  //   title: "cubic interpolation",
+  //   dist(),
+  // ),
 )
