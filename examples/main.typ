@@ -1,55 +1,89 @@
 #import "../lib/pt3d.typ" as pt
 
-#pt.diagram(
-  width: 10cm,
-  height: 6cm,
-  xaxis: (lim: (-1.5, 1.5), nticks: 7),
-  yaxis: (lim: (-1.5, 1.5), nticks: 7),
-  zaxis: (lim: (0, 1), nticks: 3),
-  title: $g((x,y)) = (x,y,sqrt(1 - x^2 - y^2))$,
-  // rotations: (
-  // pt.mat-rotate-z(.2),
-  // pt.mat-rotate-y(-1),
-  // pt.mat-rotate-x(.5),
-  // ),
-  pt.planeparam(
-    (x, y) => {
-      let z = 1 - x * x - y * y
-      if z < 0 {
-        z
+#let dfn = x => (x, calc.cos(x), calc.sin(x))
+#let interpt = dfn(calc.pi / 3)
+
+#let crcl(s: 1, x: 0, y: 0, f: 0) = {
+  let n = 100
+  let p = i => i * 2 * calc.pi / n
+  range(0, n).map(i => (calc.sin(p(i + f)) * s + x, calc.cos(p(i + f)) * s + y))
+}
+#grid(
+  columns: 2,
+  pt.diagram(
+    width: 9cm,
+    height: 6cm,
+    xaxis: (lim: (-1.5, 1.5), nticks: 7),
+    yaxis: (lim: (-1.5, 1.5), nticks: 7),
+    zaxis: (lim: (0, 1), nticks: 3),
+    title: $g((x,y)) = (x,y,sqrt(1 - x^2 - y^2))$,
+    // rotations: (
+    // pt.mat-rotate-z(.2),
+    // pt.mat-rotate-y(-1),
+    // pt.mat-rotate-x(.5),
+    // ),
+    pt.planeparam(
+      (x, y) => {
+        let z = 1 - x * x - y * y
+        if z < 0 {
+          z
+        } else {
+          calc.sqrt(z)
+        }
+      },
+      steps: 50,
+    ),
+  ),
+
+  pt.diagram(
+    width: 8cm,
+    height: 6cm,
+    xaxis: (ticks: (6, 4, 2, 0)),
+    yaxis: (nticks: 4),
+    zaxis: (nticks: 4),
+    rotations: (
+      pt.mat-rotate-z(.2),
+      pt.mat-rotate-y(-1),
+      pt.mat-rotate-x(.5),
+    ),
+    pt.plane(
+      pt.plane-normal((1, 0, 0), calc.pi / 3),
+      stroke: black,
+      fill: black.transparentize(85%),
+    ),
+    pt.vec(
+      (calc.pi / 3, 0, 0),
+      interpt,
+      stroke: red,
+      tip: "o",
+      toe: "o",
+    ),
+    pt.vec(
+      (calc.pi / 3, interpt.at(1) / 2, interpt.at(2) / 2),
+      (calc.pi / 3, 0, 0),
+      stroke: red,
+      tip: m => text(fill: red.darken(20%))[#v(3em) #box(
+          inset: .25em,
+          fill: black.lighten(85%),
+          $t = pi / 3$,
+        )],
+    ),
+    pt.path(
+      ..crcl().map(((y, z)) => (calc.pi / 3, y, z)),
+      stroke-color-fn: (x, y, z) => if y > interpt.at(1) and z > 0 {
+        red
       } else {
-        calc.sqrt(z)
-      }
-    },
-    steps: 50,
+        blue
+      },
+    ),
+    pt.path(
+      stroke-color-fn: (x, y, z) => if x < calc.pi / 3 { red } else {
+        blue
+      },
+      ..pt.linspace(0, calc.pi * 2).map(dfn),
+    ),
   ),
 )
-
-#pt.diagram(
-  width: 8cm,
-  height: 6cm,
-  xaxis: (ticks: (6, 4, 2, 0)),
-  yaxis: (nticks: 3),
-  zaxis: (nticks: 3),
-  rotations: (
-    pt.mat-rotate-z(.2),
-    pt.mat-rotate-y(-1),
-    pt.mat-rotate-x(.5),
-  ),
-  // TODO:
-  pt.plane(
-    pt.plane-normal((1, 0, 0), calc.pi / 3),
-    stroke: black,
-    fill: black.transparentize(80%),
-  ),
-  pt.path(
-    stroke-color-fn: (x, y, z) => if x < calc.pi / 3 { red } else {
-      blue
-    },
-    ..pt.linspace(0, calc.pi * 2).map(x => (x, calc.cos(x), calc.sin(x))),
-  ),
-)
-
 
 #pt.diagram(
   title: [#sym.Omega],
@@ -122,6 +156,7 @@
     tip: "s",
   ),
 )
+
 #let xp = pt.linspace(1, 100, num: 20)
 #pt.diagram(
   stroke: blue,
@@ -154,6 +189,7 @@
   pt.vec((50, 100, 100), toe: "s8", tip: "|>", label: "vec1"),
   pt.vec((0, 100, 100), (100, 150, 150), toe: "|", tip: ">", label: "vec2"),
 )
+
 #let num = 30
 #let domain = pt.domain((0, calc.pi), (0, 2 * calc.pi), v-num: num)
 #pt.diagram(

@@ -211,3 +211,6 @@
 ).map(x => n-points-on(ymax, ymin, n).map(y => (x, y)))
 
 #let apply-color-fn = (p, fn, def) => if fn != none { fn(..p) } else { def }
+
+#let stroke-to-paint = s => if type(s) == stroke { s.paint } else { s }
+#let to-stroke = s => if type(s) == stroke { s } else { (paint: s) }

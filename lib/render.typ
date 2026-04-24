@@ -27,9 +27,11 @@
       for sub-pts in points.windows(2) {
         // TODO: gradient everywhere stroke-color-fn is in use
         let s = if "stroke-color-fn" in elem {
-          gradient.linear((elem.stroke-color-fn)(..sub-pts.at(0)), (
-            elem.stroke-color-fn
-          )(..sub-pts.at(1)))
+          gradient.linear(
+            ..(sub-pts.at(0), sub-pts.at(1)).map(p => stroke-to-paint(
+              (elem.stroke-color-fn)(..p),
+            )),
+          )
         } else { elem.stroke }
         place(line(
           // stroke: apply-color-fn(sub-pts.at(0), ..stroke-param),
@@ -204,15 +206,17 @@
       let pts = elem.eval-points.join()
       let (min, max) = pts.fold((pts.at(0), pts.at(0)), minmax-vec)
       if "stroke-color-fn" in elem {
+        // TODO: extrapolate
         stroke = gradient.linear(
-          (elem.stroke-color-fn)(..min),
-          (elem.stroke-color-fn)(..max),
+          stroke-to-paint((elem.stroke-color-fn)(..min)),
+          stroke-to-paint((elem.stroke-color-fn)(..max)),
         )
       }
       if "fill-color-fn" in elem {
+        // TODO: extrapolate
         fill = gradient.linear(
-          (elem.fill-color-fn)(..min),
-          (elem.fill-color-fn)(..max),
+          stroke-to-paint((elem.fill-color-fn)(..min)),
+          stroke-to-paint((elem.fill-color-fn)(..max)),
         )
       }
     }
@@ -232,9 +236,10 @@
     if "stroke-color-fn" in elem and type(elem.stroke-color-fn) == function {
       let pts = elem.eval-points.join()
       let (min, max) = pts.fold((pts.at(0), pts.at(0)), minmax-vec)
+      // TODO: extrapolate
       stroke = gradient.linear(
-        (elem.stroke-color-fn)(..min),
-        (elem.stroke-color-fn)(..max),
+        stroke-to-paint((elem.stroke-color-fn)(..min)),
+        stroke-to-paint((elem.stroke-color-fn)(..max)),
       )
     }
     line(length: 1em, stroke: stroke)
