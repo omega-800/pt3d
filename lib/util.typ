@@ -204,7 +204,7 @@
   n-points-on(ymin, ymax, n),
   n-points-on(zmin, zmax, n),
 )
-#let x-y-points = (((xmin, xmax), (ymin, ymax), ..x), n) => n-points-on(
+#let x-y-points = (((xmin, xmax), (ymin, ymax), ..), n) => n-points-on(
   xmax,
   xmin,
   n,

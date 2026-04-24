@@ -38,6 +38,34 @@
   )
 }
 
+// TODO: w/ bars n stuff
+// #let histogram3d = (
+//   stroke: auto,
+//   fill: auto,
+//   label: none,
+//   stroke-color-fn: none,
+//   fill-color-fn: none,
+//   xn: 10,
+//   yn: 10,
+//   xs,
+//   ys,
+// ) => {
+//   (
+//     type: "histogram",
+//     xs: xs,
+//     ys: ys,
+//     xn: xn,
+//     yn: yn,
+//     mark: mark,
+//     label: label,
+//     stroke: stroke,
+//     fill: fill,
+//     stroke-color-fn: stroke-color-fn,
+//     fill-color-fn: fill-color-fn,
+//     interpolate: interpolate,
+//   )
+// }
+
 #let distribution3d = (
   stroke: auto,
   fill: auto,
@@ -48,8 +76,6 @@
   xn: 10,
   yn: 10,
   interpolate: none,
-  // xlim: auto,
-  // ylim: auto,
   xs,
   ys,
 ) => {
