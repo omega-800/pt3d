@@ -38,12 +38,55 @@
 #let (rng, dxs) = suiji.normal-f(rng, size: 100, scale: 2.5)
 #let (rng, dys) = suiji.normal-f(rng, size: 100, scale: 2.5)
 
+#let exbox = c => {
+  grid(
+    columns: (1fr, 1fr),
+    raw(lang: "typst", c),
+    eval(
+      "
+import \"/lib/pt3d.typ\" as pt
+import \"@preview/suiji:0.5.1\"
+import \"@preview/lilaq:0.5.0\" as lq
+
+let num = 50
+let xs = pt.linspace(-10, 10, num: num)
+
+let cfn = (x, y, z) => pt.rgb-clamp(
+  z * 40,
+  255 - calc.abs(z) * 10,
+  -z * 40,
+)
+let cfn0c = (x, y, z) => (
+  z * 40,
+  255 - calc.abs(z - 5) * 10,
+  if z == 0 { 255 } else { 10 / z },
+)
+let cfn0 = (x, y, z) => pt.rgb-clamp(
+  ..cfn0c(x, y, z),
+)
+let cfn0s = (x, y, z) => pt.rgb-clamp(
+  ..cfn0c(x, y, z).map(i => i - 50),
+)
+let rng = suiji.gen-rng-f(26)
+let (rng, dxs) = suiji.normal-f(rng, size: 100, scale: 2.5)
+let (rng, dys) = suiji.normal-f(rng, size: 100, scale: 2.5)
+
+let diagram = pt.diagram.with(
+  xaxis: (lim: (-10, 10), nticks: 5),
+  yaxis: (lim: (-10, 10), nticks: 5),
+  zaxis: (lim: (-10, 10), nticks: 5),
+)
+      "
+        + c,
+    ),
+  )
+}
+
 #align(center + horizon, lq.diagram(
   xlim: (-10, 10),
   ylim: (-10, 10),
   lq.scatter(dxs, dys),
 ))
-
 
 #diagram(
   zaxis: (lim: (0, 10)),

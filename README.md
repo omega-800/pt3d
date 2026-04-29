@@ -1,6 +1,6 @@
 # pt3d
 
-A 3d plotting library for typst, inspired by [lilaq](https://lilaq.org/).
+A dependency-free 3d plotting library written in pure typst, inspired by [lilaq](https://lilaq.org/).
 
 Examples can be found in ./examples.
 
