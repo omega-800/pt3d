@@ -224,6 +224,7 @@
     .filter(v => (
       v != none
         and not v.any(vv => vv == none)
+        and v.len() > 1
         and distance-vec(v.at(0), v.at(1)) > 0
     ))
   // TODO: only eval if mark != none
