@@ -5,7 +5,7 @@
   tidy.parse-module(
     read("/lib/" + module + ".typ"),
     scope: (pt3d: pt3d),
-    preamble: "#import pt3d: *;",
+    preamble: "#import pt3d as pt: *;",
   ),
   style: tidy.styles.default,
 )

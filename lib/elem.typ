@@ -5,21 +5,59 @@
 // TODO: rename ~3d~ without name clashes
 // TODO: (cubic etc) 3d interpolation on all elems
 
-#let quiver3d = (
+/// Quiver diagram (vector field)
+///
+/// ```example
+/// #pt.diagram(
+///   pt.quiver(
+///     (0,1),
+///     (0,1),
+///     (0,1),
+///     (x,y,z) => (x, y, z - 1)
+///   )
+/// )
+/// ```
+#let quiver3d(
+  /// Stroke, defaults to the $n$th color-cycle entry
+  /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
   stroke: auto,
+  /// Fill, defaults to the $n$th color-cycle entry
+  /// -> auto | none | color | gradient | tiling
   fill: auto,
+  /// Label
+  /// -> none | content
   label: none,
+  /// Stroke color function, defaults to @quiver3d.stroke
+  /// -> none | function
   stroke-color-fn: none,
+  /// Fill color function, defaults to @quiver3d.fill
+  /// -> none | function
   fill-color-fn: none,
+  /// Vector tip, one of `TODO: tips`
+  /// -> tip
   tip: ">",
+  /// Vector toe, one of `TODO: tips`
+  /// -> tip
   toe: none,
+  /// Scale
+  /// -> int | float
   scale: 1,
+  /// If vectors should be normalized
+  /// -> bool
   norm: false,
+  /// `x` coordinates
+  /// -> array
   xs,
+  /// `y` coordinates
+  /// -> array
   ys,
+  /// `z` coordinates
+  /// -> array
   zs,
+  /// Direction function
+  /// -> function
   dir,
-) => {
+) = {
   (
     type: "quiver",
     stroke: stroke,
