@@ -1,4 +1,3 @@
-#import "elem.typ": *
 #import "linalg.typ": *
 #import "canvas.typ": *
 #import "eval.typ": *

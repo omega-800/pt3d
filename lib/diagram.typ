@@ -1,5 +1,5 @@
 #import "render.typ": *
-#import "elem.typ": *
+#import "elem.typ": legend-def
 #import "style.typ": *
 #import "linalg.typ": *
 #import "canvas.typ": *

@@ -5,7 +5,10 @@
   tidy.parse-module(
     read("/lib/" + module + ".typ"),
     scope: (pt3d: pt3d),
-    preamble: "#import pt3d as pt: *;",
+    preamble: "
+    #import pt3d as pt: *
+    #import \"@preview/suiji:0.5.1\"
+    ",
   ),
   style: tidy.styles.default,
 )

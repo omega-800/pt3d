@@ -2,22 +2,23 @@
 #import "util.typ": *
 
 // TODO: vector field?
-// TODO: rename ~3d~ without name clashes
 // TODO: (cubic etc) 3d interpolation on all elems
 
 /// Quiver diagram (vector field)
 ///
 /// ```example
+/// #let xs = pt.linspace(-1, 1, num: 5)
+/// #let (xs, ys, zs) = pt.meshgrid(xs, xs, xs, pts: false)
 /// #pt.diagram(
 ///   pt.quiver(
-///     (0,1),
-///     (0,1),
-///     (0,1),
-///     (x,y,z) => (x, y, z - 1)
+///     xs, ys, zs,
+///     (x, y, z) => (y / z, -x / z, 0),
+///     norm: true,
+///     scale: .2,
 ///   )
 /// )
 /// ```
-#let quiver3d(
+#let quiver(
   /// Stroke, defaults to the $n$th color-cycle entry
   /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
   stroke: auto,
@@ -27,10 +28,10 @@
   /// Label
   /// -> none | content
   label: none,
-  /// Stroke color function, defaults to @quiver3d.stroke
+  /// Stroke color function, defaults to @quiver.stroke
   /// -> none | function
   stroke-color-fn: none,
-  /// Fill color function, defaults to @quiver3d.fill
+  /// Fill color function, defaults to @quiver.fill
   /// -> none | function
   fill-color-fn: none,
   /// Vector tip, one of `TODO: tips`
@@ -45,13 +46,13 @@
   /// If vectors should be normalized
   /// -> bool
   norm: false,
-  /// `x` coordinates
+  /// `x` data points
   /// -> array
   xs,
-  /// `y` coordinates
+  /// `y` data points
   /// -> array
   ys,
-  /// `z` coordinates
+  /// `z` data points
   /// -> array
   zs,
   /// Direction function
@@ -77,7 +78,7 @@
 }
 
 // TODO: w/ bars n stuff
-// #let histogram3d = (
+// #let histogram = (
 //   stroke: auto,
 //   fill: auto,
 //   label: none,
@@ -104,19 +105,52 @@
 //   )
 // }
 
-#let distribution3d = (
+/// Histogram (distribution)
+///
+/// ```example
+/// #let rng = suiji.gen-rng-f(26)
+/// #let (rng, xs) = suiji.normal-f(rng, size: 100, scale: 2.5)
+/// #let (rng, ys) = suiji.normal-f(rng, size: 100, scale: 2.5)
+/// #pt.diagram(
+///   pt.distribution(
+///     xs, ys,
+///   )
+/// )
+/// ```
+#let distribution(
+  /// Stroke, defaults to the $n$th color-cycle entry
+  /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
   stroke: auto,
+  /// Fill, defaults to the $n$th color-cycle entry
+  /// -> auto | none | color | gradient | tiling
   fill: auto,
+  /// Label
+  /// -> none | content
   label: none,
+  /// Stroke color function, defaults to @distribution.stroke
+  /// -> none | function
   stroke-color-fn: none,
+  /// Fill color function, defaults to @distribution.fill
+  /// -> none | function
   fill-color-fn: none,
+  /// Mark for outliers, one of `TODO: marks`
+  /// -> none | mark
   mark: ".",
+  /// `x` axis sample size
+  /// -> int
   xn: 10,
+  /// `y` axis sample size
+  /// -> int
   yn: 10,
+  //// TODO:
   interpolate: none,
+  /// `x` data points
+  /// -> array
   xs,
+  /// `y` data points
+  /// -> array
   ys,
-) => {
+) = {
   (
     type: "distribution",
     xs: xs,
@@ -133,14 +167,37 @@
   )
 }
 
-#let vertices3d = (
+/// Vertices
+///
+/// ```example
+/// #pt.diagram(
+///   pt.vertices(
+///     fill: red.transparentize(80%),
+///     stroke: purple,
+///     ..pt.heart()
+///   )
+/// )
+/// ```
+#let vertices(
+  /// Stroke, defaults to the $n$th color-cycle entry
+  /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
   stroke: auto,
+  /// Fill, defaults to the $n$th color-cycle entry
+  /// -> auto | none | color | gradient | tiling
   fill: auto,
+  /// Label
+  /// -> none | content
   label: none,
+  /// Stroke color function, defaults to @vertices.stroke
+  /// -> none | function
   stroke-color-fn: none,
+  /// Fill color function, defaults to @vertices.fill
+  /// -> none | function
   fill-color-fn: none,
+  /// Vertices as $(x,y,z)$
+  /// -> array
   ..vertices,
-) => {
+) = {
   (
     type: "vertices",
     vertices: vertices.pos(),
@@ -152,51 +209,108 @@
   )
 }
 
-#let lineplot3d = (
+
+/// Plotted line
+///
+/// ```example
+/// #let xs = pt.linspace(0,calc.pi * 3)
+/// #pt.diagram(
+///    pt.lineplot(
+///      xs.map(x => calc.cos(x) * 5),
+///      xs,
+///      xs.map(x => calc.sin(x) * 10),
+///    )
+///  )
+/// ```
+#let lineplot(
+  /// Stroke, defaults to the $n$th color-cycle entry
+  /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
   stroke: auto,
+  /// Label
+  /// -> none | content
   label: none,
+  /// Stroke color function, defaults to @lineplot.stroke
+  /// -> none | function
   stroke-color-fn: none,
-  mark: none,
-  // TODO: naming
-  x,
-  y,
-  z,
-) => {
+  /// Mark for intermediary points, one of `TODO: marks`
+  /// -> none | mark
+  mark: ".",
+  /// `x` data points
+  /// -> array
+  xs,
+  /// `y` data points
+  /// -> array
+  ys,
+  /// `z` data points
+  /// -> array
+  zs,
+) = {
   assert(
-    x.len() == y.len() and x.len() == z.len(),
+    xs.len() == ys.len() and xs.len() == zs.len(),
     message: "x, y and z points must have same length",
   )
   (
     type: "lineplot",
     mark: mark,
     // TODO: unfold
-    lineplot: (x, y, z),
+    lineplot: (xs, ys, zs),
     stroke: stroke,
     label: label,
     stroke-color-fn: stroke-color-fn,
   )
 }
 
-#let planeplot3d = (
+/// Plotted surface
+///
+/// ```example
+///  #let num = 20
+///  #let domain = pt.domain((0, calc.pi), (0, 2 * calc.pi), v-num: num, u-num: num)
+///  #diagram(
+///    pt.planeplot(
+///      domain.map(((u, v)) => u * calc.sin(v)),
+///      domain.map(((u, v)) => u * calc.cos(v)),
+///      domain.map(((u, v)) => u * 2),
+///      num: num,
+///    ),
+///  )
+/// ```
+#let planeplot(
+  /// Stroke, defaults to the $n$th color-cycle entry
+  /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
   stroke: auto,
+  /// Fill, defaults to the $n$th color-cycle entry
+  /// -> auto | none | color | gradient | tiling
   fill: auto,
+  /// Label
+  /// -> none | content
   label: none,
-  num: none,
+  /// Stroke color function, defaults to @planeplot.stroke
+  /// -> none | function
   stroke-color-fn: none,
+  /// Fill color function, defaults to @planeplot.fill
+  /// -> none | function
   fill-color-fn: none,
-  // TODO: naming
-  x,
-  y,
-  z,
-) => {
+  /// TODO:
+  /// -> none | int
+  num: none,
+  /// `x` data points
+  /// -> array
+  xs,
+  /// `y` data points
+  /// -> array
+  ys,
+  /// `z` data points
+  /// -> array
+  zs,
+) = {
   assert(
-    x.len() == y.len() and x.len() == z.len(),
+    xs.len() == ys.len() and xs.len() == zs.len(),
     message: "x, y and z points must have same length",
   )
   (
     type: "planeplot",
     // TODO: unfold
-    planeplot: (x, y, z, num),
+    planeplot: (xs, ys, zs, num),
     stroke: stroke,
     label: label,
     fill: fill,
@@ -205,7 +319,7 @@
   )
 }
 
-#let path3d = (
+#let path = (
   stroke: auto,
   label: none,
   stroke-color-fn: none,
@@ -226,7 +340,7 @@
   )
 }
 
-#let polygon3d = (stroke: auto, fill: none, label: none, ..points) => {
+#let polygon = (stroke: auto, fill: none, label: none, ..points) => {
   assert(
     points.pos().len() > 2,
     message: "At least 3 points must be provided",
@@ -240,7 +354,7 @@
   )
 }
 
-#let line3d = (stroke: auto, label: none, point-normal) => {
+#let line = (stroke: auto, label: none, point-normal) => {
   assert(
     is-point-normal(point-normal),
     message: "Line must be in point-normal form",
@@ -253,7 +367,7 @@
   )
 }
 
-#let vec3d = (stroke: auto, label: none, tip: ">", toe: none, ..points) => {
+#let vec = (stroke: auto, label: none, tip: ">", toe: none, ..points) => {
   let pts = points.pos()
   // TODO: more error handling around the codebase
   assert(pts.len() > 0, message: "Vector must be provided at least one point")
@@ -271,7 +385,7 @@
   )
 }
 
-#let plane3d = (
+#let plane = (
   point-normal,
   stroke: auto,
   fill: auto,
@@ -290,7 +404,7 @@
   )
 }
 
-// #let lineparam3d = (
+// #let lineparam = (
 //   stroke: auto,
 //   steps: auto,
 //   stroke-color-fn: none,
@@ -307,7 +421,7 @@
 //   mark: mark,
 // )
 
-#let planeparam3d = (
+#let planeparam = (
   stroke: auto,
   fill: none,
   steps: auto,
@@ -341,7 +455,7 @@
   dir: dir,
 )
 
-#let axisplane3d = (
+#let axisplane = (
   kind: "x",
   position: auto,
   stroke: (paint: black.transparentize(40%), dash: "dotted"),
@@ -366,7 +480,7 @@
   // format-extra-ticks: format-extra-ticks,
 )
 
-#let axisline3d = (
+#let axisline = (
   kind: "x",
   position: (auto, auto),
   label: auto,
@@ -395,7 +509,7 @@
 
 // TODO: clean this up
 // FIXME: wonky
-#let axis3d = (
+#let axis = (
   order: auto,
   kind: "x",
   instances: (),
@@ -426,8 +540,8 @@
   type: "axis",
   instances: if instances.len() == 0 {
     (
-      axisline3d(kind: kind, label: label),
-      axisplane3d(kind: kind),
+      axisline(kind: kind, label: label),
+      axisplane(kind: kind),
     )
   } else {
     instances.map(i => (

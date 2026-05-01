@@ -1,6 +1,6 @@
 #import "util.typ": *
 #import "eval.typ": *
-#import "elem.typ": *
+#import "elem.typ": axis
 
 #let overflow-correction = ns => {
   let s = ns.filter(out-of-bounds-2d).sorted()
@@ -64,9 +64,9 @@
   children,
   noclip,
 ) = {
-  let xas = axis3d(..xaxis, kind: "x")
-  let yas = axis3d(..yaxis, kind: "y")
-  let zas = axis3d(..zaxis, kind: "z")
+  let xas = axis(..xaxis, kind: "x")
+  let yas = axis(..yaxis, kind: "y")
+  let zas = axis(..zaxis, kind: "z")
 
   let ((xmin, ymin, zmin), (xmax, ymax, zmax)) = eval-min-bounds(
     (xas, yas, zas),

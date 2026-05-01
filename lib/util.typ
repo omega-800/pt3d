@@ -122,9 +122,12 @@
 )
 
 // FIXME: float n
-#let n-points-on = (min, max, n) => range(0, int(n)).map(i => (
-  min + i * ((max - min) / n)
-))
+#let n-points-on = (min, max, n) => (
+  ..range(0, int(n - 1)).map(i => (
+    min + i * ((max - min) / n)
+  )),
+  max,
+)
 
 #let linspace = (from, to, num: auto, step: auto, include-end: true) => {
   assert(num == auto or step == auto, message: "'num' and 'auto' are exclusive")
@@ -135,7 +138,8 @@
   } else {
     num
   }
-  let t = if include-end { to + 1 } else { to }
+  // FIXME: check if this broke any internal logic
+  let t = if include-end { to } else { to - 1 }
   n-points-on(from, t, n)
 }
 
@@ -145,13 +149,20 @@
   }
 }
 
-#let meshgrid = (..ls) => {
+#let pts-to-dims(pts) = {
+  range(pts.at(0, default: ()).len()).map(i => pts.map(p => p.at(i)))
+}
+
+#let meshgrid = (..ls, pts: true) => {
   assert(ls.pos().len() > 1, message: "Must provide at least two dimensions")
-  assert(
-    ls.pos().map(i => i.len()).dedup().len() == 1,
-    message: "All dimensions must have same amount of elements",
-  )
-  _meshgrid(ls.pos().at(0).map(i => (i,)), ls.pos().slice(1))
+  // wait why?
+  // assert(
+  //   ls.pos().map(i => i.len()).dedup().len() == 1,
+  //   message: "All dimensions must have same amount of elements",
+  // )
+  // TODO: optimize
+  let res = _meshgrid(ls.pos().at(0).map(i => (i,)), ls.pos().slice(1))
+  if pts { res } else { pts-to-dims(res) }
 }
 
 #let domain = (
