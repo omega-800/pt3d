@@ -7,14 +7,14 @@
 /// Quiver diagram (vector field)
 ///
 /// ```example
-/// #let xs = pt.linspace(-1, 1, num: 5)
+/// #let xs = pt.linspace(-1, 1, num: 4)
 /// #let (xs, ys, zs) = pt.meshgrid(xs, xs, xs, pts: false)
 /// #pt.diagram(
 ///   pt.quiver(
 ///     xs, ys, zs,
 ///     (x, y, z) => (y / z, -x / z, 0),
 ///     norm: true,
-///     scale: .2,
+///     scale: .3,
 ///   )
 /// )
 /// ```
@@ -109,9 +109,11 @@
 ///
 /// ```example
 /// #let rng = suiji.gen-rng-f(26)
-/// #let (rng, xs) = suiji.normal-f(rng, size: 100, scale: 2.5)
-/// #let (rng, ys) = suiji.normal-f(rng, size: 100, scale: 2.5)
+/// #let (rng, xs) = suiji.normal-f(rng, size: 200, scale: 2)
+/// #let (rng, ys) = suiji.normal-f(rng, size: 200, scale: 2)
 /// #pt.diagram(
+///   xaxis: (lim: (-7, 7)),
+///   yaxis: (lim: (-7, 7)),
 ///   pt.distribution(
 ///     xs, ys,
 ///   )
@@ -319,13 +321,33 @@
   )
 }
 
-#let path = (
+/// Path along points
+///
+/// ```example
+///  #diagram(
+///    pt.path(
+///      (0,1,1), (1,2,1), (3,3,3),
+///      (3,2,0), (3,2,1), (2,0,0)
+///    ),
+///  )
+/// ```
+#let path(
+  /// Stroke, defaults to the $n$th color-cycle entry
+  /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
   stroke: auto,
+  /// Label
+  /// -> none | content
   label: none,
+  /// Stroke color function, defaults to @path.stroke
+  /// -> none | function
   stroke-color-fn: none,
+  /// Mark for intermediary points, one of `TODO: marks`
+  /// -> none | mark
   mark: none,
+  /// Points as $(x,y,z)$
+  /// -> array
   ..points,
-) => {
+) = {
   assert(
     points.pos().len() > 1,
     message: "At least 2 points must be provided",
@@ -340,7 +362,33 @@
   )
 }
 
-#let polygon = (stroke: auto, fill: none, label: none, ..points) => {
+// TODO: polygon color-fn
+// TODO: polygon marks
+
+/// Polygon along points
+///
+/// ```example
+///  #diagram(
+///    pt.polygon(
+///      (0,1,1), (1,2,1), (3,3,3),
+///      (3,2,0), (3,2,1), (2,0,0)
+///    ),
+///  )
+/// ```
+#let polygon(
+  /// Stroke, defaults to the $n$th color-cycle entry
+  /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
+  stroke: auto,
+  /// Fill, defaults to the $n$th color-cycle entry
+  /// -> auto | none | color | gradient | tiling
+  fill: auto,
+  /// Label
+  /// -> none | content
+  label: none,
+  /// Points as $(x,y,z)$
+  /// -> array
+  ..points,
+) = {
   assert(
     points.pos().len() > 2,
     message: "At least 3 points must be provided",
@@ -354,7 +402,27 @@
   )
 }
 
-#let line = (stroke: auto, label: none, point-normal) => {
+/// Renders line in point-normal form. Following helper functions exist for
+/// converting to point-normal:
+/// TODO: line-parametric, line-point-normal, line-symmetric, line-points
+/// ```example
+///  #diagram(
+///    pt.line(
+///      ((2,0,2), (0,10,0))
+///    ),
+///  )
+/// ```
+#let line(
+  /// Stroke, defaults to the $n$th color-cycle entry
+  /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
+  stroke: auto,
+  /// Label
+  /// -> none | content
+  label: none,
+  /// Point-normal form of the line $(p, d)$
+  /// -> array
+  point-normal,
+) = {
   assert(
     is-point-normal(point-normal),
     message: "Line must be in point-normal form",

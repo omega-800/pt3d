@@ -330,7 +330,7 @@
   let n = if axis.nticks == auto and tick-l-ratio == none {
     10
   } else if axis.nticks == auto { tick-l-ratio } else { axis.nticks }
-  (..n-points-on(min, max, if n == 0 { 9 } else { n - 1 }), max)
+  n-points-on(min, max, if n == 0 { 3 } else { n })
 }
 
 #let axes-defaults = (xaxis, yaxis, zaxis, ctx) => (

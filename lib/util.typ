@@ -122,12 +122,13 @@
 )
 
 // FIXME: float n
-#let n-points-on = (min, max, n) => (
-  ..range(0, int(n - 1)).map(i => (
-    min + i * ((max - min) / n)
-  )),
-  max,
-)
+#let n-points-on = (min, max, n) => if n == 0 { () } else if n == 1 {
+  ((max - min) / 2,)
+} else {
+  range(0, int(n)).map(i => (
+    min + i * ((max - min) / (n - 1))
+  ))
+}
 
 #let linspace = (from, to, num: auto, step: auto, include-end: true) => {
   assert(num == auto or step == auto, message: "'num' and 'auto' are exclusive")
@@ -225,3 +226,4 @@
 
 #let stroke-to-paint = s => if type(s) == stroke { s.paint } else { s }
 #let to-stroke = s => if type(s) == stroke { s } else { (paint: s) }
+#let or-default = (it, d) => if it == auto or it == none { d } else { it }

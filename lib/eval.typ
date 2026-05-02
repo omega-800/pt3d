@@ -37,11 +37,12 @@
 #let get-0th-pt = (from, to) => {
   // TODO: probably correct? i don't have the time to check
   // FIXME: check if this still works
+  let d = distance-vec(from, to)
   rescale-line(
     from,
     to,
-    distance-vec(from, to),
-    from-off: distance-vec(from, to),
+    d,
+    from-off: d,
   )
 }
 
@@ -178,14 +179,20 @@
 
 #let eval-distribution(ctx, elem) = {
   // TODO: xlim, ylim proper
-  let (xlim, ylim, (zmin, _)) = ctx.dim
+  let ((xmin, xmax), (ymin, ymax), (zmin, _)) = ctx.dim
   let (plane, points, ysteps) = dist3d(
     elem.xs,
     elem.ys,
     xn: elem.xn,
     yn: elem.yn,
-    xlim: xlim,
-    ylim: ylim,
+    xlim: (
+      or-default(xmin, calc.min(..elem.xs)),
+      or-default(xmax, calc.max(..elem.xs)),
+    ),
+    ylim: (
+      or-default(ymin, calc.min(..elem.ys)),
+      or-default(ymax, calc.max(..elem.ys)),
+    ),
   )
   let (x, y, z) = plane
 
@@ -195,10 +202,18 @@
     pts.chunks(ysteps.len()),
   )
 
+  let ms = points.map(((x, y, z)) => (
+    x,
+    y,
+    or-default(zmin, 0),
+  ))
+
   elem.eval-marks = eval-marks(elem, elem.mark, (
-    points
-      .map(((x, y, z)) => (x, y, zmin))
-      .filter(p => not (ctx.out-of-bounds)(p)),
+    if "out-of-bounds" in ctx {
+      ms.filter(p => not (ctx.out-of-bounds)(p))
+    } else {
+      ms
+    },
   ))
   elem
 }
@@ -562,10 +577,9 @@
     elem.xs.zip(elem.ys, elem.zs)
   } else if elem.type == "distribution" {
     // TODO: distribution
-    // let elem = eval-distribution(ctx, elem)
+    let elem = eval-distribution(ctx, elem)
     // TODO: marks
-    // elem.eval-points.join()
-    ()
+    elem.eval-points.join()
   } else {
     ()
   }
@@ -595,11 +609,15 @@
     .map(elem => eval-points(ctx, elem))
     .fold((), (acc, cur) => (..acc, ..cur))
 
-  points.fold(
+  let (min, max) = points.fold(
     (
       points.at(0, default: (-10, -10, -10)),
       points.at(0, default: (10, 10, 10)),
     ),
     minmax-vec,
   )
+
+  (min.map(calc.floor), max.map(calc.ceil))
 }
+
+

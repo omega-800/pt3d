@@ -42,12 +42,13 @@
 }
 
 #let clip-plane(
-  (noclip, out-of-bounds, dim, intersection-canvas),
+  ctx,
   pts,
 ) = {
-  if noclip or not pts.any(out-of-bounds) {
+  if "noclip" not in ctx or ctx.noclip or not pts.any(ctx.out-of-bounds) {
     pts
   } else {
+    let (noclip, out-of-bounds, dim, intersection-canvas) = ctx
     let newpts = ()
     for (f, t) in (..pts.windows(2), (pts.last(), pts.first())) {
       // TODO: optimize if i someday will have time left
