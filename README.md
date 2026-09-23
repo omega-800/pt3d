@@ -49,3 +49,5 @@ Examples can be found in ./examples.
 <a href="https://sensualworld.bandcamp.com/album/feeling-wild">Feeling Wild by Sensual World</a>
 <br />
 <a href="https://crimeofpassing.bandcamp.com/album/crime-of-passing">Crime of Passing by Crime of Passing</a>
+<br />
+<a href="https://nofusstapes.bandcamp.com/album/spleen-ii">SPLEEN - II by SPLEEN</a>
