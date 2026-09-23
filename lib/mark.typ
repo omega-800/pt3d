@@ -1,7 +1,17 @@
 #import "linalg.typ": *
 #import "util.typ": *
 
-#let render-label((on-canvas, ..x), (label, position)) = {
+/// Renders a text label at its 3d position on the canvas
+///
+/// -> content
+#let render-label(
+  /// Canvas context
+  /// -> dictionary
+  (on-canvas, ..x),
+  /// (label, position) pair
+  /// -> array
+  (label, position),
+) = {
   let (dx, dy) = on-canvas(position)
   let (width, height) = measure(label)
   place(
@@ -11,7 +21,17 @@
   )
 }
 
-#let render-arrow(ctx, elem) = {
+/// Renders an arrow mark at the end of a line segment
+///
+/// -> content
+#let render-arrow(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Mark element as returned by a mark constructor
+  /// -> dictionary
+  elem,
+) = {
   // TODO: 3d
   let (on-canvas, map-point-pt, pt-to-ratio) = ctx
   let (fill, stroke, from, to) = elem.mark
@@ -41,7 +61,17 @@
   })
 }
 
-#let render-circle(ctx, elem) = {
+/// Renders a circle mark at a point
+///
+/// -> content
+#let render-circle(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Mark element as returned by a mark constructor
+  /// -> dictionary
+  elem,
+) = {
   // TODO: 3d
   let (on-canvas, map-point-pt, pt-to-ratio) = ctx
   let (fill, stroke, from, to) = elem.mark
@@ -56,7 +86,17 @@
   ))
 }
 
-#let render-polygon(ctx, elem) = {
+/// Renders a regular polygon mark at a point
+///
+/// -> content
+#let render-polygon(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Mark element as returned by a mark constructor
+  /// -> dictionary
+  elem,
+) = {
   let (fill, stroke, from, to) = elem.mark
   // TODO: 3d
   let (on-canvas, map-point-pt, pt-to-ratio) = ctx
@@ -101,19 +141,49 @@
   place(polygon(stroke: stroke, fill: fill, ..with-inset))
 }
 
-#let render-square(ctx, elem) = {
+/// Renders a square mark at a point
+///
+/// -> content
+#let render-square(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Mark element as returned by a mark constructor
+  /// -> dictionary
+  elem,
+) = {
   let (fill, stroke, from, to) = elem.mark
   // TODO:
 }
 
-#let render-text(ctx, elem) = {
+/// Renders a text mark at a point
+///
+/// -> content
+#let render-text(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Mark element as returned by a mark constructor
+  /// -> dictionary
+  elem,
+) = {
   let (fill, stroke, from, to) = elem.mark
   // TODO: size, 3d, etc
   // FIXME: hacky
   render-label(ctx, (label: elem.body, position: to))
 }
 
-#let render-mark = (ctx, elem) => {
+/// Dispatches the rendering of a mark element to the correct render function
+///
+/// -> content
+#let render-mark(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Mark element, can be `none`
+  /// -> dictionary | content | none
+  elem,
+) = {
   if elem != none and elem.mark != none {
     if type(elem.mark) == dictionary {
       (
@@ -130,26 +200,53 @@
   }
 }
 
-#let mark = (
+/// Constructs a mark element that the mark constructors take. It holds the
+/// color and position of the mark.
+///
+/// -> dictionary
+#let mark(
+  /// Fill color of the mark
+  /// -> auto | none | color | gradient | tiling
   fill: auto,
+  /// Stroke of the mark
+  /// -> auto | none | length | color | gradient | stroke | tiling | dictionary
   stroke: auto,
+  /// Start of the line segment the mark belongs to
+  /// -> auto | vector
   from: none,
+  /// End of the line segment the mark belongs to
+  /// -> auto | vector
   to: none,
-) => (
+) = (
   fill: fill,
   stroke: stroke,
   from: from,
   to: to,
 )
 
-#let arrow-mark = (
+/// Constructs an arrow mark element
+///
+/// -> dictionary
+#let arrow-mark(
+  /// Mark element as returned by @mark
+  /// -> dictionary
   mark,
+  /// Whether the arrow is flat
+  /// -> bool
   flat: false,
+  /// Size of the arrow head
+  /// -> length
   size: 4pt,
+  /// Whether the arrow head is filled
+  /// -> bool
   closed: false,
+  /// Opening angle of the arrow head
+  /// -> angle
   angle: 30deg,
+  /// Rotation of the arrow head
+  /// -> angle
   rotate: 0deg,
-) => (
+) = (
   type: "arrow",
   flat: flat,
   size: size,
@@ -159,25 +256,49 @@
   rotate: rotate,
 )
 
-#let circle-mark = (
+/// Constructs a circle mark element
+///
+/// -> dictionary
+#let circle-mark(
+  /// Mark element as returned by @mark
+  /// -> dictionary
   mark,
+  /// Whether the circle is flat
+  /// -> bool
   flat: false,
+  /// Diameter of the circle
+  /// -> length
   size: 4pt,
-) => (
+) = (
   type: "circle",
   mark: mark,
   flat: flat,
   size: size,
 )
 
-#let polygon-mark = (
+/// Constructs a regular polygon mark element
+///
+/// -> dictionary
+#let polygon-mark(
+  /// Mark element as returned by @mark
+  /// -> dictionary
   mark,
+  /// Whether the polygon is flat
+  /// -> bool
   flat: false,
+  /// Size of the polygon
+  /// -> length
   size: 4pt,
+  /// Number of vertices
+  /// -> int
   n: 5,
+  /// Edge inset of the polygon. A value of 100% produces an asterisk.
+  /// -> ratio
   inset: 0%,
+  /// Rotation of the polygon
+  /// -> angle
   rotate: 0deg,
-) => (
+) = (
   type: "polygon",
   mark: mark,
   flat: flat,
@@ -187,12 +308,23 @@
   rotate: rotate,
 )
 
-#let square-mark = (
+/// Constructs a square mark element
+///
+/// -> dictionary
+#let square-mark(
+  /// Mark element as returned by @mark
+  /// -> dictionary
   mark,
+  /// Whether the square is flat
+  /// -> bool
   flat: false,
+  /// Size of the square
+  /// -> length
   size: 4pt,
+  /// Height of the square
+  /// -> length
   height: 4pt,
-) => (
+) = (
   type: "square",
   mark: mark,
   flat: flat,
@@ -200,12 +332,23 @@
   height: height,
 )
 
-#let text-mark = (
+/// Constructs a text mark element
+///
+/// -> dictionary
+#let text-mark(
+  /// Mark element as returned by @mark
+  /// -> dictionary
   mark,
+  /// Text size
+  /// -> length
   size: 4pt,
+  /// Whether the text is flat
+  /// -> bool
   flat: false,
+  /// Arbitrary content to render as mark. If `auto`, the mark is used.
+  /// -> auto | content
   body: auto,
-) => (
+) = (
   type: "text",
   mark: mark,
   flat: flat,
@@ -213,10 +356,22 @@
   body: body,
 )
 
+/// A star mark, a @polygon-mark with 40% inset
+///
+/// -> function
 #let star-mark = polygon-mark.with(inset: 40%)
 
+/// An asterisk mark, a @polygon-mark with 100% inset
+///
+/// -> function
 #let asterisk-mark = polygon-mark.with(inset: 100%)
 
+/// A dictionary of all marks by name or symbol.
+///
+/// Any of these can be used wherever a mark is accepted, e.g. @lineplot.mark.
+/// Additionally, any string can be used as a text mark.
+///
+/// -> dictionary
 #let marks = (
   arrow: arrow-mark,
   ">": arrow-mark,

@@ -1,7 +1,16 @@
 #import "util.typ": *
 
+/// Clips a list of 3d points (a polyline) against the bounding volume and
+/// splits it into the visible sub-polylines, inserting the intersection
+/// points with the volume boundaries.
+///
+/// -> array
 #let clip-line(
+  /// Clip context as (out-of-bounds, dim, intersection-canvas, noclip)
+  /// -> array
   (out-of-bounds, dim, intersection-canvas, noclip),
+  /// 3d points as $(x, y, z)$
+  /// -> array
   pts,
 ) = {
   if noclip or not pts.any(out-of-bounds) {
@@ -41,8 +50,16 @@
   }
 }
 
+/// Clips a closed 3d polygon (a plane) against the bounding volume and
+/// returns the visible part, or the original polygon if `noclip` is set.
+///
+/// -> array
 #let clip-plane(
+  /// Canvas context
+  /// -> dictionary
   ctx,
+  /// 3d points as $(x, y, z)$
+  /// -> array
   pts,
 ) = {
   if "noclip" not in ctx or ctx.noclip or not pts.any(ctx.out-of-bounds) {
@@ -64,6 +81,17 @@
   }
 }
 
-#let clip-vertices(ctx, vertices) = {
+/// Clips a list of closed 3d polygons (a group of vertices) against the
+/// bounding volume and discards the invisible ones.
+///
+/// -> array
+#let clip-vertices(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Group of 3d points as $(x, y, z)$
+  /// -> array
+  vertices,
+) = {
   vertices.map(f => clip-plane(ctx, f)).filter(f => f.len() > 0)
 }

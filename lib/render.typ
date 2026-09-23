@@ -6,8 +6,16 @@
 #import "clip.typ": *
 #import "mark.typ": *
 
+/// Renders a @lineplot, @path, @line or @quiver element: draws the (clipped)
+/// polylines, applying the `stroke-color-fn` gradient, and the marks.
+///
+/// -> content
 #let render-clipped-line(
+  /// Canvas context
+  /// -> dictionary
   ctx,
+  /// Element with evaluated `eval-points`
+  /// -> dictionary
   elem,
 ) = {
   let stroke-param = (
@@ -50,8 +58,17 @@
   }
 }
 
+/// Renders a @vertices, @polygon, @planeplot, @planeparam or @distribution
+/// element: draws the (clipped) polygons, applying the color functions, and
+/// the marks.
+///
+/// -> content
 #let render-clipped-plane(
+  /// Canvas context
+  /// -> dictionary
   ctx,
+  /// Element with evaluated `eval-points`
+  /// -> dictionary
   elem,
 ) = {
   let stroke-param = (
@@ -82,7 +99,17 @@
   }
 }
 
-#let render-plane(ctx, elem) = {
+/// Renders a @plane element: draws the (clipped) polygon of the plane
+///
+/// -> content
+#let render-plane(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Plane element with evaluated `eval-points`
+  /// -> dictionary
+  elem,
+) = {
   let pts = elem.eval-points.at(0)
   if pts.len() > 2 {
     place(polygon(
@@ -93,7 +120,17 @@
   }
 }
 
-#let render-vec(ctx, elem) = {
+/// Renders a @vec element: draws the line and the tip/toe marks
+///
+/// -> content
+#let render-vec(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Vec element with evaluated `eval-points`
+  /// -> dictionary
+  elem,
+) = {
   let (on-canvas, ..x) = ctx
   let (start, end) = elem.eval-points.at(0)
   if elem.eval-toe != none {
@@ -109,7 +146,17 @@
   ))
 }
 
-#let render-ticks(ctx, ticks) = {
+/// Renders the tick marks and labels of an axis
+///
+/// -> content
+#let render-ticks(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Ticks as evaluated by @eval-ticks, a list of (label, tick, stroke)
+  /// -> array
+  ticks,
+) = {
   let (on-canvas, ..x) = ctx
   for (label, tick, stroke) in ticks {
     let (start, end) = tick
@@ -124,7 +171,18 @@
   }
 }
 
-#let render-axisline(ctx, elem) = {
+/// Renders an @axisline element: draws the line, the tip/toe marks, the
+/// label and the ticks
+///
+/// -> content
+#let render-axisline(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Axisline element with evaluated `eval-points`
+  /// -> dictionary
+  elem,
+) = {
   let (on-canvas, ..x) = ctx
   let (start, end) = elem.eval-points
 
@@ -144,7 +202,18 @@
   render-ticks(ctx, elem.eval-ticks)
 }
 
-#let render-axisplane(ctx, elem) = {
+/// Renders an @axisplane element: draws the plane polygon and the tick
+/// grid
+///
+/// -> content
+#let render-axisplane(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Axisplane element with evaluated `eval-points`
+  /// -> dictionary
+  elem,
+) = {
   let (on-canvas, ..x) = ctx
   place(polygon(
     fill: elem.fill,
@@ -154,7 +223,17 @@
   render-ticks(ctx, elem.eval-ticks)
 }
 
-#let render-axes(ctx, axis) = {
+/// Renders an axis and all of its instances (@axisline and @axisplane)
+///
+/// -> content
+#let render-axes(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Axis element with evaluated instances
+  /// -> dictionary
+  axis,
+) = {
   for i in axis.instances {
     if i.type == "axisline" {
       render-axisline(ctx, i)
@@ -164,6 +243,10 @@
   }
 }
 
+/// Dictionary of all element render functions, keyed by element type. This
+/// is used by @diagram to render the evaluated elements.
+///
+/// -> dictionary
 #let render = (
   "axis": render-axes,
   "axisline": render-axisline,
@@ -182,7 +265,19 @@
   "path": render-clipped-line,
 )
 
-#let render-legend-label(elem, (width, format, dir, spacing)) = {
+/// Renders a single legend entry: a small preview of the element (line or
+/// area) together with its label
+///
+/// -> content
+#let render-legend-label(
+  /// Evaluated element
+  /// -> dictionary
+  elem,
+  /// (width, format, dir, spacing) of the legend label as returned by
+  /// @legend-label
+  /// -> array
+  (width, format, dir, spacing),
+) = {
   let stroke = elem.stroke
   let fill = none
   let height = measure(format(elem.label, black, black)).height
@@ -252,11 +347,25 @@
   )
 }
 
+/// Renders the legend of a @diagram: a box containing a legend entry for
+/// every labeled element
+///
+/// -> content
 #let render-legend(
+  /// Canvas context
+  /// -> dictionary
   ctx,
+  /// Legend parameters as returned by @legend-def
+  /// -> dictionary
   legend-params,
+  /// Evaluated elements to include in the legend
+  /// -> array
   legend-elems,
+  /// Width of the legend box
+  /// -> auto | length | ratio
   width: auto,
+  /// Height of the legend box
+  /// -> auto | length | ratio
   height: auto,
 ) = {
   let (dir, position, label, stroke, fill, spacing, inset) = legend-params

@@ -1,4 +1,32 @@
-#let load-obj(txt) = {
+/// Parses the faces of a `wavefront .obj` string as triangle vertices.
+/// Only `v` and `f` lines are parsed.
+///
+/// ```example
+/// #let obj = (
+///   "v 0 0 0",
+///   "v 3 0 0",
+///   "v 0 3 0",
+///   "v 0 0 3",
+///   "f 1 2 3",
+///   "f 1 2 4",
+///   "f 1 3 4",
+///   "f 2 3 4",
+/// ).join("\n")
+/// #pt.diagram(
+///   pt.vertices(
+///     stroke: black,
+///     fill: black.transparentize(90%),
+///     ..pt.load-obj(obj),
+///   ),
+/// )
+/// ```
+///
+/// -> array
+#let load-obj(
+  /// The text content of the `.obj` file
+  /// -> str
+  txt,
+) = {
   // TODO: bruh i could've just used split(" ") and split("/")...
   // TODO: redo if i get the time to
   let df = "(-?\\d\\.?\\d*)"
@@ -48,7 +76,7 @@
         13,
         15,
         17,
-      ).map(i => if i == none { none } else { int(cap.at(i)) })
+      ).map(i => if cap.at(i) == none { none } else { int(cap.at(i)) })
       vertices.push((v1, v2, v3).map(i => vs.at(i - 1)))
 
       // ns
@@ -59,7 +87,35 @@
   vertices
 }
 
-#let load-csv(txt, sep: ",", with-labels: false) = {
+/// Parses a `csv` string as a list of 3d points. The first line is parsed
+/// as column labels if `with-labels` is set.
+///
+/// ```example
+/// #let csv = (
+///   "1,2,3",
+///   "4,5,8",
+///   "7,9,0",
+///   "2,8,6",
+/// ).join("\n")
+/// #pt.diagram(
+///   pt.path(
+///     ..pt.load-csv(csv),
+///   ),
+/// )
+/// ```
+///
+/// -> array | array (labels, points)
+#let load-csv(
+  /// The text content of the `csv` file
+  /// -> str
+  txt,
+  /// Separator between columns
+  /// -> str
+  sep: ",",
+  /// Whether to parse the first line as column labels
+  /// -> bool
+  with-labels: false,
+) = {
   let dr = "-?\\d\\.?\\d*"
   let reg = regex(dr + sep + dr + sep + dr)
   let points = ()

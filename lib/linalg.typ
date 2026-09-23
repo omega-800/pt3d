@@ -1,9 +1,23 @@
 // TODO:
+/// Interpolates between $p_1$ and $p_2$ at $t$ with a cubic (catmull-rom)
+/// curve through the points $p_0, p_1, p_2, p_3$.
+///
+/// -> array
 #let interpolate-cubic(
+  /// Point before $p_1$
+  /// -> vector
   p0,
+  /// Start point
+  /// -> vector
   p1,
+  /// End point
+  /// -> vector
   p2,
+  /// Point after $p_2$
+  /// -> vector
   p3,
+  /// Interpolation parameter
+  /// -> int | float
   t,
 ) = {
   let interp = ((n0, n1, n2, n3)) => (
@@ -16,7 +30,17 @@
 }
 
 
-#let ortho-proj = (((xmin, xmax), (ymin, ymax), _), (x, y, z)) => (
+/// Orthographically projects a 3d point onto the 2d $x$-$y$ canvas
+///
+/// -> array
+#let ortho-proj(
+  /// Bounding box as ($x$-min, $x$-max), ($y$-min, $y$-max), ..
+  /// -> array
+  ((xmin, xmax), (ymin, ymax), _),
+  /// Point to project
+  /// -> vector
+  (x, y, z),
+) = (
   // FIXME: huh.
   x,
   y,
@@ -24,9 +48,29 @@
   // (2 * y - ymax - ymin) / (ymax - ymin),
 )
 
-#let out-of-bounds-2d = x => x > 100% or x < 0%
+/// Checks if a 2d canvas coordinate is out of bounds
+///
+/// -> bool
+#let out-of-bounds-2d(
+  /// 2d canvas coordinate as a fraction of the canvas size
+  /// -> ratio | int | float
+  x,
+) = x > 100% or x < 0%
 
-#let clamp-to-bounds-3d = ((xmin, xmax), (ymin, ymax), (zmin, zmax)) => (
+/// Constructs a function that clamps a 3d point to the given bounding box
+///
+/// -> function
+#let clamp-to-bounds-3d(
+  /// $x$-min, $x$-max
+  /// -> array
+  (xmin, xmax),
+  /// $y$-min, $y$-max
+  /// -> array
+  (ymin, ymax),
+  /// $z$-min, $z$-max
+  /// -> array
+  (zmin, zmax),
+) = (
   (x, y, z),
 ) => (
   calc.clamp(x, xmin, xmax),
@@ -34,7 +78,21 @@
   calc.clamp(z, zmin, zmax),
 )
 
-#let out-of-bounds-3d = ((xmin, xmax), (ymin, ymax), (zmin, zmax)) => (
+/// Constructs a function that checks if a 3d point is inside the given
+/// bounding box
+///
+/// -> function
+#let out-of-bounds-3d(
+  /// $x$-min, $x$-max
+  /// -> array
+  (xmin, xmax),
+  /// $y$-min, $y$-max
+  /// -> array
+  (ymin, ymax),
+  /// $z$-min, $z$-max
+  /// -> array
+  (zmin, zmax),
+) = (
   (x, y, z),
 ) => {
   x < xmin or x > xmax or y < ymin or y > ymax or z < zmin or z > zmax
@@ -77,7 +135,7 @@
 /// #length-vec((0,3,4))
 /// ```
 ///
-/// -> vector
+/// -> float
 #let length-vec(
   /// Vector
   /// -> vector
@@ -104,7 +162,7 @@
 /// #distance-vec((0,1,2), (2,0,1))
 /// ```
 ///
-/// -> vector
+/// -> float
 #let distance-vec(
   /// Start vector
   /// -> vector
@@ -120,7 +178,7 @@
 /// #distance-vec-squared((0,1,2), (2,0,1))
 /// ```
 ///
-/// -> vector
+/// -> float
 #let distance-vec-squared(
   /// Start vector
   /// -> vector
@@ -199,7 +257,7 @@
 /// #dot-product((1,3,2), (2,0,1))
 /// ```
 ///
-/// -> vector
+/// -> float
 #let dot-product(
   /// v
   /// -> vector
@@ -209,7 +267,14 @@
   w,
 ) = v.zip(w).map(((a, b)) => a * b).sum()
 
-#let cube-planes = (((xmin, xmax), (ymin, ymax), (zmin, zmax))) => (
+/// The 6 planes of the bounding box in $(n, d)$ point-normal form
+///
+/// -> array
+#let cube-planes(
+  /// Bounding box as ($x$-min, $x$-max), ($y$-min, $y$-max), ($z$-min, $z$-max)
+  /// -> array
+  ((xmin, xmax), (ymin, ymax), (zmin, zmax)),
+) = (
   ((1, 0, 0), xmin),
   ((-1, 0, 0), xmax),
   ((0, 1, 0), ymin),
@@ -218,7 +283,14 @@
   ((0, 0, -1), zmax),
 )
 
-#let cube-vertices = (((xmin, xmax), (ymin, ymax), (zmin, zmax))) => (
+/// The 8 corner points of the bounding box
+///
+/// -> array
+#let cube-vertices(
+  /// Bounding box as ($x$-min, $x$-max), ($y$-min, $y$-max), ($z$-min, $z$-max)
+  /// -> array
+  ((xmin, xmax), (ymin, ymax), (zmin, zmax)),
+) = (
   (xmin, ymin, zmin),
   (xmax, ymin, zmin),
   (xmax, ymax, zmin),
@@ -229,7 +301,14 @@
   (xmin, ymax, zmax),
 )
 
-#let cube-edges = dim => {
+/// The 12 edges of the bounding box as (start, end) point pairs
+///
+/// -> array
+#let cube-edges(
+  /// Bounding box as ($x$-min, $x$-max), ($y$-min, $y$-max), ($z$-min, $z$-max)
+  /// -> array
+  dim,
+) = {
   let vertices = cube-vertices(dim)
   (
     (vertices.at(0), vertices.at(1)),
@@ -247,7 +326,14 @@
   )
 }
 
-#let assert-n-vec = n => assert(
+/// Asserts that a normal vector is not the zero vector
+///
+/// -> none
+#let assert-n-vec(
+  /// Normal vector
+  /// -> vector
+  n,
+) = assert(
   n.any(i => i != 0),
   message: "Normal vector cannot be zero vector",
 )
@@ -348,7 +434,17 @@
 /// -> plane
 #let plane-normal = plane-hesse
 
-#let points-on-plane = (n, p) => {
+/// Returns 3 non-colinear points on the plane in $(n, p)$ point-normal form
+///
+/// -> array
+#let points-on-plane(
+  /// Normal vector
+  /// -> vector
+  n,
+  /// Point on plane
+  /// -> vector
+  p,
+) = {
   let v2 = cross-product((1, 0, 0), n)
   let v3 = cross-product((0, 0, 1), n)
   let p2 = sum-vec(p, v2)
@@ -474,14 +570,48 @@
   res
 }
 
-#let rotate3d = (x, y, z, p) => {
+/// Rotates a point by the given angles around the x, y and z axis.
+/// `none` angles are skipped.
+///
+/// -> vector
+#let rotate3d(
+  /// Rotation around the $x$ axis
+  /// -> auto | int | float
+  x,
+  /// Rotation around the $y$ axis
+  /// -> auto | int | float
+  y,
+  /// Rotation around the $z$ axis
+  /// -> auto | int | float
+  z,
+  /// Point to rotate
+  /// -> vector
+  p,
+) = {
   let v1 = if x != none { rotate-x(x, p) } else { p }
   let v2 = if y != none { rotate-y(y, v1) } else { v1 }
   let v3 = if z != none { rotate-z(z, v2) } else { v2 }
   v3
 }
 
-#let perpendicular-2d(line-from, line-to, point, off) = {
+/// Calculates the two points of a segment centered on `point` that is
+/// perpendicular to a 2d line
+///
+/// -> array
+#let perpendicular-2d(
+  /// Point on the line
+  /// -> array
+  line-from,
+  /// Point on the line
+  /// -> array
+  line-to,
+  /// Center of the perpendicular segment
+  /// -> array
+  point,
+  /// Length of the perpendicular segment
+  /// -> int | float
+  off,
+) = {
   let (x, y) = direction-vec(line-from, line-to)
   let (pnx, pny) = normalize-vec((-y, x))
   let (px, py) = point
@@ -493,7 +623,17 @@
   )
 }
 
-#let atan2 = (x, y) => if x > 0 {
+/// Calculates the 2d arctangent of $x$ and $y$ with the correct quadrant
+///
+/// -> int | float
+#let atan2(
+  /// x
+  /// -> int | float
+  x,
+  /// y
+  /// -> int | float
+  y,
+) = if x > 0 {
   calc.atan(y / x).rad()
 } else if (x < 0 and y >= 0) {
   calc.atan(y / x).rad() + calc.pi
@@ -507,7 +647,14 @@
   0
 }
 
-#let connect-circle-2d(..p) = {
+/// Orders a list of 2d points clockwise around their centroid
+///
+/// -> array
+#let connect-circle-2d(
+  /// 2d points as $(x, y)$
+  /// -> array
+  ..p,
+) = {
   let c = p
     .pos()
     .reduce(((ax, ay), (x, y)) => (ax + x, ay + y))
@@ -518,7 +665,18 @@
   angles.sorted(key: it => it.at(0)).map(it => it.at(1))
 }
 
-#let intersections-line-dim((p, d), dim) = {
+/// Calculates the points where a line in $(p, d)$ parametric form intersects
+/// the bounding volume
+///
+/// -> array
+#let intersections-line-dim(
+  /// Line in (point, direction) parametric form
+  /// -> line
+  (p, d),
+  /// Bounding box as ($x$-min, $x$-max), ($y$-min, $y$-max), ($z$-min, $z$-max)
+  /// -> array
+  dim,
+) = {
   let out-of-bounds = out-of-bounds-3d(..dim)
   let points = ()
   for (dir, ddim) in dim.enumerate() {
@@ -533,7 +691,19 @@
   }
   points
 }
-#let is-point-on-line-prime((from, to), p) = {
+
+/// Checks if a point lies on the inside of a line segment based on
+/// distances
+///
+/// -> bool
+#let is-point-on-line-prime(
+  /// Line segment as (start, end)
+  /// -> array
+  (from, to),
+  /// Point to check
+  /// -> vector
+  p,
+) = {
   let d-f-t = distance-vec(from, to)
   let d-f-p = distance-vec(from, p)
   let d-p-t = distance-vec(p, to)
@@ -542,7 +712,18 @@
   d-f-t <= d-f-p + d-p-t + 1 and d-f-t >= d-f-p + d-p-t - 1
 }
 
-#let is-point-on-line((from, to), p) = {
+/// Checks if a point lies on the inside of a line segment based on
+/// projections
+///
+/// -> bool
+#let is-point-on-line(
+  /// Line segment as (start, end)
+  /// -> array
+  (from, to),
+  /// Point to check
+  /// -> vector
+  p,
+) = {
   let f-t = direction-vec(from, to)
   let f-p = direction-vec(from, p)
   let dot-f-p = dot-product(f-p, f-t)
@@ -554,12 +735,30 @@
 }
 
 // TODO:
-#let is-point-on-line-2d((from, to), p) = {
+/// Checks if a 2d point lies on a 2d line segment
+///
+/// -> bool
+#let is-point-on-line-2d(
+  /// Line segment as (start, end)
+  /// -> array
+  (from, to),
+  /// Point to check
+  /// -> array
+  p,
+) = {
   false
 }
 
+/// Clips a 3d line segment to the bounding volume. Returns the (start, end)
+/// points of the visible part, or `none` if the segment is not visible.
+///
+/// -> array | none
 #let intersection-3d-cube(
+  /// Line segment as (start, end)
+  /// -> array
   (from, to),
+  /// Bounding box as ($x$-min, $x$-max), ($y$-min, $y$-max), ($z$-min, $z$-max)
+  /// -> array
   dim,
 ) = {
   let out-of-bounds = out-of-bounds-3d(..dim)
@@ -583,19 +782,37 @@
   }
 }
 
-#let intersection-3d-lines = (
+/// Calculates the intersection point of two 3d lines
+///
+/// -> vector
+#let intersection-3d-lines(
+  /// Point on line 1
+  /// -> vector
   from1,
+  /// Point on line 1
+  /// -> vector
   to1,
+  /// Point on line 2
+  /// -> vector
   from2,
+  /// Point on line 2
+  /// -> vector
   to2,
-) => {
+) = {
   let d1 = distance-vec(from1, to1)
   let d2 = distance-vec(from2, to2)
   let t = cross-product(d1, d2)
   sum-vec(from1, scalar-mult-vec(t, d1))
 }
 
-#let perpendicular-3d = v => {
+/// Calculates a unit vector that is perpendicular to the given vector
+///
+/// -> vector
+#let perpendicular-3d(
+  /// Vector
+  /// -> vector
+  v,
+) = {
   let (x, y, z) = v
   let u = if y == z and x != y {
     (0, 1, 0)
@@ -605,7 +822,23 @@
   cross-product(v, u)
 }
 
-#let rescale-line = (from, to, to-off, from-off: 0) => {
+/// Rescales a 3d line segment along its direction by the given lengths
+///
+/// -> array
+#let rescale-line(
+  /// Start of the line
+  /// -> vector
+  from,
+  /// End of the line
+  /// -> vector
+  to,
+  /// Length from the start to the new end
+  /// -> int | float
+  to-off,
+  /// Length offset from the start to the new start
+  /// -> int | float
+  from-off: 0,
+) = {
   let n = normalize-vec(direction-vec(from, to))
   (
     sum-vec(from, scalar-mult-vec(-from-off, n)),

@@ -3,7 +3,25 @@
 #import "clip.typ": *
 #import "mark.typ": *
 
-#let eval-mark(elem, mark, from, to) = {
+/// Evaluates a single mark (e.g. a line endpoint, a quiver tip or a
+/// distribution outlier) into a renderable mark element. If `mark` is a
+/// string, it is looked up in @marks.
+///
+/// -> dictionary
+#let eval-mark(
+  /// Element the mark belongs to
+  /// -> dictionary
+  elem,
+  /// Mark name, string or function
+  /// -> none | str | function
+  mark,
+  /// Start of the line segment
+  /// -> vector
+  from,
+  /// End of the line segment
+  /// -> vector
+  to,
+) = {
   if mark == none or (type(mark) != str and type(mark) != function) {
     return mark
   }
@@ -34,7 +52,19 @@
   (mark: res, from: from, to: to)
 }
 
-#let get-0th-pt = (from, to) => {
+/// Calculates the point at distance $d$ past `to` on the line through
+/// `from` and `to`. Marks are anchored to this point so that they end
+/// exactly on `to`.
+///
+/// -> array
+#let get-0th-pt(
+  /// Start of the line segment
+  /// -> vector
+  from,
+  /// End of the line segment
+  /// -> vector
+  to,
+) = {
   // TODO: probably correct? i don't have the time to check
   // FIXME: check if this still works
   let d = distance-vec(from, to)
@@ -46,7 +76,21 @@
   )
 }
 
-#let eval-marks(elem, mark, points) = {
+/// Evaluates all marks of a polyline (e.g. the intermediate points of a
+/// @lineplot) into renderable mark elements.
+///
+/// -> array
+#let eval-marks(
+  /// Element the marks belong to
+  /// -> dictionary
+  elem,
+  /// Mark name, string or function
+  /// -> none | str | function
+  mark,
+  /// Polyline as a list of 3d points
+  /// -> array
+  points,
+) = {
   points
     .filter(pts => pts.len() > 1)
     .map(pts => (get-0th-pt(pts.at(0), pts.at(1)).at(0), ..pts)
@@ -55,7 +99,17 @@
     .join()
 }
 
-#let plane-points-to-vertices(ctx, points) = {
+/// Converts a 2d grid of 3d points into a mesh of (clipped) triangles
+///
+/// -> array
+#let plane-points-to-vertices(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// 2d grid of 3d points as $(x, y, z)$
+  /// -> array
+  points,
+) = {
   // something smells very fishy in here
   // TODO: revisit clipping
   let vertices = ()
@@ -81,7 +135,18 @@
   vertices
 }
 
-#let eval-planeparam(ctx, elem) = {
+/// Evaluates a @planeparam element: samples the parametrized plane over the
+/// bounding volume and stores the resulting surface in `eval-points`.
+///
+/// -> dictionary
+#let eval-planeparam(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Planeparam element
+  /// -> dictionary
+  elem,
+) = {
   let steps = if elem.steps == auto { 5 } else { elem.steps }
   let p-x-y-z = x-y-points(ctx.dim, steps).map(ps => ps.map((
     (x, y),
@@ -106,12 +171,34 @@
 //   elem
 // }
 
-#let eval-line(ctx, elem) = {
+/// Evaluates a @line element: clips the line to the bounding volume and
+/// stores the visible part in `eval-points`.
+///
+/// -> dictionary
+#let eval-line(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Line element
+  /// -> dictionary
+  elem,
+) = {
   elem.eval-points = (intersections-line-dim(elem.line, ctx.dim),)
   elem
 }
 
-#let eval-planeplot(ctx, elem) = {
+/// Evaluates a @planeplot element: converts the sampled surface into a
+/// (clipped) triangulation and stores it in `eval-points`.
+///
+/// -> dictionary
+#let eval-planeplot(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Planeplot element
+  /// -> dictionary
+  elem,
+) = {
   let (x, y, z, num) = elem.planeplot
   let pts = x.zip(y, z)
   elem.eval-points = if num != none {
@@ -127,30 +214,85 @@
   elem
 }
 
-#let eval-lineplot(ctx, elem) = {
+/// Evaluates a @lineplot element: clips the polyline to the bounding volume
+/// and stores the visible part in `eval-points`.
+///
+/// -> dictionary
+#let eval-lineplot(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Lineplot element
+  /// -> dictionary
+  elem,
+) = {
   let (x, y, z) = elem.lineplot
   elem.eval-points = clip-line(ctx, x.zip(y, z))
   elem.eval-marks = eval-marks(elem, elem.mark, elem.eval-points)
   elem
 }
 
-#let eval-path(ctx, elem) = {
+/// Evaluates a @path element: clips the polyline to the bounding volume and
+/// stores the visible part in `eval-points`.
+///
+/// -> dictionary
+#let eval-path(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Path element
+  /// -> dictionary
+  elem,
+) = {
   elem.eval-points = clip-line(ctx, elem.path)
   elem.eval-marks = eval-marks(elem, elem.mark, elem.eval-points)
   elem
 }
 
-#let eval-vertices(ctx, elem) = {
+/// Evaluates a @vertices element: clips the polygons to the bounding volume
+/// and stores the visible part in `eval-points`.
+///
+/// -> dictionary
+#let eval-vertices(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Vertices element
+  /// -> dictionary
+  elem,
+) = {
   elem.eval-points = clip-vertices(ctx, elem.vertices)
   elem
 }
 
-#let eval-polygon(ctx, elem) = {
+/// Evaluates a @polygon element: clips the polygon to the bounding volume
+/// and stores the visible part in `eval-points`.
+///
+/// -> dictionary
+#let eval-polygon(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Polygon element
+  /// -> dictionary
+  elem,
+) = {
   elem.eval-points = (clip-plane(ctx, elem.polygon),)
   elem
 }
 
-#let eval-plane((dim, ..x), elem) = {
+/// Evaluates a @plane element: computes the intersection of the plane with
+/// the bounding volume and stores the resulting polygon in `eval-points`.
+///
+/// -> dictionary
+#let eval-plane(
+  /// Canvas context
+  /// -> dictionary
+  (dim, ..x),
+  /// Plane element
+  /// -> dictionary
+  elem,
+) = {
   let (n, p) = elem.plane
   let points = ()
   for (a, b) in cube-edges(dim) {
@@ -170,14 +312,36 @@
   elem
 }
 
-#let eval-vec(ctx, elem) = {
+/// Evaluates a @vec element: clips the vector line to the bounding volume
+/// and evaluates its tip and toe marks.
+///
+/// -> dictionary
+#let eval-vec(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Vec element
+  /// -> dictionary
+  elem,
+) = {
   elem.eval-points = clip-line(ctx, elem.vec)
   elem.eval-tip = eval-mark(elem, elem.tip, ..elem.eval-points.at(0))
   elem.eval-toe = eval-mark(elem, elem.toe, ..elem.eval-points.at(0).rev())
   elem
 }
 
-#let eval-distribution(ctx, elem) = {
+/// Evaluates a @distribution element: bins the sample points into a surface
+/// and evaluates the outlier marks.
+///
+/// -> dictionary
+#let eval-distribution(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Distribution element
+  /// -> dictionary
+  elem,
+) = {
   // TODO: xlim, ylim proper
   let ((xmin, xmax), (ymin, ymax), (zmin, _)) = ctx.dim
   let (plane, points, ysteps) = dist3d(
@@ -218,7 +382,18 @@
   elem
 }
 
-#let eval-quiver(ctx, elem) = {
+/// Evaluates a @quiver element: computes the vector field lines from the
+/// direction function and evaluates the tip and toe marks.
+///
+/// -> dictionary
+#let eval-quiver(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Quiver element
+  /// -> dictionary
+  elem,
+) = {
   // TODO:
   elem.eval-points = elem
     .xs
@@ -250,13 +425,31 @@
   elem
 }
 
+/// Evaluates the ticks of an axis line into renderable (label, tick,
+/// stroke) tuples.
+///
+/// -> array
 #let eval-ticks(
+  /// Canvas context
+  /// -> dictionary
   ctx,
+  /// Tick positions
+  /// -> array
   ticks,
+  /// Tick format as returned by @tickformat
+  /// -> dictionary
   format-ticks,
+  /// Start of the axis line
+  /// -> vector
   line-from,
+  /// End of the axis line
+  /// -> vector
   line-to,
+  /// Axis kind, one of `x`, `y` and `z`
+  /// -> str
   kind,
+  /// Stroke of the axis
+  /// -> auto | none | length | color | gradient | stroke | tiling | dictionary
   elem-stroke,
 ) = {
   let (point-r,) = axis-helper-fn(
@@ -287,7 +480,18 @@
   res
 }
 
-#let eval-axisplane(ctx, elem) = {
+/// Evaluates an @axisplane element: computes the corners of the axis plane
+/// and the grid lines of the ticks on it.
+///
+/// -> dictionary
+#let eval-axisplane(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Axisplane element
+  /// -> dictionary
+  elem,
+) = {
   let (
     point,
     point-p,
@@ -401,7 +605,18 @@
   elem
 }
 
-#let eval-axisline(ctx, elem) = {
+/// Evaluates an @axisline element: computes the endpoints, ticks, label and
+/// tip/toe marks of the axis line.
+///
+/// -> dictionary
+#let eval-axisline(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Axisline element
+  /// -> dictionary
+  elem,
+) = {
   let (
     point,
     point-p,
@@ -460,7 +675,17 @@
   elem
 }
 
-#let eval-axes(ctx, elem) = {
+/// Evaluates an axis and all of its instances (@axisline and @axisplane)
+///
+/// -> dictionary
+#let eval-axes(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Axis element
+  /// -> dictionary
+  elem,
+) = {
   elem.instances = elem.instances.map(i => {
     if i.type == "axisline" {
       eval-axisline(ctx, i)
@@ -471,7 +696,18 @@
   elem
 }
 
-#let eval-axisline-points(ctx, elem) = {
+/// Collects all 3d points of an evaluated @axisline element (line, ticks
+/// and label) for bounding box evaluation
+///
+/// -> array
+#let eval-axisline-points(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Axisline element
+  /// -> dictionary
+  elem,
+) = {
   let res = ()
   let (min, max) = axis-helper-fn(ctx, elem)
   if (
@@ -499,7 +735,18 @@
   res
 }
 
-#let eval-axisplane-points(ctx, elem) = {
+/// Collects all 3d points of an evaluated @axisplane element (corners and
+/// tick lines) for bounding box evaluation
+///
+/// -> array
+#let eval-axisplane-points(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Axisplane element
+  /// -> dictionary
+  elem,
+) = {
   let res = ()
   if (
     axis-plane-points(ctx, elem).all(pp => pp.all(is-num))
@@ -518,7 +765,17 @@
   res
 }
 
-#let eval-axis-points(ctx, elem) = {
+/// Collects all 3d points of an evaluated axis for bounding box evaluation
+///
+/// -> array
+#let eval-axis-points(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Axis element
+  /// -> dictionary
+  elem,
+) = {
   elem
     .instances
     .map(i => {
@@ -532,6 +789,10 @@
 }
 
 // TODO: eval marks
+/// Dictionary of all element evaluators, keyed by element type. This is
+/// used by @diagram to evaluate the elements.
+///
+/// -> dictionary
 #let eval-elem = (
   "axis": eval-axes,
   "path": eval-path,
@@ -548,10 +809,18 @@
   // "lineparam": eval-lineparam,
 )
 
-#let eval-points = (
+/// Collects all 3d points of an element for bounding box evaluation. This is
+/// used by @diagram to find the extents of the plot.
+///
+/// -> array
+#let eval-points(
+  /// Canvas context
+  /// -> dictionary
   ctx,
+  /// Element
+  /// -> dictionary
   elem,
-) => {
+) = {
   if elem.type == "axis" {
     eval-axis-points(ctx, elem)
   } else if elem.type == "axisplane" {
@@ -585,7 +854,18 @@
   }
 }
 
-#let eval-min-bounds = (axes, ..children) => {
+/// Calculates the (minimum, maximum) bounding box of all the elements and
+/// axes of a plot. Used by @diagram to determine the bounding volume.
+///
+/// -> array
+#let eval-min-bounds(
+  /// The 3 axes
+  /// -> array
+  axes,
+  /// The elements of the plot
+  /// -> array
+  ..children,
+) = {
   let (xaxis, yaxis, zaxis) = axes
 
   let getlim = (lim: auto, ..x) => if type(lim) != array { (auto, auto) } else {

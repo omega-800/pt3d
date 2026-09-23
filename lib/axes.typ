@@ -1,11 +1,31 @@
 #import "linalg.typ": *
 #import "util.typ": *
 
-#let axis-kind-case = (kind, (x, y, z)) => if kind == "x" { x } else if (
+/// Selects the entry of a 3-tuple corresponding to the axis kind
+///
+/// -> any
+#let axis-kind-case(
+  /// Axis kind, one of `x`, `y` and `z`
+  /// -> str
+  kind,
+  /// Tuple of the 3 axis components
+  /// -> array
+  (x, y, z),
+) = if kind == "x" { x } else if (
   kind == "y"
 ) { y } else { z }
 
-#let axis-plane-points = (ctx, elem) => {
+/// Calculates the 4 corner points of the axis plane at `elem.position`
+///
+/// -> array
+#let axis-plane-points(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Axisplane element
+  /// -> dictionary
+  elem,
+) = {
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = ctx.dim
   axis-kind-case(elem.kind, (
     (
@@ -29,7 +49,25 @@
   ))
 }
 
-#let axis-helper-fn = (ctx, elem) => {
+/// Returns a set of axis-kind-specific helper functions and values used for
+/// computing the geometry of the axes:
+/// - `point`: places a value on the axis
+/// - `point-p`: moves a point along the axis
+/// - `point-r`: sets the axis component of a point
+/// - `point-n`: projects a point onto the plane orthogonal to the axis
+/// - `cur`: extracts the axis component of a point
+/// - `other`: the 2 components orthogonal to the axis
+/// - `min` and `max`: the bounds of the axis
+///
+/// -> dictionary
+#let axis-helper-fn(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Axis-like element with a `kind`
+  /// -> dictionary
+  elem,
+) = {
   let (dim, ..x) = ctx
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
   axis-kind-case(elem.kind, (
@@ -66,7 +104,22 @@
   ))
 }
 
-#let label-left = (ctx, kind, position) => {
+/// Calculates whether a tick label on an axis should be drawn on the "left"
+/// side (i.e. rotated 180 degrees) based on its position within the bounding
+/// volume.
+///
+/// -> bool
+#let label-left(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Axis kind, one of `x`, `y` and `z`
+  /// -> str
+  kind,
+  /// (position, other-position) pair
+  /// -> array
+  position,
+) = {
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = ctx.dim
   let relto = (min, max) => v => (v - min) / (max - min) * 100
   let reltox = relto(xmin, xmax)
@@ -102,19 +155,31 @@
 }
 
 // FIXME: buggy (rotations)
-#let axis-tick-pos = (
+// TODO: label-left, label-off, label, from-off: 0, to-off: 0
+/// Calculates the 3d start/end points of a tick mark and the position and
+/// size of its label.
+///
+/// -> dictionary
+#let axis-tick-pos(
+  /// Canvas context
+  /// -> dictionary
   ctx,
+  /// Axis kind, one of `x`, `y` and `z`
+  /// -> str
   kind,
+  /// 3d point on the axis line
+  /// -> vector
   from-3d,
+  /// Tick format as returned by @tickformat
+  /// -> dictionary
   format-ticks,
+  /// Tick value
+  /// -> int | float
   tick,
-  // label-left,
-  // label-off,
-  // label,
-  // from-off: 0,
-  // to-off: 0,
+  /// Distance of the label from the axis line
+  /// -> length
   label-off: 1em,
-) => {
+) = {
   let (dim, on-canvas, canvas-dim, map-point-pt) = ctx
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
   let length = if "length" in format-ticks { format-ticks.length } else { 0pt }
@@ -202,10 +267,18 @@
   )
 }
 
-#let axis-instance-defaults = (
+/// Fills in the default values of an axis instance element (@axisline or
+/// @axisplane): `position`, `label` and `format-ticks`.
+///
+/// -> dictionary
+#let axis-instance-defaults(
+  /// Axis instance element
+  /// -> dictionary
   i,
+  /// Canvas context
+  /// -> dictionary
   ctx,
-) => {
+) = {
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = ctx.dim
   let (min, max, point-n) = axis-helper-fn(ctx, i)
 
@@ -264,7 +337,19 @@
 }
 
 // TODO: better auto ticks
-#let axis-ticks-default = (ctx, axis) => {
+/// Calculates the tick positions of an axis. If `axis.ticks` is a list, it
+/// is filtered to the axis bounds. Otherwise the number of ticks is derived
+/// from `axis.nticks` (or automatically from the label space).
+///
+/// -> array
+#let axis-ticks-default(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Axis element
+  /// -> dictionary
+  axis,
+) = {
   let (on-canvas, dim, map-point-pt) = ctx
   let ((xmin, xmax), (ymin, ymax), (zmin, zmax)) = dim
   let (min, max, point-n) = axis-helper-fn(ctx, (
@@ -333,7 +418,24 @@
   n-points-on(min, max, if n == 0 { 3 } else { n })
 }
 
-#let axes-defaults = (xaxis, yaxis, zaxis, ctx) => (
+/// Fills in all default values of the 3 axes (@axis): the bounds
+/// (`lim`), the instances and the tick positions.
+///
+/// -> array
+#let axes-defaults(
+  /// The x-axis element
+  /// -> dictionary
+  xaxis,
+  /// The y-axis element
+  /// -> dictionary
+  yaxis,
+  /// The z-axis element
+  /// -> dictionary
+  zaxis,
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+) = (
   (xaxis, yaxis, zaxis)
     .zip(ctx.dim)
     .map(((axis, lim)) => {

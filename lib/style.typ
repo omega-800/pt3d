@@ -1,5 +1,23 @@
-#let rgb-clamp = (..p) => rgb(..p.pos().map(i => calc.clamp(int(i), 0, 255)))
+/// Clamps the rgb components to the $0$-$255$ range and constructs a color.
+///
+/// ```example
+/// #pt.rgb-clamp(-10, 128, 280)
+/// ```
+///
+/// -> color
+#let rgb-clamp(
+  /// The rgb components
+  /// -> int | float
+  ..p,
+) = rgb(..p.pos().map(i => calc.clamp(int(i), 0, 255)))
 
+/// A palette of 10 colors, used as the default color-cycle of @diagram
+///
+/// ```example
+/// #pt.petroff10
+/// ```
+///
+/// -> array
 #let petroff10 = (
   rgb(63, 144, 218),
   rgb(255, 169, 14),

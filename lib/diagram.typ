@@ -7,7 +7,33 @@
 // https://www.mauriciopoppe.com/notes/computer-graphics/viewing/projection-transform/
 // http://www.songho.ca/opengl/gl_projectionmatrix.html
 
-#let render-canvas(ctx, title-offset, legend, cycle, fill, stroke, children) = {
+/// Renders the canvas of a @diagram: evaluates the axes and the elements,
+/// renders them inside the plot box, and lays out the legend.
+///
+/// -> content
+#let render-canvas(
+  /// Canvas context
+  /// -> dictionary
+  ctx,
+  /// Height of the title area
+  /// -> length
+  title-offset,
+  /// Legend parameters as returned by @legend-def
+  /// -> dictionary
+  legend,
+  /// Color cycle
+  /// -> array
+  cycle,
+  /// Default fill of the elements
+  /// -> auto | none | color | gradient | tiling
+  fill,
+  /// Default stroke of the elements
+  /// -> auto | none | length | color | gradient | stroke | tiling | dictionary
+  stroke,
+  /// The elements of the plot
+  /// -> array
+  children,
+) = {
   let (xas, yas, zas) = ctx.axes
   let elems = children
     .pos()
@@ -101,21 +127,85 @@
   )
 }
 
+/// Creates a 3d plot.
+///
+/// The elements (@lineplot, @planeplot, @path, @polygon, @vertices, @vec,
+/// @line, @plane, @planeparam, @distribution and @quiver) are evaluated, a
+/// bounding volume is computed, the scene is rotated and projected onto a 2d
+/// canvas, and the elements are rendered.
+///
+/// ```example
+/// #pt.diagram(
+///   title: "trippy cube",
+///   legend: (separate: true, dir: ltr),
+///   pt.polygon(
+///     (3, 0, 3),
+///     (3, 0, -3),
+///     (-3, 0, -3),
+///     (-3, 0, 3),
+///     fill: red.transparentize(70%),
+///   ),
+///   pt.path(
+///     stroke: red,
+///     label: "trippy cube",
+///     (-1, -1, 1),
+///     (1, -1, 1),
+///     (1, 1, 1),
+///     (-1, 1, 1),
+///     (1, 1, -1),
+///     (1, -1, -1),
+///     (-1, -1, -1),
+///   ),
+/// )
+/// ```
+///
+/// -> content
 #let diagram(
+  /// Width of the diagram
+  /// -> length | ratio
   width: 8cm,
+  /// Height of the diagram
+  /// -> length | ratio
   height: 6cm,
+  /// Title of the diagram
+  /// -> auto | none | content
   title: none,
+  /// Legend parameters, see @legend-def
+  /// -> dictionary
   legend: (:),
+  /// Whether to draw a grid (not implemented yet)
+  /// -> auto | bool
   grid: auto,
+  /// Parameters for the x-axis, see @axis
+  /// -> dictionary
   xaxis: (:),
+  /// Parameters for the y-axis, see @axis
+  /// -> dictionary
   yaxis: (:),
+  /// Parameters for the z-axis, see @axis
+  /// -> dictionary
   zaxis: (:),
+  /// Margin around the canvas (not implemented yet)
+  /// -> length | ratio
   margin: 6%,
+  /// Color cycle, the $n$th element is colored with the $n$th color
+  /// -> array
   cycle: petroff10,
+  /// Default fill of the elements
+  /// -> auto | none | color | gradient | tiling
   fill: none,
+  /// Default stroke of the elements
+  /// -> auto | none | length | color | gradient | stroke | tiling | dictionary
   stroke: none,
+  /// Rotation matrices applied to the scene before projection, see
+  /// @mat-rotate-x, @mat-rotate-y, @mat-rotate-z and @mat-rotate-iso
+  /// -> array
   rotations: (mat-rotate-iso,),
+  /// Whether to disable clipping of the elements at the bounding volume
+  /// -> bool
   noclip: false,
+  /// Elements to plot
+  /// -> array
   ..children,
 ) = context {
   let (title-offset, ctx) = gen-ctx(

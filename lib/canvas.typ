@@ -2,7 +2,15 @@
 #import "eval.typ": *
 #import "elem.typ": axis
 
-#let overflow-correction = ns => {
+/// Computes the offset and scale that are needed so that the given 2d
+/// points all fit inside the unit square (0%-100%) of the canvas
+///
+/// -> array
+#let overflow-correction(
+  /// 2d canvas coordinates as fractions of the canvas size
+  /// -> array
+  ns,
+) = {
   let s = ns.filter(out-of-bounds-2d).sorted()
   let high = calc.max(s.last(default: 100%), 100%)
   let low = calc.min(s.first(default: 0%), 0%)
@@ -13,30 +21,73 @@
   )
 }
 
-#let measure-3d-pt = (
+/// Constructs a function that measures the 2d distance between two 3d
+/// points on the canvas
+///
+/// -> function
+#let measure-3d-pt(
+  /// Function that projects a 3d point to the 2d canvas
+  /// -> function
   on-canvas,
+  /// Function that maps a 2d canvas point to a 2d point in pt
+  /// -> function
   map-point-pt,
-) => (
+) = (
   from,
   to,
 ) => distance-vec(
   ..(from, to).map(on-canvas).map(map-point-pt),
 )
 
-#let rescale = (
+/// Constructs a linear rescaling function of 2d points:
+/// `(x, y)` becomes `(x * xscale + xo, y * yscale + yo)`
+///
+/// -> function
+#let rescale(
+  /// (offset, scale) for the x coordinate
+  /// -> array
   (xo, xscale),
+  /// (offset, scale) for the y coordinate
+  /// -> array
   (yo, yscale),
-) => (
+) = (
   (x, y),
 ) => {
   (x * xscale + xo, y * yscale + yo)
 }
 
-#let order-axes = ((xo, yo, zo)) => ((x, y, z)) => (
+/// Constructs a function that orders a 3d point by the axis ordering,
+/// flipping the z axis so that the axes are sorted by depth
+///
+/// -> function
+#let order-axes(
+  /// Axis ordering as (x-order, y-order, z-order)
+  /// -> array
+  (xo, yo, zo),
+) = (
+  (x, y, z),
+) => (
   ((x, xo), (y, yo), (-z, zo)).sorted(key: it => it.at(1)).map(it => it.at(0))
 )
 
-#let canvas(dim, transform-fn, rotate-fn, scale-fn) = p => scale-fn(
+/// Constructs the canvas projection function: transforms, rotates,
+/// orthographically projects and rescales a 3d point onto the 2d canvas
+///
+/// -> function
+#let canvas(
+  /// Bounding box as ($x$-min, $x$-max), ($y$-min, $y$-max), ($z$-min, $z$-max)
+  /// -> array
+  dim,
+  /// Axis reordering transformation
+  /// -> function
+  transform-fn,
+  /// Rotation by the axis rotations
+  /// -> function
+  rotate-fn,
+  /// Rescaling to the canvas size
+  /// -> function
+  scale-fn,
+) = p => scale-fn(
   ortho-proj(
     dim,
     rotate-fn(transform-fn(p)),
@@ -44,7 +95,25 @@
 )
 
 // FIXME: wonky
-#let def-lim = (min, max, lim: (-1, 1), ..x) => {
+/// Resolves a bounding axis limit against the data extents. `lim` entries
+/// that are not numbers are replaced by `min`/`max` (or -1/1 if those are
+/// not available). Degenerate limits (min == max) are expanded by 1.
+///
+/// -> array
+#let def-lim(
+  /// Minimum of the data
+  /// -> auto | int | float
+  min,
+  /// Maximum of the data
+  /// -> auto | int | float
+  max,
+  /// Axis limit as (`min`, `max`)
+  /// -> array
+  lim: (-1, 1),
+  /// Other axis parameters (unused)
+  /// -> dictionary
+  ..x,
+) = {
   let def = (i, def) => if is-num(i) { i } else { def }
   let lim = (def(def(lim.at(0), min), 1), def(def(lim.at(1), max), -1))
   if lim.at(0) == lim.at(1) {
@@ -56,12 +125,29 @@
 
 // TODO: make the stuff that's badly implemented better
 
+/// Constructs the canvas context of a @diagram: evaluates the bounding box
+/// and the axes, and computes the projection functions. Returns the
+/// (title-offset, ctx) pair.
+///
+/// -> array
 #let gen-ctx(
+  /// Title of the diagram, or `none`
+  /// -> auto | none | content
   title,
+  /// (width, height) of the canvas
+  /// -> array
   (width, height),
+  /// The 3 axis parameter dictionaries
+  /// -> array
   (xaxis, yaxis, zaxis),
+  /// Rotation matrices
+  /// -> array
   rotations,
+  /// The elements of the plot
+  /// -> array
   children,
+  /// Whether to disable clipping of the elements
+  /// -> bool
   noclip,
 ) = {
   let xas = axis(..xaxis, kind: "x")

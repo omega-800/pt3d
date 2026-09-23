@@ -34,11 +34,11 @@
   /// Fill color function, defaults to @quiver.fill
   /// -> none | function
   fill-color-fn: none,
-  /// Vector tip, one of `TODO: tips`
-  /// -> tip
+  /// Vector tip, one of the @marks
+  /// -> none | str | function
   tip: ">",
-  /// Vector toe, one of `TODO: tips`
-  /// -> tip
+  /// Vector toe, one of the @marks
+  /// -> none | str | function
   toe: none,
   /// Scale
   /// -> int | float
@@ -135,8 +135,8 @@
   /// Fill color function, defaults to @distribution.fill
   /// -> none | function
   fill-color-fn: none,
-  /// Mark for outliers, one of `TODO: marks`
-  /// -> none | mark
+  /// Mark for outliers, one of the @marks
+  /// -> none | str | function
   mark: ".",
   /// `x` axis sample size
   /// -> int
@@ -144,7 +144,8 @@
   /// `y` axis sample size
   /// -> int
   yn: 10,
-  //// TODO:
+  /// TODO:
+  /// -> none | array
   interpolate: none,
   /// `x` data points
   /// -> array
@@ -234,8 +235,8 @@
   /// Stroke color function, defaults to @lineplot.stroke
   /// -> none | function
   stroke-color-fn: none,
-  /// Mark for intermediary points, one of `TODO: marks`
-  /// -> none | mark
+  /// Mark for intermediary points, one of the @marks
+  /// -> none | str | function
   mark: ".",
   /// `x` data points
   /// -> array
@@ -341,8 +342,8 @@
   /// Stroke color function, defaults to @path.stroke
   /// -> none | function
   stroke-color-fn: none,
-  /// Mark for intermediary points, one of `TODO: marks`
-  /// -> none | mark
+  /// Mark for intermediary points, one of the @marks
+  /// -> none | str | function
   mark: none,
   /// Points as $(x,y,z)$
   /// -> array
@@ -402,15 +403,15 @@
   )
 }
 
-/// Renders line in point-normal form. Following helper functions exist for
-/// converting to point-normal:
-/// TODO: line-parametric, line-point-normal, line-symmetric, line-points
+/// Renders line in point-normal form. The line can be constructed with
+/// @line-parametric, @line-point-normal, @line-symmetric or @line-points.
+///
 /// ```example
-///  #diagram(
-///    pt.line(
-///      ((2,0,2), (0,10,0))
-///    ),
-///  )
+/// #diagram(
+///   pt.line(
+///     pt.line-points((-1, -1, -1), (1, 1, 1)),
+///   ),
+/// )
 /// ```
 #let line(
   /// Stroke, defaults to the $n$th color-cycle entry
@@ -435,7 +436,39 @@
   )
 }
 
-#let vec = (stroke: auto, label: none, tip: ">", toe: none, ..points) => {
+/// Vector with tip and toe marks
+///
+/// ```example
+/// #pt.diagram(
+///   pt.vec(
+///     (0, 0, 0),
+///     (4, 3, 6),
+///     stroke: red,
+///     tip: "o",
+///     toe: "o",
+///   ),
+/// )
+/// ```
+///
+/// -> dictionary
+#let vec(
+  /// Stroke, defaults to the $n$th color-cycle entry
+  /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
+  stroke: auto,
+  /// Label
+  /// -> none | content
+  label: none,
+  /// Vector tip, one of the @marks
+  /// -> none | str | function
+  tip: ">",
+  /// Vector toe, one of the @marks
+  /// -> none | str | function
+  toe: none,
+  /// Points as $(x,y,z)$, at most two. If only one point is given, the
+  /// origin is used as the start.
+  /// -> array
+  ..points,
+) = {
   let pts = points.pos()
   // TODO: more error handling around the codebase
   assert(pts.len() > 0, message: "Vector must be provided at least one point")
@@ -453,12 +486,35 @@
   )
 }
 
-#let plane = (
+/// Plane in point-normal form
+///
+/// ```example
+/// #pt.diagram(
+///   xaxis: (lim: (0, 3)),
+///   pt.plane(
+///     pt.plane-normal((1, 0, 0), calc.pi / 3),
+///     fill: black.transparentize(85%),
+///   ),
+/// )
+/// ```
+///
+/// -> dictionary
+#let plane(
+  /// Point-normal form of the plane $(n, p)$, can be constructed with
+  /// @plane-point-normal, @plane-parametric, @plane-points,
+  /// @plane-coordinate, @plane-hesse or @plane-normal
+  /// -> plane
   point-normal,
+  /// Stroke, defaults to the $n$th color-cycle entry
+  /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
   stroke: auto,
+  /// Fill, defaults to the $n$th color-cycle entry
+  /// -> auto | none | color | gradient | tiling
   fill: auto,
+  /// Label
+  /// -> none | content
   label: none,
-) => {
+) = {
   assert(
     is-point-normal(point-normal),
     message: "Plane must be in point-normal form",
@@ -489,15 +545,47 @@
 //   mark: mark,
 // )
 
-#let planeparam = (
+/// Parametrized plane $z = f(x, y)$
+///
+/// ```example
+/// #pt.diagram(
+///   xaxis: (lim: (-1.5, 1.5)),
+///   yaxis: (lim: (-1.5, 1.5)),
+///   zaxis: (lim: (0, 1)),
+///   pt.planeparam(
+///     (x, y) => {
+///       let z = 1 - x * x - y * y
+///       if z < 0 { z } else { calc.sqrt(z) }
+///     },
+///     steps: 20,
+///   ),
+/// )
+/// ```
+///
+/// -> dictionary
+#let planeparam(
+  /// Stroke, defaults to the $n$th color-cycle entry
+  /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
   stroke: auto,
+  /// Fill, defaults to none
+  /// -> auto | none | color | gradient | tiling
   fill: none,
+  /// Number of samples per axis
+  /// -> auto | int
   steps: auto,
+  /// Stroke color function, defaults to @planeparam.stroke
+  /// -> none | function
   stroke-color-fn: none,
+  /// Fill color function, defaults to @planeparam.fill
+  /// -> none | function
   fill-color-fn: none,
+  /// Label
+  /// -> none | content
   label: none,
+  /// The function $f(x, y) = z$
+  /// -> function
   fn,
-) => (
+) = (
   type: "planeparam",
   planeparam: fn,
   stroke-color-fn: stroke-color-fn,
@@ -509,13 +597,30 @@
 )
 
 // TODO: http://lilaq.org/docs/tutorials/ticks#custom-tick-formatting
-#let tickformat = (
+/// Format for the ticks of an @axisline or an @axisplane. The same
+/// parameters can be given directly as the `format-ticks` argument, e.g.
+/// `pt.axisline(format-ticks: (length: 30pt))`.
+///
+/// -> dictionary
+#let tickformat(
+  /// Stroke of the tick marks, `auto` uses the stroke of the axis
+  /// -> auto | none | length | color | gradient | stroke | tiling | dictionary
   stroke: auto,
+  /// Length of the tick marks, `auto` uses a sensible default
+  /// -> auto | length
   length: auto,
+  /// Offset of the tick marks from the axis line, `auto` uses a
+  /// sensible default
+  /// -> auto | length
   offset: auto,
+  /// Function that formats the tick value into a label. `none` hides the
+  /// label.
+  /// -> none | function
   label-format: tick => text(size: 0.75em)[#calc.round(tick, digits: 2)],
+  /// Direction the tick marks are drawn in
+  /// -> auto | str
   dir: auto,
-) => (
+) = (
   stroke: stroke,
   length: length,
   offset: offset,
@@ -523,15 +628,40 @@
   dir: dir,
 )
 
-#let axisplane = (
+// TODO: format-subticks: (:), format-extra-ticks: (:),
+/// A plane perpendicular to one axis that visualizes the "back wall" of the
+/// bounding volume, optionally with a grid of ticks. Used as an @axis
+/// instance.
+///
+/// ```example
+/// #pt.diagram(
+///   stroke: blue,
+///   xaxis: (instances: (pt.axisplane(),)),
+///   yaxis: (instances: (pt.axisplane(),)),
+///   zaxis: (instances: (pt.axisplane(),)),
+/// )
+/// ```
+///
+/// -> dictionary
+#let axisplane(
+  /// Axis kind, one of `x`, `y` and `z`. Set automatically by @axis.
+  /// -> str
   kind: "x",
+  /// Position of the plane on the axis, `auto` places it on the far side
+  /// of the bounding volume
+  /// -> auto | int | float
   position: auto,
+  /// Stroke of the plane outline
+  /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
   stroke: (paint: black.transparentize(40%), dash: "dotted"),
+  /// Fill of the plane
+  /// -> auto | none | color | gradient | tiling
   fill: none,
+  /// Tick format as a @tickformat dictionary, or a list of them for the
+  /// grid lines. `none` disables the ticks.
+  /// -> none | dictionary | array
   format-ticks: (label-format: none),
-  // format-subticks: (:),
-  // format-extra-ticks: (:),
-) => (
+) = (
   type: "axisplane",
   kind: kind,
   position: position,
@@ -548,18 +678,51 @@
   // format-extra-ticks: format-extra-ticks,
 )
 
-#let axisline = (
+// TODO: format-subticks: (:), format-extra-ticks: (:),
+/// A line along one axis with ticks and a label. Used as an @axis instance.
+///
+/// ```example
+/// #pt.diagram(
+///   stroke: blue,
+///   xaxis: (
+///     instances: (
+///       pt.axisline(format-ticks: (length: 30pt, offset: 15pt)),
+///     ),
+///   ),
+///   yaxis: (instances: (pt.axisline(),)),
+///   zaxis: (instances: (pt.axisline(),)),
+/// )
+/// ```
+///
+/// -> dictionary
+#let axisline(
+  /// Axis kind, one of `x`, `y` and `z`. Set automatically by @axis.
+  /// -> str
   kind: "x",
+  /// (start, end) positions of the line on the other two axes, `auto`
+  /// spans the whole bounding volume
+  /// -> array
   position: (auto, auto),
+  /// Label of the axis, `auto` uses the axis letter
+  /// -> auto | none | content
   label: auto,
+  /// Stroke of the axis line
+  /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
   stroke: black.transparentize(40%),
+  /// Whether the label is drawn on the left side, `auto` decides based on
+  /// the position
+  /// -> auto | bool
   label-left: auto,
+  /// Vector tip at the end of the axis, one of the @marks
+  /// -> none | str | function
   tip: none,
+  /// Vector toe at the start of the axis, one of the @marks
+  /// -> none | str | function
   toe: none,
+  /// Tick format as a @tickformat dictionary. `none` disables the ticks.
+  /// -> none | dictionary
   format-ticks: (:),
-  // format-subticks: (:),
-  // format-extra-ticks: (:),
-) => (
+) = (
   type: "axisline",
   kind: kind,
   label: label,
@@ -576,33 +739,60 @@
 )
 
 // TODO: clean this up
+// TODO: scale: auto, inverted: false, mirror: auto, offset: auto, exponent: auto,
+// auto-exponent-threshold: 3, functions: auto, filter: (value, distance) => true,
+// locate-ticks: auto, subticks: auto, locate-subticks: auto, extra-ticks: (),
+// tick-args: (:), subtick-args: (:),
 // FIXME: wonky
-#let axis = (
+/// An axis of the diagram, consisting of a label, extent limit and a set of
+/// instances (@axisline and @axisplane). Pass parameter dictionaries for
+/// `xaxis`, `yaxis` and `zaxis` of @diagram, or use this function directly.
+///
+/// ```example
+/// #pt.diagram(
+///   xaxis: pt.axis(nticks: 8, label: "t"),
+///   yaxis: pt.axis(lim: (-5, 5)),
+///   pt.lineplot(
+///     pt.linspace(0, 10, num: 20),
+///     pt.linspace(-5, 5, num: 20),
+///     pt.linspace(-2, 2, num: 20),
+///   ),
+/// )
+/// ```
+///
+/// -> dictionary
+#let axis(
+  /// Axis order for depth sorting, `auto` sorts by default
+  /// -> auto | int
   order: auto,
+  /// Axis kind, one of `x`, `y` and `z`. Set automatically by @diagram.
+  /// -> str
   kind: "x",
+  /// Axis instances, defaults to an @axisline and an @axisplane
+  /// -> array
   instances: (),
-  // scale: auto,
+  /// Axis limit as (`min`, `max`), `auto` spans the data
+  /// -> array
   lim: (auto, auto),
-  // inverted: false,
-  // mirror: auto,
-  // offset: auto,
-  // exponent: auto,
-  // auto-exponent-threshold: 3,
+  /// Label of the axis, `auto` uses the axis letter
+  /// -> auto | none | content
   label: auto,
-  // functions: auto,
+  /// Whether to hide the axis
+  /// -> bool
   hidden: false,
-  // filter: (value, distance) => true,
+  /// Tick positions, `auto` calculates them from `nticks`
+  /// -> auto | array
   ticks: auto,
+  /// Number of ticks, `auto` calculates them from the available space
+  /// -> auto | int
   nticks: auto,
+  /// Minimum distance between the ticks
+  /// -> auto | length
   tick-distance: auto,
-  // locate-ticks: auto,
-  // subticks: auto,
-  // locate-subticks: auto,
-  // extra-ticks: (),
-  // tick-args: (:),
-  // subtick-args: (:),
+  /// Other axis parameters
+  /// -> dictionary
   ..plots,
-) => (
+) = (
   order: order,
   kind: kind,
   type: "axis",
@@ -638,10 +828,21 @@
   // subtick-args: subtick-args,
 )
 
+/// Format of the legend labels of a @diagram
+///
+/// -> dictionary
 #let legend-label(
+  /// Function that renders the label: `format(element-label, stroke, fill)`
+  /// -> function
   format: (it, stroke, fill) => text(size: 0.75em)[#it],
+  /// Width of the line/area preview of a legend entry
+  /// -> length
   width: 1em,
+  /// Spacing between the preview and the label
+  /// -> length
   spacing: 0.5em,
+  /// Direction of the legend entries
+  /// -> direction
   dir: ltr,
 ) = (
   width: width,
@@ -650,14 +851,35 @@
   spacing: spacing,
 )
 
+/// Parameters of the legend of a @diagram. Every element with a `label`
+/// gets a legend entry.
+///
+/// -> dictionary
 #let legend-def(
+  /// Position of the legend inside the canvas, e.g. `top + left`
+  /// -> location
   position: top + left,
+  /// Stroke of the legend box
+  /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
   stroke: black.transparentize(40%),
+  /// Fill of the legend box
+  /// -> auto | none | color | gradient | tiling
   fill: black.transparentize(95%),
+  /// Direction of the legend entries
+  /// -> direction
   dir: ttb,
+  /// Spacing between the legend entries
+  /// -> length
   spacing: 0.5em,
+  /// Inset of the legend box
+  /// -> length
   inset: 0.25em,
+  /// Legend label format, see @legend-label
+  /// -> dictionary
   label: (:),
+  /// Whether the legend should be placed next to the plot instead of
+  /// inside the canvas
+  /// -> bool
   separate: false,
 ) = (
   position: position,
