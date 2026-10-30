@@ -29,7 +29,7 @@
             15 * calc.cos(u)
               - 5 * calc.cos(2 * u)
               - 2 * calc.cos(3 * u)
-              - calc.cos(2 * u)
+              - calc.cos(4 * u)
           )
       )
 

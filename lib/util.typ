@@ -247,7 +247,7 @@
   /// -> bool
   include-end: true,
 ) = {
-  assert(num == auto or step == auto, message: "'num' and 'auto' are exclusive")
+  assert(num == auto or step == auto, message: "'num' and 'step' are exclusive")
   let n = if num == auto and step == auto {
     50
   } else if num == auto {

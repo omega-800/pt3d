@@ -41,11 +41,8 @@
   /// -> vector
   (x, y, z),
 ) = (
-  // FIXME: huh.
   x,
   y,
-  // (2 * x - xmax - xmin) / (xmax - xmin),
-  // (2 * y - ymax - ymin) / (ymax - ymin),
 )
 
 /// Checks if a 2d canvas coordinate is out of bounds
@@ -276,11 +273,11 @@
   ((xmin, xmax), (ymin, ymax), (zmin, zmax)),
 ) = (
   ((1, 0, 0), xmin),
-  ((-1, 0, 0), xmax),
+  ((-1, 0, 0), -xmax),
   ((0, 1, 0), ymin),
-  ((0, -1, 0), ymax),
+  ((0, -1, 0), -ymax),
   ((0, 0, 1), zmin),
-  ((0, 0, -1), zmax),
+  ((0, 0, -1), -zmax),
 )
 
 /// The 8 corner points of the bounding box
@@ -384,7 +381,7 @@
   /// -> vector
   c,
 ) = {
-  let n = cross-product(direction-vec(a, b), sum-vec(a, c))
+  let n = cross-product(direction-vec(a, b), direction-vec(a, c))
   assert-n-vec(n)
   (n, a)
 }
@@ -570,30 +567,6 @@
   res
 }
 
-/// Rotates a point by the given angles around the x, y and z axis.
-/// `none` angles are skipped.
-///
-/// -> vector
-#let rotate3d(
-  /// Rotation around the $x$ axis
-  /// -> auto | int | float
-  x,
-  /// Rotation around the $y$ axis
-  /// -> auto | int | float
-  y,
-  /// Rotation around the $z$ axis
-  /// -> auto | int | float
-  z,
-  /// Point to rotate
-  /// -> vector
-  p,
-) = {
-  let v1 = if x != none { rotate-x(x, p) } else { p }
-  let v2 = if y != none { rotate-y(y, v1) } else { v1 }
-  let v3 = if z != none { rotate-z(z, v2) } else { v2 }
-  v3
-}
-
 /// Calculates the two points of a segment centered on `point` that is
 /// perpendicular to a 2d line
 ///
@@ -708,8 +681,8 @@
   let d-f-p = distance-vec(from, p)
   let d-p-t = distance-vec(p, to)
   // FIXME: floating point imprecision?
-  // d-f-t == d-f-p + d-p-t + 1
-  d-f-t <= d-f-p + d-p-t + 1 and d-f-t >= d-f-p + d-p-t - 1
+  let tol = d-f-t * 1e-6
+  calc.abs(d-f-p + d-p-t - d-f-t) <= tol
 }
 
 /// Checks if a point lies on the inside of a line segment based on
@@ -728,10 +701,11 @@
   let f-p = direction-vec(from, p)
   let dot-f-p = dot-product(f-p, f-t)
   let dot-f-f = dot-product(f-t, f-t)
-  let s-c = cross-product(f-p, f-t).sum()
+  let dot-f-f-2 = dot-product(f-p, f-p)
+  let col = cross-product(f-p, f-t)
   // FIXME: floating point imprecision?
-  // s-c == 0 and 0 <= dot-f-p and dot-f-p <= dot-f-f
-  s-c <= 1 and s-c >= -1 and 0 <= dot-f-p and dot-f-p <= dot-f-f
+  let tol = (dot-f-f + dot-f-f-2) * 1e-6
+  col.all(v => calc.abs(v) <= tol) and 0 <= dot-f-p and dot-f-p <= dot-f-f
 }
 
 // TODO:
@@ -744,9 +718,18 @@
   (from, to),
   /// Point to check
   /// -> array
-  p,
+  (x, y),
 ) = {
-  false
+  let (fx, fy) = from
+  let (dx, dy) = (to.at(0) - fx, to.at(1) - fy)
+  let (px, py) = (x - fx, y - fy)
+  let len2 = dx * dx + dy * dy
+  if len2 == 0 {
+    return x == fx and y == fy
+  }
+  let t = (px * dx + py * dy) / len2
+  let cross = px * dy - py * dx
+  t >= 0 and t <= 1 and calc.abs(cross) <= len2 * 1e-6
 }
 
 /// Clips a 3d line segment to the bounding volume. Returns the (start, end)
@@ -782,9 +765,10 @@
   }
 }
 
-/// Calculates the intersection point of two 3d lines
+/// Calculates the intersection point of two 3d lines, or `none` if they
+/// are parallel. For skew lines it returns the point of closest approach.
 ///
-/// -> vector
+/// -> vector | none
 #let intersection-3d-lines(
   /// Point on line 1
   /// -> vector
@@ -799,9 +783,18 @@
   /// -> vector
   to2,
 ) = {
-  let d1 = distance-vec(from1, to1)
-  let d2 = distance-vec(from2, to2)
-  let t = cross-product(d1, d2)
+  let d1 = direction-vec(from1, to1)
+  let d2 = direction-vec(from2, to2)
+  let r = direction-vec(from1, from2)
+  let cross-d = cross-product(d1, d2)
+  let denom = dot-product(cross-d, cross-d)
+  if denom == 0 {
+    // Lines are parallel: no unique intersection point.
+    return none
+  }
+  // Point of closest approach of the two lines, which is the intersection
+  // if the lines are coplanar.
+  let t = dot-product(cross-product(r, d2), cross-d) / denom
   sum-vec(from1, scalar-mult-vec(t, d1))
 }
 

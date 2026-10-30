@@ -117,18 +117,22 @@
   with-labels: false,
 ) = {
   let dr = "-?\\d\\.?\\d*"
-  let reg = regex(dr + sep + dr + sep + dr)
+  let num-reg = regex("^" + dr + "$")
   let points = ()
   let labels = ()
   let lines = txt.split("\n")
-  if lines.first().match(reg) == none and with-labels {
+  let is-num-row = line => {
+    let parts = line.split(sep)
+    parts.len() == 3 and parts.all(p => p.match(num-reg) != none)
+  }
+  if with-labels and lines.len() > 0 and not is-num-row(lines.first()) {
     let parts = lines.first().split(sep)
     if parts.len() == 3 {
       labels = parts
     }
   }
   for line in lines {
-    if line.match(reg) != none {
+    if is-num-row(line) {
       points.push(line.split(sep).map(float))
     }
   }

@@ -36,7 +36,7 @@
   let (on-canvas, map-point-pt, pt-to-ratio) = ctx
   let (fill, stroke, from, to) = elem.mark
   let (r-from, r-to) = (from, to).map(on-canvas)
-  let (pt-from, pt-to) = (r-from, r-to).map(map-point-pt)
+  let (_, pt-to) = (r-from, r-to).map(map-point-pt)
   let int-to-ratio = ((x, y)) => pt-to-ratio((x * 1pt, y * 1pt))
   let size = elem.size / 1pt
 
@@ -102,8 +102,7 @@
   let (on-canvas, map-point-pt, pt-to-ratio) = ctx
   let (fill, stroke, from, to) = elem.mark
   let (r-from, r-to) = (from, to).map(on-canvas)
-  let (pt-from, pt-to) = (r-from, r-to).map(map-point-pt)
-  let int-to-ratio = ((x, y)) => pt-to-ratio((x * 1pt, y * 1pt))
+  let (_, pt-to) = (r-from, r-to).map(map-point-pt)
   let int-to-ratio = ((x, y)) => pt-to-ratio((x * 1pt, y * 1pt))
   let size = elem.size / 1.5pt
 
@@ -153,7 +152,17 @@
   elem,
 ) = {
   let (fill, stroke, from, to) = elem.mark
-  // TODO:
+  let (on-canvas, map-point-pt, pt-to-ratio) = ctx
+  let (x, y) = map-point-pt(on-canvas(to))
+  let w = elem.size / 2
+  let h = elem.height / 2
+  let (cs-x, cs-y) = pt-to-ratio((x * 1pt - w, y * 1pt - h))
+  place(dx: cs-x, dy: cs-y, rect(
+    stroke: stroke,
+    fill: fill,
+    width: 2 * w,
+    height: 2 * h,
+  ))
 }
 
 /// Renders a text mark at a point

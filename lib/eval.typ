@@ -325,8 +325,13 @@
   elem,
 ) = {
   elem.eval-points = clip-line(ctx, elem.vec)
-  elem.eval-tip = eval-mark(elem, elem.tip, ..elem.eval-points.at(0))
-  elem.eval-toe = eval-mark(elem, elem.toe, ..elem.eval-points.at(0).rev())
+  if elem.eval-points.len() > 0 and elem.eval-points.at(0).len() > 1 {
+    elem.eval-tip = eval-mark(elem, elem.tip, ..elem.eval-points.at(0))
+    elem.eval-toe = eval-mark(elem, elem.toe, ..elem.eval-points.at(0).rev())
+  } else {
+    elem.eval-tip = none
+    elem.eval-toe = none
+  }
   elem
 }
 
@@ -824,9 +829,9 @@
   if elem.type == "axis" {
     eval-axis-points(ctx, elem)
   } else if elem.type == "axisplane" {
-    eval-axisline-points(ctx, elem)
-  } else if elem.type == "axisline" {
     eval-axisplane-points(ctx, elem)
+  } else if elem.type == "axisline" {
+    eval-axisline-points(ctx, elem)
   } else if elem.type == "path" {
     elem.path
   } else if elem.type == "polygon" {

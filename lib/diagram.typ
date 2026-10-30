@@ -40,12 +40,20 @@
     .filter(elem => "type" in elem and elem.type in render)
     .enumerate()
     .map(((i, elem)) => {
-      let color = cycle.at(calc.rem(i, cycle.len()))
+      let color = if cycle.len() > 0 {
+        cycle.at(calc.rem(i, cycle.len()))
+      } else {
+        none
+      }
       if "stroke" in elem and elem.stroke == auto {
         elem.stroke = color
       }
       if "fill" in elem and elem.fill == auto {
-        elem.fill = color.transparentize(80%)
+        elem.fill = if color != none {
+          color.transparentize(80%)
+        } else {
+          none
+        }
       }
       eval-elem.at(elem.type)(ctx, elem)
     })
