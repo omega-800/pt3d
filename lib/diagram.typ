@@ -135,34 +135,20 @@
   )
 }
 
-/// Creates a 3d plot.
-///
-/// The elements (@lineplot, @planeplot, @path, @polygon, @vertices, @vec,
-/// @line, @plane, @planeparam, @distribution and @quiver) are evaluated, a
-/// bounding volume is computed, the scene is rotated and projected onto a 2d
-/// canvas, and the elements are rendered.
+/// Creates a 3d plot diagram.
 ///
 /// ```example
 /// #pt.diagram(
-///   title: "trippy cube",
-///   legend: (separate: true, dir: ltr),
-///   pt.polygon(
-///     (3, 0, 3),
-///     (3, 0, -3),
-///     (-3, 0, -3),
-///     (-3, 0, 3),
-///     fill: red.transparentize(70%),
-///   ),
-///   pt.path(
-///     stroke: red,
-///     label: "trippy cube",
-///     (-1, -1, 1),
-///     (1, -1, 1),
-///     (1, 1, 1),
-///     (-1, 1, 1),
-///     (1, 1, -1),
-///     (1, -1, -1),
-///     (-1, -1, -1),
+///   xaxis: (lim: (-1.5, 1.5), nticks: 7),
+///   yaxis: (lim: (-1.5, 1.5), nticks: 7),
+///   zaxis: (lim: (0, 1), nticks: 3),
+///   title: $g(x,y) = (x,y,sqrt(1-x^2-y^2))$,
+///   pt.planeparam(
+///     (x, y) => {
+///       let z = 1 - x * x - y * y
+///       if z < 0 { z } else { calc.sqrt(z) }
+///     },
+///     steps: 30,
 ///   ),
 /// )
 /// ```

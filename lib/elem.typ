@@ -861,10 +861,10 @@
   position: top + left,
   /// Stroke of the legend box
   /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
-  stroke: black.transparentize(40%),
+  stroke: black,
   /// Fill of the legend box
   /// -> auto | none | color | gradient | tiling
-  fill: black.transparentize(95%),
+  fill: rgb(0,0,0,0),
   /// Direction of the legend entries
   /// -> direction
   dir: ttb,
@@ -874,6 +874,9 @@
   /// Inset of the legend box
   /// -> length
   inset: 0.25em,
+  /// Radius of the legend box
+  /// -> length
+  radius: 2pt,
   /// Legend label format, see @legend-label
   /// -> dictionary
   label: (:),
@@ -890,4 +893,5 @@
   spacing: spacing,
   inset: inset,
   separate: separate,
+  radius: radius
 )

@@ -368,7 +368,7 @@
   /// -> auto | length | ratio
   height: auto,
 ) = {
-  let (dir, position, label, stroke, fill, spacing, inset) = legend-params
+  let (dir, position, label, stroke, fill, spacing, inset, radius) = legend-params
   let content = legend-elems.map(elem => render-legend-label(elem, label))
   block(
     inset: inset,
@@ -376,6 +376,7 @@
     stroke: stroke,
     width: width,
     height: height,
+    radius: radius,
     stack(spacing: spacing, dir: dir, ..content),
   )
 }
