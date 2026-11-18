@@ -412,16 +412,29 @@
       )).at(0)
     })
     .filter(v => (
-      v != none
-        and not v.any(vv => vv == none)
-        and v.len() > 1
-        and distance-vec(v.at(0), v.at(1)) > 0
+      v != none and not v.any(vv => vv == none) and v.len() > 1 and distance-vec(v.at(0), v.at(1)) > 0
     ))
   // TODO: only eval if mark != none
   elem.eval-marks = (
     ..eval-marks(elem, elem.tip, elem.eval-points),
     ..eval-marks(elem, elem.toe, elem.eval-points.map(l => l.rev())),
   )
+  elem
+}
+
+#let eval-scatter(
+  ctx,
+  elem,
+) = {
+  // TODO:
+  elem.eval-marks = eval-marks(
+    elem,
+    elem.mark,
+    // FIXME: bad
+    elem.xs.zip(elem.ys, elem.zs).map(((x, y, z)) => ((x + .1, y + .1, z
+      + .1),(x, y, z),)),
+  ).enumerate().filter(((i,p))=>calc.rem(i,2) ==
+  1).map(((i,p))=>p)
   elem
 }
 
@@ -807,6 +820,7 @@
   "distribution": eval-distribution,
   "quiver": eval-quiver,
   // "lineparam": eval-lineparam,
+  "scatter": eval-scatter,
 )
 
 /// Collects all 3d points of an element for bounding box evaluation. This is
@@ -841,6 +855,8 @@
   } else if elem.type == "planeplot" {
     let (x, y, z, _) = elem.planeplot
     x.zip(y, z)
+  } else if elem.type == "scatter" {
+    elem.xs.zip(elem.ys, elem.zs)
   } else if elem.type == "quiver" {
     // TODO: distance
     elem.xs.zip(elem.ys, elem.zs)
@@ -899,5 +915,4 @@
 
   (min.map(calc.floor), max.map(calc.ceil))
 }
-
 

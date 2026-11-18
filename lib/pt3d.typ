@@ -2,7 +2,7 @@
 #import "diagram.typ": diagram
 #import "elem.typ": (
   axis, axisline, axisplane, distribution, line, lineplot, path, plane,
-  planeparam, planeplot, polygon, quiver, vec, vertices,
+  planeparam, planeplot, polygon, quiver, vec, vertices, scatter
 )
 #import "linalg.typ": *
 #import "style.typ": *

@@ -6,6 +6,16 @@
 #import "clip.typ": *
 #import "mark.typ": *
 
+
+#let render-marks(ctx, elem) = {
+  if "eval-marks" in elem and elem.eval-marks != none {
+    for mark in elem.eval-marks {
+      // FIXME: render marks that are in front of the plane
+      render-mark(ctx, mark)
+    }
+  }
+}
+
 /// Renders a @lineplot, @path, @line or @quiver element: draws the (clipped)
 /// polylines, applying the `stroke-color-fn` gradient, and the marks.
 ///
@@ -50,11 +60,7 @@
     }
     // huh, wait, what is this doing here
     // TODO: shouldn't this be in the outer scope
-    if "eval-marks" in elem and elem.eval-marks != none {
-      for mark in elem.eval-marks {
-        render-mark(ctx, mark)
-      }
-    }
+    render-marks(ctx, elem)
   }
 }
 
@@ -91,12 +97,7 @@
       ))
     }
   }
-  if "eval-marks" in elem and elem.eval-marks != none {
-    for mark in elem.eval-marks {
-      // FIXME: render marks that are in front of the plane
-      render-mark(ctx, mark)
-    }
-  }
+  render-marks(ctx,elem)
 }
 
 /// Renders a @plane element: draws the (clipped) polygon of the plane
@@ -263,6 +264,7 @@
   // "lineparam": render-clipped-line,
   "line": render-clipped-line,
   "path": render-clipped-line,
+  "scatter": render-marks,
 )
 
 /// Renders a single legend entry: a small preview of the element (line or

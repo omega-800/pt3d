@@ -77,6 +77,65 @@
   )
 }
 
+/// Scatter points
+///
+/// ```example
+/// #let xs = pt.linspace(-1, 1, num: 3)
+/// #let (xs, ys, zs) = pt.meshgrid(xs, xs, xs, pts: false)
+/// #pt.diagram(
+///   pt.scatter(
+///     xs, ys, zs,
+///   )
+/// )
+/// ```
+#let scatter(
+  /// Stroke, defaults to the $n$th color-cycle entry
+  /// -> none | auto | length | color | gradient | stroke | tiling | dictionary
+  stroke: auto,
+  /// Fill, defaults to the $n$th color-cycle entry
+  /// -> auto | none | color | gradient | tiling
+  fill: auto,
+  /// Label
+  /// -> none | content
+  label: none,
+  /// Stroke color function, defaults to @quiver.stroke
+  /// -> none | function
+  stroke-color-fn: none,
+  /// Fill color function, defaults to @quiver.fill
+  /// -> none | function
+  fill-color-fn: none,
+  /// One of the @marks
+  /// -> none | str | function
+  mark: "o",
+  /// Scale
+  /// -> int | float
+  scale: 1,
+  /// `x` data points
+  /// -> array
+  xs,
+  /// `y` data points
+  /// -> array
+  ys,
+  /// `z` data points
+  /// -> array
+  zs,
+) = {
+  (
+    type: "scatter",
+    stroke: stroke,
+    fill: fill,
+    label: label,
+    stroke-color-fn: stroke-color-fn,
+    fill-color-fn: fill-color-fn,
+    // TODO:
+    scale: scale,
+    mark: mark,
+    xs: xs,
+    ys: ys,
+    zs: zs,
+  )
+}
+
 // TODO: w/ bars n stuff
 // #let histogram = (
 //   stroke: auto,
